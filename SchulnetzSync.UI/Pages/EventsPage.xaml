@@ -13,11 +13,11 @@
         <!-- ══════════════════════════════════════════════════════════════
              TOOLBAR
              ══════════════════════════════════════════════════════════════ -->
-        <Grid Grid.Row="0" Margin="20,14,20,0">
+        <Grid Grid.Row="0" Margin="20,12,20,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>  <!-- Titel -->
+                <ColumnDefinition Width="*"/>     <!-- Monatsnav (zentriert) -->
+                <ColumnDefinition Width="Auto"/>  <!-- Ansicht + Filter -->
             </Grid.ColumnDefinitions>
 
             <!-- Titel -->
@@ -26,16 +26,17 @@
                        Style="{StaticResource TitleText}"
                        VerticalAlignment="Center"/>
 
-            <!-- Monats-Navigation (zentriert) -->
+            <!-- Monatsnavigation zentriert -->
             <StackPanel Grid.Column="1" Orientation="Horizontal"
                         HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Button x:Name="BtnPrevMonth" Content="‹" FontSize="20"
                         Style="{StaticResource SecondaryButton}" Padding="10,4"
                         Click="BtnPrevMonth_Click"/>
                 <TextBlock x:Name="TxtMonthYear"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="17" FontWeight="Bold"
+                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
                            VerticalAlignment="Center" Margin="16,0"
-                           MinWidth="175" TextAlignment="Center"/>
+                           MinWidth="190" TextAlignment="Center"/>
                 <Button x:Name="BtnNextMonth" Content="›" FontSize="20"
                         Style="{StaticResource SecondaryButton}" Padding="10,4"
                         Click="BtnNextMonth_Click"/>
@@ -45,30 +46,47 @@
                         Click="BtnToday_Click"/>
             </StackPanel>
 
-            <!-- Filter-Chips (rechts) -->
+            <!-- Ansichts-Toggle + Filter rechts -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Monat / Woche Toggle -->
+                <Border CornerRadius="7"
+                        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        Margin="0,0,12,0" Padding="2">
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnViewMonth" Content="Monat"
+                                Style="{StaticResource PrimaryButton}"
+                                Padding="10,4" FontSize="12"
+                                Click="BtnViewMonth_Click"/>
+                        <Button x:Name="BtnViewWeek" Content="Woche"
+                                Style="{StaticResource SecondaryButton}"
+                                Padding="10,4" FontSize="12"
+                                Click="BtnViewWeek_Click"/>
+                    </StackPanel>
+                </Border>
+                <!-- Filter -->
                 <Button x:Name="BtnFilterAll" Content="Alle"
                         Style="{StaticResource PrimaryButton}"
-                        Padding="12,5" FontSize="12" Margin="0,0,6,0"
+                        Padding="11,5" FontSize="12" Margin="0,0,5,0"
                         Click="BtnFilter_Click" Tag="All"/>
                 <Button x:Name="BtnFilterPruefung" Content="Prüfungen"
                         Style="{StaticResource SecondaryButton}"
-                        Padding="12,5" FontSize="12" Margin="0,0,6,0"
+                        Padding="11,5" FontSize="12" Margin="0,0,5,0"
                         Click="BtnFilter_Click" Tag="Pruefung"/>
                 <Button x:Name="BtnFilterTermin" Content="Termine"
                         Style="{StaticResource SecondaryButton}"
-                        Padding="12,5" FontSize="12"
+                        Padding="11,5" FontSize="12"
                         Click="BtnFilter_Click" Tag="Termin"/>
             </StackPanel>
         </Grid>
 
         <!-- ══════════════════════════════════════════════════════════════
-             NO-DATA HINT (sichtbar wenn noch kein Feed geladen)
+             NO-DATA
              ══════════════════════════════════════════════════════════════ -->
         <Border x:Name="NoDataHint" Grid.Row="1" Visibility="Collapsed"
                 Style="{StaticResource Card}" Margin="20"
-                VerticalAlignment="Center" HorizontalAlignment="Center"
-                MinWidth="400">
+                VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="380">
             <StackPanel Margin="48,40">
                 <TextBlock Text="📅" FontSize="64" HorizontalAlignment="Center"/>
                 <TextBlock Text="Noch keine Einträge"
@@ -84,24 +102,23 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════════════════════
-             HAUPT-LAYOUT: Kalender (links) + Detail-Panel (rechts)
+             HAUPT-LAYOUT: Kalender + Detail-Panel
              ══════════════════════════════════════════════════════════════ -->
-        <Grid x:Name="MainLayout" Grid.Row="1" Margin="20,10,20,20" Visibility="Collapsed">
+        <Grid x:Name="MainLayout" Grid.Row="1" Margin="20,8,20,20" Visibility="Collapsed">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <!-- Detail-Panel: 0 = versteckt, 330 = sichtbar (per Code gesetzt) -->
                 <ColumnDefinition x:Name="DetailColumnDef" Width="0"/>
             </Grid.ColumnDefinitions>
 
             <!-- ── Kalender-Bereich ── -->
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="26"/>  <!-- Wochentag-Köpfe -->
-                    <RowDefinition Height="*"/>   <!-- Kalender-Zellen -->
+                    <RowDefinition Height="26"/>  <!-- Wochentag-Köpfe (nur Monat) -->
+                    <RowDefinition Height="*"/>   <!-- Zellen / Wochenansicht -->
                 </Grid.RowDefinitions>
 
-                <!-- Wochentag-Köpfe -->
-                <Grid Grid.Row="0">
+                <!-- Wochentag-Köpfe (Monatsansicht) -->
+                <Grid Grid.Row="0" x:Name="MonthDayHeaders">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
@@ -111,44 +128,30 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                            BorderThickness="0,0,0,1" Padding="0,4,0,4">
-                        <TextBlock Text="Mo" FontSize="11" FontWeight="SemiBold"
-                                   Opacity="0.50" HorizontalAlignment="Center"/>
+                    <Border Grid.Column="0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="Mo" FontSize="11" FontWeight="SemiBold" Opacity="0.50" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <Border Grid.Column="1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                            BorderThickness="0,0,0,1" Padding="0,4,0,4">
-                        <TextBlock Text="Di" FontSize="11" FontWeight="SemiBold"
-                                   Opacity="0.50" HorizontalAlignment="Center"/>
+                    <Border Grid.Column="1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="Di" FontSize="11" FontWeight="SemiBold" Opacity="0.50" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <Border Grid.Column="2" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                            BorderThickness="0,0,0,1" Padding="0,4,0,4">
-                        <TextBlock Text="Mi" FontSize="11" FontWeight="SemiBold"
-                                   Opacity="0.50" HorizontalAlignment="Center"/>
+                    <Border Grid.Column="2" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="Mi" FontSize="11" FontWeight="SemiBold" Opacity="0.50" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <Border Grid.Column="3" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                            BorderThickness="0,0,0,1" Padding="0,4,0,4">
-                        <TextBlock Text="Do" FontSize="11" FontWeight="SemiBold"
-                                   Opacity="0.50" HorizontalAlignment="Center"/>
+                    <Border Grid.Column="3" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="Do" FontSize="11" FontWeight="SemiBold" Opacity="0.50" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <Border Grid.Column="4" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                            BorderThickness="0,0,0,1" Padding="0,4,0,4">
-                        <TextBlock Text="Fr" FontSize="11" FontWeight="SemiBold"
-                                   Opacity="0.50" HorizontalAlignment="Center"/>
+                    <Border Grid.Column="4" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="Fr" FontSize="11" FontWeight="SemiBold" Opacity="0.50" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <Border Grid.Column="5" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                            BorderThickness="0,0,0,1" Padding="0,4,0,4">
-                        <TextBlock Text="Sa" FontSize="11" FontWeight="SemiBold"
-                                   Opacity="0.35" HorizontalAlignment="Center"/>
+                    <Border Grid.Column="5" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="Sa" FontSize="11" FontWeight="SemiBold" Opacity="0.35" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <Border Grid.Column="6" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                            BorderThickness="0,0,0,1" Padding="0,4,0,4">
-                        <TextBlock Text="So" FontSize="11" FontWeight="SemiBold"
-                                   Opacity="0.35" HorizontalAlignment="Center"/>
+                    <Border Grid.Column="6" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="So" FontSize="11" FontWeight="SemiBold" Opacity="0.35" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </Grid>
 
-                <!-- Kalender-Zellen (6×7, per Code befüllt) -->
+                <!-- Monatsansicht: 6×7 Zellen (per Code befüllt) -->
                 <Grid Grid.Row="1" x:Name="CalendarGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -168,12 +171,26 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                 </Grid>
+
+                <!-- Wochenansicht: 7 Spalten (per Code befüllt, überspannt beide Zeilen) -->
+                <Grid Grid.Row="0" Grid.RowSpan="2" x:Name="WeekGrid"
+                      Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                </Grid>
             </Grid>
 
-            <!-- ── Detail-Panel (rechts, standardmässig versteckt) ── -->
+            <!-- ── Detail-Panel (rechts, versteckt) ── -->
             <Border x:Name="DetailPanel"
                     Grid.Column="1"
-                    Margin="12,0,0,0"
+                    Margin="10,0,0,0"
                     Visibility="Collapsed"
                     CornerRadius="12"
                     Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
@@ -181,16 +198,16 @@
                     BorderThickness="1">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>  <!-- Header mit Schliessen-Knopf -->
-                        <RowDefinition Height="*"/>     <!-- Inhalt (scrollbar) -->
-                        <RowDefinition Height="Auto"/>  <!-- Aktions-Buttons -->
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Panel-Header -->
+                    <!-- Header -->
                     <Grid Grid.Row="0" Margin="16,12,16,12">
                         <TextBlock x:Name="TxtDetailBadge"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Opacity="0.45" VerticalAlignment="Center"/>
+                                   FontSize="11" FontWeight="Bold"
+                                   Opacity="0.60" VerticalAlignment="Center"/>
                         <Button x:Name="BtnCloseDetail" Content="✕"
                                 HorizontalAlignment="Right"
                                 Style="{StaticResource SecondaryButton}"
@@ -200,16 +217,13 @@
                     <Separator Grid.Row="0" VerticalAlignment="Bottom"
                                Margin="0" Style="{StaticResource Divider}"/>
 
-                    <!-- Event-Details (scrollbar) -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="DetailContent" Margin="16,14,16,0"/>
                     </ScrollViewer>
 
-                    <!-- Aktions-Buttons -->
                     <Border Grid.Row="2"
                             BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                            BorderThickness="0,1,0,0"
-                            Padding="16,12">
+                            BorderThickness="0,1,0,0" Padding="16,12">
                         <StackPanel>
                             <Button x:Name="BtnDeleteFromApp"
                                     Content="🚫  Aus App ausblenden"
@@ -217,10 +231,9 @@
                                     HorizontalAlignment="Stretch"
                                     Margin="0,0,0,8"
                                     Click="BtnDeleteFromApp_Click"/>
-                            <TextBlock FontSize="10" Opacity="0.50"
-                                       TextAlignment="Center"
-                                       TextWrapping="Wrap"
-                                       Text="Bleibt im Schulnetz-Feed. Wird nur hier ausgeblendet."/>
+                            <TextBlock FontSize="10" Opacity="0.45"
+                                       TextAlignment="Center" TextWrapping="Wrap"
+                                       Text="Bleibt im Schulnetz-Feed. Hier dauerhaft ausgeblendet."/>
                         </StackPanel>
                     </Border>
                 </Grid>

@@ -232,7 +232,13 @@ public partial class SettingsPage : Page
 
         ConfigManager.Save(config);
         AppState.Notify();
-        TxtSaveStatus.Text = "✅ Gespeichert";
+
+        // Grünes Feedback — automatisch nach 3 s ausblenden
+        TxtSaveStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E));
+        TxtSaveStatus.Text       = "✅  Einstellungen gespeichert";
+        _ = Task.Delay(3000).ContinueWith(
+            _ => Dispatcher.Invoke(() => TxtSaveStatus.Text = ""),
+            System.Threading.Tasks.TaskScheduler.Default);
     }
 
     // -----------------------------------------------------------------------
