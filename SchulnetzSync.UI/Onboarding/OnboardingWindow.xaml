@@ -40,7 +40,7 @@
                      SCHRITT 1 — Willkommen
                      ══════════════════════════════════ -->
                 <StackPanel x:Name="Step1" HorizontalAlignment="Center" MaxWidth="520">
-                    <Image Source="pack://application:,,,/Resources/semestria.ico"
+                    <Image Source="pack://application:,,,/Resources/Semestra_Logo.png"
                            Width="80" Height="80"
                            HorizontalAlignment="Center" Margin="0,0,0,18"
                            RenderOptions.BitmapScalingMode="HighQuality"/>

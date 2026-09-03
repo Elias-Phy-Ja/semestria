@@ -26,9 +26,10 @@
     <Copyright>© 2025 Elias Wyss</Copyright>
   </PropertyGroup>
 
-  <!-- Icon als eingebettete Ressource einschliessen -->
+  <!-- Icons und Bilder als eingebettete Ressourcen -->
   <ItemGroup>
     <Resource Include="Resources\semestria.ico"/>
+    <Resource Include="Resources\Semestra_Logo.png"/>
   </ItemGroup>
 
 </Project>
