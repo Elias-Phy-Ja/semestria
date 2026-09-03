@@ -187,18 +187,8 @@
                     </Grid.ColumnDefinitions>
                 </Grid>
 
-                <!-- Wochenansicht -->
-                <Grid Grid.Row="0" Grid.RowSpan="2" x:Name="WeekGrid" Visibility="Collapsed">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                </Grid>
+                <!-- Wochenansicht (Struktur wird vollständig in Code aufgebaut) -->
+                <Grid Grid.Row="0" Grid.RowSpan="2" x:Name="WeekGrid" Visibility="Collapsed"/>
             </Grid>
 
             <!-- ── Rechtes Panel (Detail / Einstellungen / Neuer Eintrag) ── -->

@@ -30,6 +30,13 @@ public partial class EventsPage : WpfPage
     private string    _viewMode  = "Month";    // "Month" | "Week"
     private string    _panelMode = "None";     // "None" | "Detail" | "Settings" | "AddEvent"
 
+    // Zeit-Raster Konstanten
+    private const int    _weekStartH = 7;      // 07:00
+    private const int    _weekEndH   = 22;     // 22:00
+    private const int    _slotMin    = 15;     // Minuten pro Zeile
+    private const double _slotPx     = 15.0;  // Pixel pro Zeile (1h = 60px)
+    private const double _gutterW    = 48.0;  // Breite der Zeit-Spalte
+
     private static readonly CultureInfo _deCH = CultureInfo.GetCultureInfo("de-CH");
 
     // Standardfarben (über CategoryColors überschreibbar)
@@ -341,86 +348,78 @@ public partial class EventsPage : WpfPage
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // WOCHENANSICHT
+    // WOCHENANSICHT — Zeit-Raster (Stundenplan-Ansicht)
     // ══════════════════════════════════════════════════════════════════════
     private void BuildWeekView()
     {
         MonthDayHeaders.Visibility = Visibility.Collapsed;
         CalendarGrid.Visibility    = Visibility.Collapsed;
         WeekGrid.Visibility        = Visibility.Visible;
+
+        // Alle vorherigen Children + Definitionen löschen
         WeekGrid.Children.Clear();
+        WeekGrid.ColumnDefinitions.Clear();
+        WeekGrid.RowDefinitions.Clear();
 
-        var anchor     = _selectedDate ?? DateTime.Today;
-        int daysFromMo = ((int)anchor.DayOfWeek + 6) % 7;
-        var weekStart  = anchor.AddDays(-daysFromMo);
-        var weekEnd    = weekStart.AddDays(6);
+        var anchor    = _selectedDate ?? DateTime.Today;
+        int fromMon   = ((int)anchor.DayOfWeek + 6) % 7;
+        var weekStart = anchor.AddDays(-fromMon);
+        var weekEnd   = weekStart.AddDays(6);
+        var today     = DateTime.Today;
+        var events    = FilteredEvents();
+        var gridLine  = new SolidColorBrush(Color.FromArgb(40, 0x80, 0x80, 0x80));
 
-        TxtMonthYear.Text = weekStart.Month == weekEnd.Month
-            ? $"{weekStart.ToString("d. MMM", _deCH)} – {weekEnd.ToString("d. MMM yyyy", _deCH)}"
-            : $"{weekStart.ToString("d. MMM", _deCH)} – {weekEnd.ToString("d. MMM yyyy", _deCH)}";
+        int kw = System.Globalization.ISOWeek.GetWeekOfYear(weekStart);
+        TxtMonthYear.Text = $"KW {kw}  ·  {weekStart.ToString("d. MMM", _deCH)} – {weekEnd.ToString("d. MMM yyyy", _deCH)}";
 
-        var events   = FilteredEvents();
-        var today    = DateTime.Today;
-        var gridLine = new SolidColorBrush(Color.FromArgb(45, 0x80, 0x80, 0x80));
+        // Haupt-Layout: 2 Zeilen (Header + Zeitraster)
+        WeekGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        WeekGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        WeekGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        for (int col = 0; col < 7; col++)
+        // ── Kopfzeile (Wochentag-Nummern) ────────────────────────────────────
+        var headerGrid = new Grid();
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(_gutterW) });
+        for (int d = 0; d < 7; d++)
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        // Gutter-Spacer
+        var gutterSpacer = new WpfBorder { BorderBrush = gridLine, BorderThickness = new Thickness(0, 0, 1, 1) };
+        Grid.SetColumn(gutterSpacer, 0);
+        headerGrid.Children.Add(gutterSpacer);
+
+        for (int d = 0; d < 7; d++)
         {
-            var date      = weekStart.AddDays(col);
-            var dayEvents = events.Where(e => e.Start.Date == date).OrderBy(e => e.Start).ToList();
+            var date      = weekStart.AddDays(d);
             bool isToday  = date == today;
-            bool isWeekend = col >= 5;
+            bool isWe     = d >= 5;
 
-            var column = new WpfBorder
-            {
-                BorderBrush     = gridLine,
-                BorderThickness = new Thickness(col == 0 ? 1 : 0, 0, 1, 0)
-            };
-
-            var colGrid = new Grid();
-            colGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            colGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-
-            // Spaltenheader
             Brush headerBg = isToday
-                ? new SolidColorBrush(Color.FromArgb(30, _accentColor.R, _accentColor.G, _accentColor.B))
-                : isWeekend
-                ? new SolidColorBrush(Color.FromArgb(14, 0x80, 0x80, 0x80))
+                ? new SolidColorBrush(Color.FromArgb(28, _accentColor.R, _accentColor.G, _accentColor.B))
                 : WpfBrushes.Transparent;
 
-            var header = new WpfBorder
+            var hdr = new WpfBorder
             {
                 Background      = headerBg,
                 BorderBrush     = gridLine,
-                BorderThickness = new Thickness(0, 0, 0, 1),
-                Padding         = new Thickness(0, 10, 0, 10)
+                BorderThickness = new Thickness(0, 0, d < 6 ? 1 : 0, 1),
+                Padding         = new Thickness(0, 8, 0, 8)
             };
 
-            var dayLabel = new WpfTextBlock
-            {
-                Text                = date.ToString("ddd", _deCH).ToUpper(),
-                FontSize            = 10,
-                FontWeight          = FontWeights.SemiBold,
-                Opacity             = isWeekend ? 0.38 : 0.55,
-                HorizontalAlignment = WpfHA.Center,
-                Margin              = new Thickness(0, 0, 0, 3)
-            };
-
-            // Tagesnummer: adaptive Opacity statt fixer Farbe
             UIElement dayNum;
             if (isToday)
             {
                 dayNum = new WpfBorder
                 {
-                    Width               = 32,
-                    Height              = 32,
-                    CornerRadius        = new CornerRadius(16),
+                    Width               = 30,
+                    Height              = 30,
+                    CornerRadius        = new CornerRadius(15),
                     Background          = new SolidColorBrush(_accentColor),
                     HorizontalAlignment = WpfHA.Center,
-                    Margin              = new Thickness(0, 2, 0, 0),
-                    Child = new WpfTextBlock
+                    Child               = new WpfTextBlock
                     {
                         Text                = date.Day.ToString(),
-                        FontSize            = 16,
+                        FontSize            = 14,
                         FontWeight          = FontWeights.Bold,
                         Foreground          = WpfBrushes.White,
                         HorizontalAlignment = WpfHA.Center,
@@ -433,87 +432,298 @@ public partial class EventsPage : WpfPage
                 dayNum = new WpfTextBlock
                 {
                     Text                = date.Day.ToString(),
-                    FontSize            = 22,
+                    FontSize            = 18,
                     FontWeight          = FontWeights.Normal,
-                    Opacity             = isWeekend ? 0.42 : 0.85,
+                    Opacity             = isWe ? 0.40 : 0.85,
                     HorizontalAlignment = WpfHA.Center
                 };
             }
 
-            var headerPanel = new StackPanel { HorizontalAlignment = WpfHA.Center };
-            headerPanel.Children.Add(dayLabel);
-            headerPanel.Children.Add(dayNum);
-            header.Child = headerPanel;
-            Grid.SetRow(header, 0);
-            colGrid.Children.Add(header);
-
-            // Events
-            var eventsPanel = new StackPanel { Margin = new Thickness(5, 6, 5, 6) };
-
-            if (dayEvents.Count == 0)
+            var hp = new StackPanel { HorizontalAlignment = WpfHA.Center };
+            hp.Children.Add(new WpfTextBlock
             {
-                eventsPanel.Children.Add(new WpfTextBlock
-                {
-                    Text                = "–",
-                    FontSize            = 13,
-                    Opacity             = 0.20,
-                    HorizontalAlignment = WpfHA.Center,
-                    Margin              = new Thickness(0, 16, 0, 0)
-                });
-            }
-            else
-            {
-                foreach (var ev in dayEvents)
-                    eventsPanel.Children.Add(MakeWeekEventCard(ev));
-            }
-
-            var scroll = new ScrollViewer
-            {
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Content = eventsPanel
-            };
-            Grid.SetRow(scroll, 1);
-            colGrid.Children.Add(scroll);
-
-            column.Child = colGrid;
-            Grid.SetColumn(column, col);
-            WeekGrid.Children.Add(column);
+                Text                = date.ToString("ddd", _deCH).ToUpper(),
+                FontSize            = 10,
+                FontWeight          = FontWeights.SemiBold,
+                Opacity             = isWe ? 0.35 : 0.50,
+                HorizontalAlignment = WpfHA.Center,
+                Margin              = new Thickness(0, 0, 0, 2)
+            });
+            hp.Children.Add(dayNum);
+            hdr.Child = hp;
+            Grid.SetColumn(hdr, d + 1);
+            headerGrid.Children.Add(hdr);
         }
+
+        Grid.SetRow(headerGrid, 0);
+        Grid.SetColumn(headerGrid, 0);
+        WeekGrid.Children.Add(headerGrid);
+
+        // ── Zeitraster (scrollbar) ───────────────────────────────────────────
+        int totalSlots = (_weekEndH - _weekStartH) * (60 / _slotMin); // 60 Slots bei 15-min / 900px
+
+        var tGrid = new Grid();
+        tGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(_gutterW) });
+        for (int d = 0; d < 7; d++)
+            tGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        for (int i = 0; i <= totalSlots; i++)
+            tGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(_slotPx) });
+
+        // Stunden-Linien und Zeitbeschriftung
+        int hourCount = _weekEndH - _weekStartH;
+        for (int h = 0; h <= hourCount; h++)
+        {
+            int slotRow = h * (60 / _slotMin);
+            int hour    = _weekStartH + h;
+
+            // Linie über alle Tagesspalten
+            var hline = new WpfBorder
+            {
+                Height            = 1,
+                Background        = new SolidColorBrush(Color.FromArgb(h == 0 ? (byte)70 : (byte)35, 0x80, 0x80, 0x80)),
+                VerticalAlignment = VerticalAlignment.Top,
+                IsHitTestVisible  = false
+            };
+            Grid.SetRow(hline, slotRow);
+            Grid.SetColumn(hline, 1);
+            Grid.SetColumnSpan(hline, 7);
+            tGrid.Children.Add(hline);
+
+            // Halbe-Stunden-Linie (schwächer)
+            if (h < hourCount)
+            {
+                int halfSlot = slotRow + (30 / _slotMin);
+                var hHalf = new WpfBorder
+                {
+                    Height            = 1,
+                    Background        = new SolidColorBrush(Color.FromArgb(18, 0x80, 0x80, 0x80)),
+                    VerticalAlignment = VerticalAlignment.Top,
+                    IsHitTestVisible  = false
+                };
+                Grid.SetRow(hHalf, halfSlot);
+                Grid.SetColumn(hHalf, 1);
+                Grid.SetColumnSpan(hHalf, 7);
+                tGrid.Children.Add(hHalf);
+            }
+
+            // Zeitbeschriftung links
+            if (h < hourCount)
+            {
+                var lbl = new WpfTextBlock
+                {
+                    Text                = $"{hour:D2}:00",
+                    FontSize            = 9,
+                    Opacity             = 0.42,
+                    VerticalAlignment   = VerticalAlignment.Top,
+                    HorizontalAlignment = WpfHA.Right,
+                    Margin              = new Thickness(0, -6, 5, 0),
+                    IsHitTestVisible    = false
+                };
+                Grid.SetRow(lbl, slotRow);
+                Grid.SetColumn(lbl, 0);
+                tGrid.Children.Add(lbl);
+            }
+        }
+
+        // Vertikale Spalten-Trennlinien
+        for (int d = 0; d < 7; d++)
+        {
+            var vline = new WpfBorder
+            {
+                BorderBrush       = gridLine,
+                BorderThickness   = new Thickness(d == 0 ? 1 : 0, 0, 1, 0),
+                IsHitTestVisible  = false
+            };
+            Grid.SetRow(vline, 0);
+            Grid.SetRowSpan(vline, totalSlots + 1);
+            Grid.SetColumn(vline, d + 1);
+            tGrid.Children.Add(vline);
+
+            // Wochenende / Heute Hintergrundtönung
+            var date      = weekStart.AddDays(d);
+            bool isToday  = date == today;
+            bool isWe     = d >= 5;
+            if (isToday || isWe)
+            {
+                var dayBg = new WpfBorder
+                {
+                    Background       = isToday
+                        ? new SolidColorBrush(Color.FromArgb(10, _accentColor.R, _accentColor.G, _accentColor.B))
+                        : new SolidColorBrush(Color.FromArgb(8, 0x80, 0x80, 0x80)),
+                    IsHitTestVisible = false
+                };
+                Grid.SetRow(dayBg, 0);
+                Grid.SetRowSpan(dayBg, totalSlots + 1);
+                Grid.SetColumn(dayBg, d + 1);
+                tGrid.Children.Add(dayBg);
+            }
+        }
+
+        // Events in die Spalten zeichnen
+        for (int d = 0; d < 7; d++)
+        {
+            var date      = weekStart.AddDays(d);
+            var dayEvents = events.Where(e => e.Start.Date == date).OrderBy(e => e.Start).ToList();
+
+            // Ganztägige Events werden als kompakte Streifen am Tagesstart gezeigt
+            int allDayRow = 0; // Startzeile für ganztägige Events (oben im Raster)
+            foreach (var ev in dayEvents.Where(e => e.IsAllDay))
+            {
+                var strip = MakeWeekAllDayStrip(ev);
+                Grid.SetRow(strip, allDayRow);
+                Grid.SetColumn(strip, d + 1);
+                tGrid.Children.Add(strip);
+                allDayRow = Math.Min(allDayRow + 1, totalSlots - 1);
+            }
+
+            // Zeitgebundene Events
+            foreach (var ev in dayEvents.Where(e => !e.IsAllDay))
+            {
+                var local      = ev.Start.LocalDateTime;
+                var localEnd   = ev.End.LocalDateTime;
+                double startH  = local.Hour + local.Minute / 60.0;
+                double endH    = localEnd.Hour + localEnd.Minute / 60.0;
+
+                // Ausserhalb des Rasters → überspringen
+                if (endH <= _weekStartH || startH >= _weekEndH) continue;
+                startH = Math.Max(startH, _weekStartH);
+                endH   = Math.Min(endH,   _weekEndH);
+
+                double offsetH  = startH - _weekStartH;
+                double slotDbl  = offsetH * (60.0 / _slotMin);
+                int    startSlot = (int)slotDbl;
+                double marginTop = (slotDbl - startSlot) * _slotPx;
+
+                double durH      = endH - startH;
+                int    spanSlots = Math.Max(1, (int)Math.Round(durH * (60.0 / _slotMin)));
+                // Nicht über Rastergrenze hinausgehen
+                if (startSlot + spanSlots > totalSlots)
+                    spanSlots = totalSlots - startSlot;
+
+                var card = MakeWeekEventCard(ev, marginTop);
+                Grid.SetRow(card, startSlot);
+                Grid.SetRowSpan(card, spanSlots);
+                Grid.SetColumn(card, d + 1);
+                tGrid.Children.Add(card);
+            }
+        }
+
+        // Aktueller Zeitindikator (roter Strich)
+        var now = DateTime.Now;
+        if (now.Date >= weekStart && now.Date <= weekEnd)
+        {
+            int    todayCol  = (((int)now.DayOfWeek + 6) % 7) + 1;
+            double nowH      = now.Hour + now.Minute / 60.0;
+            if (nowH >= _weekStartH && nowH < _weekEndH)
+            {
+                double offH    = nowH - _weekStartH;
+                double slotDbl = offH * (60.0 / _slotMin);
+                int    nowSlot = (int)slotDbl;
+                double mTop    = (slotDbl - nowSlot) * _slotPx;
+
+                var dot = new WpfBorder
+                {
+                    Width             = 8,
+                    Height            = 8,
+                    CornerRadius      = new CornerRadius(4),
+                    Background        = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26)),
+                    VerticalAlignment = VerticalAlignment.Top,
+                    Margin            = new Thickness(-4, mTop - 4, 0, 0),
+                    IsHitTestVisible  = false
+                };
+                Grid.SetRow(dot, nowSlot);
+                Grid.SetColumn(dot, todayCol);
+                tGrid.Children.Add(dot);
+
+                var nowLine = new WpfBorder
+                {
+                    Height            = 2,
+                    Background        = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26)),
+                    VerticalAlignment = VerticalAlignment.Top,
+                    Margin            = new Thickness(0, mTop - 1, 0, 0),
+                    IsHitTestVisible  = false
+                };
+                Grid.SetRow(nowLine, nowSlot);
+                Grid.SetColumn(nowLine, todayCol);
+                tGrid.Children.Add(nowLine);
+            }
+        }
+
+        // ScrollViewer — scrollt automatisch zur aktuellen Uhrzeit
+        var scroll = new ScrollViewer
+        {
+            VerticalScrollBarVisibility   = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Content                       = tGrid
+        };
+        scroll.Loaded += (_, _) =>
+        {
+            double targetH  = Math.Max(_weekStartH, Math.Min(_weekEndH - 2, DateTime.Now.TimeOfDay.TotalHours));
+            double offsetPx = (targetH - _weekStartH) * (60.0 / _slotMin) * _slotPx - 80;
+            scroll.ScrollToVerticalOffset(Math.Max(0, offsetPx));
+        };
+
+        Grid.SetRow(scroll, 1);
+        Grid.SetColumn(scroll, 0);
+        WeekGrid.Children.Add(scroll);
     }
 
-    private UIElement MakeWeekEventCard(SchulnetzEvent ev)
+    private UIElement MakeWeekAllDayStrip(SchulnetzEvent ev)
+    {
+        var color = GetEventColor(ev);
+        var strip = new WpfBorder
+        {
+            Background   = new SolidColorBrush(Color.FromArgb(200, color.R, color.G, color.B)),
+            CornerRadius = new CornerRadius(3),
+            Margin       = new Thickness(2, 2, 2, 1),
+            Padding      = new Thickness(4, 1, 4, 1),
+            Cursor       = WpfCursors.Hand,
+            Tag          = ev
+        };
+        strip.Child = new WpfTextBlock
+        {
+            Text         = ev.Summary,
+            FontSize     = 9,
+            FontWeight   = FontWeights.SemiBold,
+            Foreground   = WpfBrushes.White,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        };
+        strip.MouseLeftButtonUp += EventPill_MouseUp;
+        return strip;
+    }
+
+    private UIElement MakeWeekEventCard(SchulnetzEvent ev, double topMargin = 0)
     {
         var  color = GetEventColor(ev);
         bool isSel = ev == _selectedEvent;
 
         var card = new WpfBorder
         {
-            Background      = new SolidColorBrush(
-                                  Color.FromArgb(isSel ? (byte)220 : (byte)185,
-                                                 color.R, color.G, color.B)),
-            CornerRadius    = new CornerRadius(5),
-            Padding         = new Thickness(8, 6, 8, 6),
-            Margin          = new Thickness(0, 0, 0, 4),
-            Cursor          = WpfCursors.Hand,
-            Tag             = ev
+            Background        = new SolidColorBrush(
+                                    Color.FromArgb(isSel ? (byte)220 : (byte)190,
+                                                   color.R, color.G, color.B)),
+            CornerRadius      = new CornerRadius(4),
+            Margin            = new Thickness(2, topMargin + 1, 2, 1),
+            Padding           = new Thickness(5, 3, 5, 3),
+            Cursor            = WpfCursors.Hand,
+            Tag               = ev,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            ClipToBounds      = true
         };
 
-        var timeStr = ev.IsAllDay
-            ? "Ganztägig"
-            : $"{ev.Start.LocalDateTime:H:mm} – {ev.End.LocalDateTime:H:mm}";
-
-        var inner = new StackPanel();
+        var timeStr = $"{ev.Start.LocalDateTime:H:mm}–{ev.End.LocalDateTime:H:mm}";
+        var inner   = new StackPanel();
         inner.Children.Add(new WpfTextBlock
         {
             Text       = timeStr,
-            FontSize   = 9,
-            Foreground = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
-            Margin     = new Thickness(0, 0, 0, 2)
+            FontSize   = 8,
+            Foreground = new SolidColorBrush(Color.FromArgb(210, 255, 255, 255)),
+            Margin     = new Thickness(0, 0, 0, 1)
         });
         inner.Children.Add(new WpfTextBlock
         {
             Text         = ev.Summary,
-            FontSize     = 11,
+            FontSize     = 10,
             FontWeight   = FontWeights.SemiBold,
             Foreground   = WpfBrushes.White,
             TextWrapping = TextWrapping.Wrap
@@ -523,7 +733,7 @@ public partial class EventsPage : WpfPage
             inner.Children.Add(new WpfTextBlock
             {
                 Text       = "📍 " + ev.Location,
-                FontSize   = 9,
+                FontSize   = 8,
                 Foreground = new SolidColorBrush(Color.FromArgb(190, 255, 255, 255)),
                 Margin     = new Thickness(0, 2, 0, 0)
             });

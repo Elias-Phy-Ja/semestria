@@ -13,7 +13,7 @@ public static class AppConstants
     /// </summary>
     public const string ClientId = "YOUR-CLIENT-ID-HERE";
 
-    public const string AppName    = "SchulnetzSync";
+    public const string AppName    = "Semestria";
     public const string Version    = "1.0.0";
     public const string Publisher  = "Elias Wyss";
 

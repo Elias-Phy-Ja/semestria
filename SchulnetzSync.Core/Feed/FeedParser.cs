@@ -50,9 +50,10 @@ public static class FeedParser
             DateTimeOffset end = ResolveEnd(calEvent, start);
 
             // Empty LOCATION becomes null — never an empty string.
-            string? location = string.IsNullOrEmpty(calEvent.Location)
-                ? null
-                : calEvent.Location;
+            // Fallback: extract room from UID segment 4 (format: <date>et<id>et<start>et<end>et<room>@…)
+            string? location = !string.IsNullOrEmpty(calEvent.Location)
+                ? calEvent.Location
+                : ExtractRoomFromUid(calEvent.Uid);
 
             result.Add(new SchulnetzEvent(
                 Key: key,
@@ -93,6 +94,34 @@ public static class FeedParser
     // -----------------------------------------------------------------------
     // Private helpers
     // -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Tries to extract the room/location from UID segment 4.
+    /// UID format: &lt;date&gt;et&lt;id&gt;et&lt;start&gt;et&lt;end&gt;et&lt;room&gt;@centerboard.ch
+    /// Returns null when the segment looks like a type keyword or time value.
+    /// </summary>
+    private static string? ExtractRoomFromUid(string uid)
+    {
+        int atIdx    = uid.IndexOf('@');
+        var beforeAt = atIdx > 0 ? uid[..atIdx] : uid;
+        var segs     = beforeAt.Split(UidSegmentSeparator);
+        if (segs.Length < 5) return null;
+
+        var candidate = segs[4].Trim();
+        if (string.IsNullOrWhiteSpace(candidate))                                    return null;
+        // Skip type keywords
+        if (candidate.Equals("Pruefung",  StringComparison.OrdinalIgnoreCase))       return null;
+        if (candidate.Equals("Prüfung",   StringComparison.OrdinalIgnoreCase))       return null;
+        if (candidate.Equals("Termin",    StringComparison.OrdinalIgnoreCase))       return null;
+        if (candidate.Equals("Lektion",   StringComparison.OrdinalIgnoreCase))       return null;
+        // Skip time patterns like "14:55"
+        if (System.Text.RegularExpressions.Regex.IsMatch(candidate, @"^\d{1,2}:\d{2}$")) return null;
+        // Skip pure-numeric values
+        if (System.Text.RegularExpressions.Regex.IsMatch(candidate, @"^\d+$"))       return null;
+        if (candidate.Length < 2)                                                     return null;
+
+        return candidate;
+    }
 
     /// <summary>
     /// Determines the event type and stable correlation key from the UID.

@@ -17,6 +17,18 @@
     <!-- Needed for System.Windows.Forms.NotifyIcon (tray icon) -->
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- App-Icon (.ico) für Explorer und Taskleiste -->
+    <ApplicationIcon>Resources\semestria.ico</ApplicationIcon>
+    <!-- Assemblymetadaten -->
+    <AssemblyTitle>Semestria</AssemblyTitle>
+    <Product>Semestria</Product>
+    <Company>Elias Wyss</Company>
+    <Copyright>© 2025 Elias Wyss</Copyright>
   </PropertyGroup>
+
+  <!-- Icon als eingebettete Ressource einschliessen -->
+  <ItemGroup>
+    <Resource Include="Resources\semestria.ico"/>
+  </ItemGroup>
 
 </Project>

@@ -4,7 +4,7 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         xmlns:legal="clr-namespace:SchulnetzSync.UI.Legal"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="SchulnetzSync einrichten"
+        Title="Semestria einrichten"
         Width="660" Height="640"
         MinWidth="560" MinHeight="540"
         ResizeMode="CanMinimize"
@@ -40,9 +40,11 @@
                      SCHRITT 1 — Willkommen
                      ══════════════════════════════════ -->
                 <StackPanel x:Name="Step1" HorizontalAlignment="Center" MaxWidth="520">
-                    <TextBlock Text="👋" FontSize="60"
-                               HorizontalAlignment="Center" Margin="0,0,0,20"/>
-                    <TextBlock Text="Willkommen bei SchulnetzSync"
+                    <Image Source="pack://application:,,,/Resources/semestria.ico"
+                           Width="80" Height="80"
+                           HorizontalAlignment="Center" Margin="0,0,0,18"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <TextBlock Text="Willkommen bei Semestria"
                                FontSize="26" FontWeight="Bold"
                                HorizontalAlignment="Center"
                                TextAlignment="Center" Margin="0,0,0,10"/>
@@ -51,7 +53,7 @@
                                Text="Schulprüfungen und Termine automatisch in deinen Outlook-Kalender. In 4 Schritten eingerichtet."/>
                     <Border Style="{StaticResource InfoBox}">
                         <StackPanel>
-                            <TextBlock Text="Was SchulnetzSync macht:"
+                            <TextBlock Text="Was Semestria macht:"
                                        FontWeight="SemiBold" FontSize="14"
                                        Margin="0,0,0,12"/>
                             <TextBlock FontSize="13" Margin="0,0,0,6">✅  Liest deinen Schulnetz-Kalender automatisch</TextBlock>
