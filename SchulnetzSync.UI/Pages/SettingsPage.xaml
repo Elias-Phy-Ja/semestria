@@ -161,6 +161,12 @@
                     <CheckBox x:Name="ChkEnrich" IsChecked="True"
                               Margin="0,0,0,0"
                               Content="Prüfungs-Raum aus gleichzeitiger Lektion ergänzen"/>
+                    <Separator Style="{StaticResource Divider}" Margin="0,10,0,6"/>
+                    <CheckBox x:Name="ChkAutoRefresh" IsChecked="True"
+                              Margin="0,0,0,4"
+                              Content="Feed beim App-Start automatisch aktualisieren"/>
+                    <TextBlock Style="{StaticResource NoteText}" Margin="24,0,0,0"
+                               Text="Aktualisiert den Kalender im Hintergrund. Wenn offline, wird der gespeicherte Feed genutzt."/>
                 </StackPanel>
             </Border>
 

@@ -47,6 +47,12 @@ public sealed class SyncConfig
     /// <summary>Theme preference: "Light" | "Dark" | null = System.</summary>
     public string? ThemePreference { get; set; }
 
+    /// <summary>
+    /// If true, the app silently refreshes the feed from the network on every startup.
+    /// Falls back to cached events if offline or on error. Default: true.
+    /// </summary>
+    public bool AutoRefreshFeed { get; set; } = true;
+
     /// <summary>Converts config to a <see cref="SyncOptions"/> for the diff engine.</summary>
     public SyncOptions ToSyncOptions() => new()
     {

@@ -252,6 +252,7 @@ public partial class OnboardingWindow : Window
         if (IsRealClientId(clientId))
             config.ClientId = clientId;
 
+        config.AutoRefreshFeed      = ChkAutoRefresh.IsChecked != false;
         config.IsOnboardingComplete = true;
         config.AcceptedLegalVersion = AppConstants.LegalVersion;
         ConfigManager.Save(config);

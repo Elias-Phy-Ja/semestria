@@ -70,11 +70,16 @@ public partial class DashboardPage : Page
 
     private void RefreshStatus()
     {
-        var config = AppState.Config;
-        bool hasFeed = ConfigManager.GetFeedUrl(config) is not null;
+        var config   = AppState.Config;
+        bool hasFeed    = ConfigManager.GetFeedUrl(config) is not null;
+        bool hasOutlook = IsValidClientId(config.ClientId);
+
         SetupHint.Visibility = hasFeed ? Visibility.Collapsed : Visibility.Visible;
-        BtnSync.IsEnabled    = hasFeed;
-        BtnDryRun.IsEnabled  = hasFeed;
+
+        // Outlook-Sync-Button nur zeigen wenn Microsoft-Konto konfiguriert
+        BtnSync.Visibility  = hasOutlook ? Visibility.Visible  : Visibility.Collapsed;
+        BtnSync.IsEnabled   = hasFeed && hasOutlook;
+        BtnDryRun.IsEnabled = hasFeed;
 
         if (config.LastRunAt.HasValue)
         {
@@ -124,8 +129,17 @@ public partial class DashboardPage : Page
     private void SetBusy(bool busy)
     {
         SyncRing.IsActive   = busy;
-        BtnSync.IsEnabled   = !busy;
         BtnDryRun.IsEnabled = !busy;
+        // BtnSync: Nur aktivieren wenn Outlook konfiguriert (RefreshStatus setzt Visibility korrekt)
+        if (!busy) RefreshStatus();
+        else BtnSync.IsEnabled = false;
+    }
+
+    private static bool IsValidClientId(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return false;
+        if (id.Contains("YOUR", StringComparison.OrdinalIgnoreCase)) return false;
+        return id.Length >= 32 && id.Contains('-');
     }
 
     private static string FormatAgo(TimeSpan ts)

@@ -1,5 +1,9 @@
+using System.Net.Http;
+using System.Threading;
 using System.Windows;
 using ModernWpf;
+using SchulnetzSync.Core.Configuration;
+using SchulnetzSync.Core.Feed;
 using SchulnetzSync.UI.Onboarding;
 
 namespace SchulnetzSync.UI;
@@ -68,9 +72,13 @@ public partial class App : Application
         main.WindowState = WindowState.Maximized; // Vollbild beim Start
         main.Show();
 
-        // ModernWPF-Workaround: Theme nach erstem Render einmal kurz toggling,
-        // damit alle DynamicResources korrekt aktualisiert werden.
-        main.ContentRendered += (_, _) => ForceThemeRefresh();
+        // Nach dem ersten Render: Theme fixieren + Feed im Hintergrund laden
+        main.ContentRendered += (_, _) =>
+        {
+            ForceThemeRefresh();
+            if (AppState.Config.AutoRefreshFeed)
+                _ = TryAutoRefreshFeedAsync();
+        };
     }
 
     /// <summary>
@@ -84,6 +92,35 @@ public partial class App : Application
         ThemeManager.Current.ApplicationTheme =
             current == ApplicationTheme.Light ? ApplicationTheme.Dark : ApplicationTheme.Light;
         ThemeManager.Current.ApplicationTheme = current;
+    }
+
+    /// <summary>
+    /// Lädt den Feed still im Hintergrund. Kein Fehler im UI wenn offline.
+    /// Die URL enthält ein persönliches Token — URL wird NIE geloggt.
+    /// </summary>
+    private static async Task TryAutoRefreshFeedAsync()
+    {
+        if (AppState.IsSyncing) return; // Kein paralleler Lauf wenn manueller Sync aktiv
+
+        var plainUrl = ConfigManager.GetFeedUrl(AppState.Config);
+        if (string.IsNullOrEmpty(plainUrl)) return;
+
+        try
+        {
+            using var http   = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+            var source       = new HttpFeedSource(http, plainUrl);
+            var icsContent   = await source.FetchAsync(CancellationToken.None);
+
+            if (AppState.IsSyncing) return; // Nochmals prüfen — manueller Sync hat eventuell begonnen
+            var feedEvents = FeedParser.Parse(icsContent);
+            AppState.CachedFeedEvents = feedEvents;
+            AppState.Notify();
+        }
+        catch
+        {
+            // Kein Internet, Timeout oder anderer Fehler →
+            // gecachte Daten aus der letzten Session weiternutzen (kein UI-Fehler)
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

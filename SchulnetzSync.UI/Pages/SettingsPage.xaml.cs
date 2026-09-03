@@ -46,8 +46,9 @@ public partial class SettingsPage : Page
 
             ChkPruefungen.IsChecked = config.EnabledTypes.Contains(SchulnetzEventType.Pruefung);
             ChkTermine.IsChecked    = config.EnabledTypes.Contains(SchulnetzEventType.Termin);
-            ChkCancel.IsChecked     = config.CancelInsteadOfDelete;
-            ChkEnrich.IsChecked     = config.EnrichExamLocationFromLesson;
+            ChkCancel.IsChecked       = config.CancelInsteadOfDelete;
+            ChkEnrich.IsChecked       = config.EnrichExamLocationFromLesson;
+            ChkAutoRefresh.IsChecked  = config.AutoRefreshFeed;
 
             // Theme-RadioButton setzen
             switch (config.ThemePreference)
@@ -260,6 +261,7 @@ public partial class SettingsPage : Page
         // Optionen
         config.CancelInsteadOfDelete        = ChkCancel.IsChecked == true;
         config.EnrichExamLocationFromLesson = ChkEnrich.IsChecked == true;
+        config.AutoRefreshFeed              = ChkAutoRefresh.IsChecked == true;
 
         // Kalender
         if (CmbCalendar.SelectedIndex > 0 && CmbCalendar.SelectedItem is string calName)
