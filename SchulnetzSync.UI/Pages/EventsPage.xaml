@@ -1,0 +1,37 @@
+<Page x:Class="SchulnetzSync.UI.Pages.EventsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.modernwpf.com/2019"
+      Title="Prüfungen &amp; Termine">
+
+    <Grid Margin="32,28,32,32">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="Prüfungen &amp; Termine"
+                   Style="{StaticResource TitleText}" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="1"
+                   Text="Synchronisiere zuerst um die Liste zu befüllen."
+                   Style="{StaticResource BodyText}" Margin="0,0,0,20"/>
+
+        <!-- Platzhalter -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" VerticalAlignment="Top">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Margin="0,40">
+                <TextBlock Text="📅" FontSize="48" HorizontalAlignment="Center"/>
+                <TextBlock Text="Noch keine Einträge"
+                           FontSize="18" FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           Margin="0,16,0,4"/>
+                <TextBlock Text="Gehe zum Dashboard und starte eine Synchronisation."
+                           Style="{StaticResource BodyText}"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Page>

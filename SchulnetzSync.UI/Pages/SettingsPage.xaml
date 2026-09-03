@@ -1,0 +1,129 @@
+<Page x:Class="SchulnetzSync.UI.Pages.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.modernwpf.com/2019"
+      Title="Einstellungen">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="32,28,32,32" MaxWidth="660">
+
+            <TextBlock Text="Einstellungen"
+                       Style="{StaticResource TitleText}"
+                       Margin="0,0,0,24"/>
+
+            <!-- ═══ FEED-URL ═══ -->
+            <TextBlock Text="SCHULNETZ" Style="{StaticResource SectionLabel}"/>
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Feed-URL"
+                               Style="{StaticResource HeadlineText}"
+                               Margin="0,0,0,8"/>
+                    <TextBox x:Name="TxtFeedUrl" Height="36" FontSize="13"
+                             ui:ControlHelper.PlaceholderText="webcal://schulnetz.example.ch/ical?token=…"/>
+                    <TextBlock Style="{StaticResource NoteText}"
+                               Text="🔒  Enthält dein persönliches Token. Wird verschlüsselt gespeichert und verlässt dein Gerät nie."/>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══ MICROSOFT ═══ -->
+            <TextBlock Text="MICROSOFT-KONTO" Style="{StaticResource SectionLabel}"/>
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+
+                    <!-- Status-Indikator -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <Ellipse x:Name="AccountDot" Width="10" Height="10"
+                                 Fill="#9CA3AF"
+                                 VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="TxtAccountStatus"
+                                   Style="{StaticResource HeadlineText}"
+                                   Text="Status wird geprüft…"/>
+                    </StackPanel>
+                    <TextBlock x:Name="TxtAccountDetail"
+                               Style="{StaticResource NoteText}"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Client-ID -->
+                    <TextBlock Text="Azure App Client-ID:"
+                               FontWeight="SemiBold" FontSize="13"
+                               Margin="0,0,0,6"/>
+                    <TextBox x:Name="TxtClientId" Height="36" FontSize="13"
+                             ui:ControlHelper.PlaceholderText="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/>
+                    <TextBlock Style="{StaticResource NoteText}"
+                               Text="portal.azure.com → App registrations → Delegated: Calendars.ReadWrite, Platform: Public client, Redirect: http://localhost"
+                               Margin="0,4,0,16"/>
+
+                    <!-- Anmelde-Buttons -->
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnSignIn"
+                                Content="🔑  Anmelden"
+                                Style="{StaticResource PrimaryButton}"
+                                Margin="0,0,12,0"
+                                Click="BtnSignIn_Click"/>
+                        <Button x:Name="BtnSignOut"
+                                Content="Abmelden"
+                                Style="{StaticResource SecondaryButton}"
+                                IsEnabled="False"
+                                Click="BtnSignOut_Click"/>
+                    </StackPanel>
+
+                    <!-- Fehler -->
+                    <TextBlock x:Name="TxtAuthError"
+                               Visibility="Collapsed"
+                               TextWrapping="Wrap" FontSize="12"
+                               Foreground="{StaticResource DangerBrush}"
+                               Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══ KALENDER ═══ -->
+            <TextBlock Text="KALENDER" Style="{StaticResource SectionLabel}"/>
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Ziel-Kalender"
+                               Style="{StaticResource HeadlineText}"
+                               Margin="0,0,0,8"/>
+                    <ComboBox x:Name="CmbCalendar" Height="36" FontSize="13"
+                              ui:ControlHelper.PlaceholderText="Primärer Kalender (Standard)"
+                              SelectionChanged="CmbCalendar_SelectionChanged"/>
+                    <TextBlock Style="{StaticResource NoteText}"
+                               Text="Leer lassen für den primären Kalender."/>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══ OPTIONEN ═══ -->
+            <TextBlock Text="SYNCHRONISATION" Style="{StaticResource SectionLabel}"/>
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <CheckBox x:Name="ChkPruefungen"
+                              Content="Prüfungen synchronisieren"
+                              Margin="0,0,0,10" IsChecked="True"/>
+                    <CheckBox x:Name="ChkTermine"
+                              Content="Schultermine synchronisieren"
+                              Margin="0,0,0,10" IsChecked="True"/>
+                    <Separator Style="{StaticResource Divider}"/>
+                    <CheckBox x:Name="ChkCancel" IsChecked="True"
+                              Margin="0,6,0,4"
+                              Content="Verschwundene Einträge als «Abgesagt» markieren (statt löschen)"/>
+                    <TextBlock Style="{StaticResource NoteText}" Margin="24,0,0,8"
+                               Text="Empfohlen: vergangene Prüfungen bleiben so sichtbar."/>
+                    <CheckBox x:Name="ChkEnrich" IsChecked="True"
+                              Margin="0,0,0,0"
+                              Content="Prüfungs-Raum aus gleichzeitiger Lektion ergänzen"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Speichern -->
+            <StackPanel Orientation="Horizontal">
+                <Button Content="💾  Einstellungen speichern"
+                        Style="{StaticResource PrimaryButton}"
+                        Margin="0,0,16,0"
+                        Click="BtnSave_Click"/>
+                <TextBlock x:Name="TxtSaveStatus"
+                           VerticalAlignment="Center"
+                           FontSize="13" Opacity="0.65"/>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

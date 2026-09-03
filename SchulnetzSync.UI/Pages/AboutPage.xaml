@@ -1,0 +1,98 @@
+<Page x:Class="SchulnetzSync.UI.Pages.AboutPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.modernwpf.com/2019"
+      Title="Über &amp; Rechtliches">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="32,28,32,32" MaxWidth="640">
+
+            <TextBlock Text="Über SchulnetzSync"
+                       Style="{StaticResource TitleText}" Margin="0,0,0,24"/>
+
+            <!-- ── App-Info ── -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <TextBlock Text="📅" FontSize="48" VerticalAlignment="Center"
+                                   Margin="0,0,16,0"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="SchulnetzSync"
+                                       FontSize="22" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentBrush}"/>
+                            <TextBlock Text="Version 1.0.0 · Kostenlos &amp; Open Source"
+                                       Style="{StaticResource BodyText}"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBlock TextWrapping="Wrap" FontSize="13" Opacity="0.8"
+                               Text="SchulnetzSync liest deinen persönlichen Schulnetz-Kalender und schreibt Prüfungen und Schultermine automatisch in deinen Outlook-Kalender. Alles passiert lokal auf deinem Gerät. Keine Daten werden an externe Server gesendet."/>
+                    <Separator Style="{StaticResource Divider}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="⭐  GitHub"
+                                Style="{StaticResource SecondaryButton}"
+                                Margin="0,0,12,0"
+                                Click="BtnGitHub_Click"/>
+                        <Button Content="🐛  Bug melden"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="BtnBug_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ── Entwickler ── -->
+            <TextBlock Text="ENTWICKLER" Style="{StaticResource SectionLabel}"/>
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Elias Wyss"
+                               FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock Text="Dieses Projekt wurde als persönliches Non-Profit-Tool entwickelt um Schülern die manuelle Kalenderpflege zu ersparen."
+                               Style="{StaticResource BodyText}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ── Rechtliches ── -->
+            <TextBlock Text="RECHTLICHES" Style="{StaticResource SectionLabel}"/>
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Button Content="📄  Nutzungsbedingungen (AGB) anzeigen"
+                            Style="{StaticResource SecondaryButton}"
+                            HorizontalAlignment="Left"
+                            Margin="0,0,0,12"
+                            Click="BtnAgb_Click"/>
+                    <Button Content="🔒  Datenschutzerklärung anzeigen"
+                            Style="{StaticResource SecondaryButton}"
+                            HorizontalAlignment="Left"
+                            Click="BtnDatenschutz_Click"/>
+
+                    <Separator Style="{StaticResource Divider}"/>
+                    <TextBlock Style="{StaticResource NoteText}"
+                               Text="SchulnetzSync ist kostenlose Open-Source-Software. Keine Garantie, keine Haftung. Alle Daten bleiben lokal auf deinem Gerät."/>
+                </StackPanel>
+            </Border>
+
+            <!-- Rechtsdokument-Viewer (hidden by default) -->
+            <Border x:Name="LegalViewer" Visibility="Collapsed"
+                    Style="{StaticResource Card}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock x:Name="TxtLegalTitle"
+                                   Style="{StaticResource HeadlineText}"
+                                   Text="Nutzungsbedingungen" VerticalAlignment="Center"/>
+                        <Button Content="✕ Schliessen"
+                                Style="{StaticResource SecondaryButton}"
+                                Margin="16,0,0,0"
+                                Click="BtnCloseLegal_Click"/>
+                    </StackPanel>
+                    <ScrollViewer MaxHeight="400"
+                                  VerticalScrollBarVisibility="Auto">
+                        <TextBlock x:Name="TxtLegalContent"
+                                   FontFamily="Consolas" FontSize="12"
+                                   TextWrapping="Wrap" Opacity="0.85"
+                                   LineHeight="18"/>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

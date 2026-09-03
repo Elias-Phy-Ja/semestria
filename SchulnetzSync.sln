@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchulnetzSync.Tests", "Schu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchulnetzSync.Cli", "SchulnetzSync.Cli\SchulnetzSync.Cli.csproj", "{EDF45773-CB25-43C1-BA29-CD7FCC676743}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchulnetzSync.UI", "SchulnetzSync.UI\SchulnetzSync.UI.csproj", "{224FC3F2-64E7-4972-8C41-4CD0B38E895A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{EDF45773-CB25-43C1-BA29-CD7FCC676743}.Release|x64.Build.0 = Release|Any CPU
 		{EDF45773-CB25-43C1-BA29-CD7FCC676743}.Release|x86.ActiveCfg = Release|Any CPU
 		{EDF45773-CB25-43C1-BA29-CD7FCC676743}.Release|x86.Build.0 = Release|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Debug|x64.Build.0 = Debug|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Debug|x86.Build.0 = Debug|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Release|x64.ActiveCfg = Release|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Release|x64.Build.0 = Release|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Release|x86.ActiveCfg = Release|Any CPU
+		{224FC3F2-64E7-4972-8C41-4CD0B38E895A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
