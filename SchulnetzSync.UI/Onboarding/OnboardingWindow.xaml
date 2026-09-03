@@ -260,32 +260,25 @@
                                  TextChanged="TxtClientId_TextChanged"/>
                     </StackPanel>
 
-                    <!-- Kurze Anleitung für Azure -->
-                    <Border CornerRadius="6" Padding="12,10"
-                            Margin="0,8,0,20"
+                    <!-- Azure-Anleitung -->
+                    <Border CornerRadius="6" Padding="14,12"
+                            Margin="0,8,0,12"
                             Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
                         <StackPanel>
-                            <TextBlock Text="So erhältst du die App-ID:"
+                            <TextBlock Text="Wichtig: persönliches Microsoft-Konto nötig"
                                        FontSize="12" FontWeight="SemiBold"
-                                       Margin="0,0,0,6"/>
-                            <TextBlock FontSize="11.5" Opacity="0.8" TextWrapping="Wrap" Margin="0,0,0,3">
-                                1.  Klicke «Auf portal.azure.com öffnen» oben
+                                       Foreground="{StaticResource WarningBrush}"
+                                       Margin="0,0,0,8"/>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8">
+                                Schulkonten (@altekanti.ch usw.) haben meist keine Rechte um Apps zu registrieren. Du brauchst ein persönliches Microsoft-Konto (@outlook.com, @hotmail.com oder @live.com).
                             </TextBlock>
-                            <TextBlock FontSize="11.5" Opacity="0.8" TextWrapping="Wrap" Margin="0,0,0,3">
-                                2.  Klicke «Neue Registrierung»
-                            </TextBlock>
-                            <TextBlock FontSize="11.5" Opacity="0.8" TextWrapping="Wrap" Margin="0,0,0,3">
-                                3.  Name: «SchulnetzSync», Kontotypen: Persönliche Konten
-                            </TextBlock>
-                            <TextBlock FontSize="11.5" Opacity="0.8" TextWrapping="Wrap" Margin="0,0,0,3">
-                                4.  Nach Erstellung: «Anwendungs-ID (Client-ID)» kopieren
-                            </TextBlock>
-                            <TextBlock FontSize="11.5" Opacity="0.8" TextWrapping="Wrap" Margin="0,0,0,3">
-                                5.  Unter «API-Berechtigungen»: Calendars.ReadWrite hinzufügen
-                            </TextBlock>
-                            <TextBlock FontSize="11.5" Opacity="0.8" TextWrapping="Wrap">
-                                6.  Unter «Authentifizierung»: Plattform «Öffentlicher Client» aktivieren
-                            </TextBlock>
+                            <TextBlock Text="Schritte:" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3">1.  «Auf portal.azure.com öffnen» klicken und mit persönlichem Konto anmelden</TextBlock>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3">2.  «App-Registrierungen» → «Neue Registrierung»</TextBlock>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3">3.  Name: SchulnetzSync, Typ: Persönliche Microsoft-Konten</TextBlock>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3">4.  «Anwendungs-ID (Client-ID)» kopieren und oben einfügen</TextBlock>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3">5.  API-Berechtigungen: Calendars.ReadWrite (delegiert)</TextBlock>
+                            <TextBlock FontSize="12" TextWrapping="Wrap">6.  Authentifizierung: Öffentlicher Client/native Anwendung aktivieren</TextBlock>
                         </StackPanel>
                     </Border>
 

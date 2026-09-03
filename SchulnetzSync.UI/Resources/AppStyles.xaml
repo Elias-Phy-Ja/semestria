@@ -3,24 +3,26 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- ================================================================
-         FARBEN — Accent-Palette (theme-unabhängig)
-         AccentLightBrush wird NICHT mehr als Hintergrund verwendet;
-         stattdessen InfoBox-Stil mit linkem Rand (funktioniert in Dark+Light).
+         FARBEN — Accent-Palette
          ================================================================ -->
     <Color x:Key="AccentColor">#5C6EF7</Color>
     <Color x:Key="AccentDarkColor">#3D50D9</Color>
     <Color x:Key="SuccessColor">#22C55E</Color>
     <Color x:Key="WarningColor">#F59E0B</Color>
     <Color x:Key="DangerColor">#EF4444</Color>
+    <Color x:Key="PruefungColor">#EF4444</Color>
+    <Color x:Key="TerminColor">#3B82F6</Color>
 
     <SolidColorBrush x:Key="AccentBrush"     Color="{StaticResource AccentColor}"/>
     <SolidColorBrush x:Key="AccentDarkBrush" Color="{StaticResource AccentDarkColor}"/>
     <SolidColorBrush x:Key="SuccessBrush"    Color="{StaticResource SuccessColor}"/>
     <SolidColorBrush x:Key="WarningBrush"    Color="{StaticResource WarningColor}"/>
     <SolidColorBrush x:Key="DangerBrush"     Color="{StaticResource DangerColor}"/>
+    <SolidColorBrush x:Key="PruefungBrush"   Color="{StaticResource PruefungColor}"/>
+    <SolidColorBrush x:Key="TerminBrush"     Color="{StaticResource TerminColor}"/>
 
     <!-- ================================================================
-         KARTEN
+         KARTEN — leicht höherer Kontrast gegenüber Hintergrund
          ================================================================ -->
     <Style x:Key="Card" TargetType="Border">
         <Setter Property="Background"      Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"/>
@@ -31,8 +33,21 @@
         <Setter Property="BorderThickness" Value="1"/>
     </Style>
 
+    <!-- Karte mit farbigem linkem Rand (Prüfungen-Statistik) -->
+    <Style x:Key="CardPruefung" TargetType="Border" BasedOn="{StaticResource Card}">
+        <Setter Property="BorderBrush"     Value="{StaticResource PruefungBrush}"/>
+        <Setter Property="BorderThickness" Value="3,1,1,1"/>
+    </Style>
+
+    <!-- Karte mit farbigem linkem Rand (Termine-Statistik) -->
+    <Style x:Key="CardTermin" TargetType="Border" BasedOn="{StaticResource Card}">
+        <Setter Property="BorderBrush"     Value="{StaticResource TerminBrush}"/>
+        <Setter Property="BorderThickness" Value="3,1,1,1"/>
+    </Style>
+
     <!--
-        InfoBox: neutraler Hintergrund + farbiger linker Rand.
+        InfoBox / WarningBox / SuccessBox:
+        Neutraler Hintergrund + farbiger linker Rand.
         Funktioniert in Dark- und Light-Mode.
     -->
     <Style x:Key="InfoBox" TargetType="Border">
@@ -53,7 +68,7 @@
     </Style>
 
     <!-- ================================================================
-         TYPOGRAFIE
+         TYPOGRAFIE — höherer Kontrast (keine zu niedrige Opacity)
          ================================================================ -->
     <Style x:Key="TitleText" TargetType="TextBlock">
         <Setter Property="FontSize"   Value="22"/>
@@ -68,20 +83,22 @@
     <Style x:Key="LabelText" TargetType="TextBlock">
         <Setter Property="FontSize"   Value="11"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Opacity"    Value="0.5"/>
+        <Setter Property="Opacity"    Value="0.60"/>
         <Setter Property="Margin"     Value="0,0,0,4"/>
     </Style>
 
+    <!-- BodyText: lesbar auf dunklem Hintergrund -->
     <Style x:Key="BodyText" TargetType="TextBlock">
         <Setter Property="FontSize"     Value="13"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
-        <Setter Property="Opacity"      Value="0.75"/>
+        <Setter Property="Opacity"      Value="0.88"/>
     </Style>
 
+    <!-- NoteText: Hinweis-Zeile, etwas dezenter aber noch gut lesbar -->
     <Style x:Key="NoteText" TargetType="TextBlock">
-        <Setter Property="FontSize"     Value="11"/>
+        <Setter Property="FontSize"     Value="12"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
-        <Setter Property="Opacity"      Value="0.5"/>
+        <Setter Property="Opacity"      Value="0.70"/>
         <Setter Property="Margin"       Value="0,4,0,0"/>
     </Style>
 
@@ -208,12 +225,12 @@
     </Style>
 
     <!-- ================================================================
-         ABSCHNITTS-LABEL (SETTINGS)
+         ABSCHNITTS-LABEL
          ================================================================ -->
     <Style x:Key="SectionLabel" TargetType="TextBlock">
         <Setter Property="FontSize"   Value="11"/>
         <Setter Property="FontWeight" Value="Bold"/>
-        <Setter Property="Opacity"    Value="0.45"/>
+        <Setter Property="Opacity"    Value="0.55"/>
         <Setter Property="Margin"     Value="0,20,0,8"/>
     </Style>
 

@@ -16,7 +16,7 @@
                        Style="{StaticResource BodyText}"
                        Margin="0,0,0,24"/>
 
-            <!-- Hinweis: Setup unvollständig -->
+            <!-- Hinweis: Feed-URL fehlt -->
             <Border x:Name="SetupHint" Visibility="Collapsed"
                     Style="{StaticResource WarningBox}" Margin="0,0,0,16">
                 <Grid>
@@ -25,11 +25,11 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="⚠️  Einrichtung nicht vollständig"
+                        <TextBlock Text="Einrichtung nicht vollständig"
                                    FontWeight="SemiBold" FontSize="14"
                                    Margin="0,0,0,4"/>
                         <TextBlock Style="{StaticResource BodyText}"
-                                   Text="Gehe zu Einstellungen und trage deine Feed-URL ein."/>
+                                   Text="Trage unter Einstellungen deine Schulnetz Feed-URL ein."/>
                     </StackPanel>
                     <Button Grid.Column="1"
                             Content="Einstellungen"
@@ -54,8 +54,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Status-Zeile -->
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
                         <Ellipse x:Name="StatusDot" Width="10" Height="10"
                                  Fill="{StaticResource WarningBrush}"
                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -67,20 +66,22 @@
                     <TextBlock x:Name="TxtLastRun"
                                Grid.Row="1" Text="Noch nie synchronisiert"
                                Style="{StaticResource BodyText}" Margin="0,0,0,2"/>
-
                     <TextBlock x:Name="TxtLastResult"
                                Grid.Row="2" Text=""
                                Style="{StaticResource BodyText}" Margin="0,0,0,16"/>
 
                     <StackPanel Grid.Row="3" Orientation="Horizontal">
+                        <!-- Outlook-Sync -->
                         <Button x:Name="BtnSync"
-                                Content="🔄  Jetzt synchronisieren"
+                                Content="Mit Outlook synchronisieren"
                                 Style="{StaticResource PrimaryButton}"
                                 Margin="0,0,12,0"
                                 Click="BtnSync_Click"/>
+                        <!-- Feed laden (kein Outlook nötig) -->
                         <Button x:Name="BtnDryRun"
-                                Content="👁  Vorschau"
+                                Content="Feed laden"
                                 Style="{StaticResource SecondaryButton}"
+                                ToolTip="Liest den Schulnetz-Feed und aktualisiert den In-App-Kalender. Kein Microsoft-Konto nötig."
                                 Click="BtnDryRun_Click"/>
                     </StackPanel>
 
@@ -92,16 +93,16 @@
             </Border>
 
             <!-- PROTOKOLL -->
-            <Border Style="{StaticResource Card}" MinHeight="100">
+            <Border Style="{StaticResource Card}" MinHeight="80">
                 <StackPanel>
                     <TextBlock Text="PROTOKOLL" Style="{StaticResource SectionLabel}"
                                Margin="0,0,0,8"/>
-                    <ScrollViewer x:Name="LogScroll" MaxHeight="180"
+                    <ScrollViewer x:Name="LogScroll" MaxHeight="160"
                                   VerticalScrollBarVisibility="Auto">
                         <TextBlock x:Name="TxtLog"
                                    FontFamily="Consolas" FontSize="12"
-                                   TextWrapping="Wrap" Opacity="0.8"
-                                   Text="Bereit. Drücke «Jetzt synchronisieren» um zu starten."/>
+                                   TextWrapping="Wrap"
+                                   Text="Bereit. «Feed laden» für In-App-Kalender, «Mit Outlook synchronisieren» für Outlook."/>
                     </ScrollViewer>
                 </StackPanel>
             </Border>
@@ -116,33 +117,36 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0">
+                <!-- Prüfungen -->
+                <Border Grid.Column="0" Style="{StaticResource CardPruefung}" Margin="0">
                     <StackPanel>
                         <TextBlock Text="PRÜFUNGEN" Style="{StaticResource LabelText}"/>
                         <TextBlock x:Name="TxtStatPruefung"
                                    Text="·" FontSize="28" FontWeight="Bold"
-                                   Foreground="{StaticResource AccentBrush}"/>
-                        <TextBlock Text="synchronisiert"
+                                   Foreground="{StaticResource PruefungBrush}"/>
+                        <TextBlock Text="im Feed"
                                    Style="{StaticResource BodyText}"/>
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0">
+                <!-- Termine -->
+                <Border Grid.Column="2" Style="{StaticResource CardTermin}" Margin="0">
                     <StackPanel>
                         <TextBlock Text="TERMINE" Style="{StaticResource LabelText}"/>
                         <TextBlock x:Name="TxtStatTermin"
                                    Text="·" FontSize="28" FontWeight="Bold"
-                                   Foreground="{StaticResource AccentBrush}"/>
-                        <TextBlock Text="synchronisiert"
+                                   Foreground="{StaticResource TerminBrush}"/>
+                        <TextBlock Text="im Feed"
                                    Style="{StaticResource BodyText}"/>
                     </StackPanel>
                 </Border>
 
+                <!-- Status -->
                 <Border Grid.Column="4" Style="{StaticResource Card}" Margin="0">
                     <StackPanel>
                         <TextBlock Text="STATUS" Style="{StaticResource LabelText}"/>
                         <TextBlock x:Name="TxtStatStatus"
-                                   Text="Bereit" FontSize="20" FontWeight="Bold"/>
+                                   Text="⏳" FontSize="20" FontWeight="Bold"/>
                         <TextBlock x:Name="TxtStatDetail"
                                    Text="Noch kein Lauf"
                                    Style="{StaticResource BodyText}"/>

@@ -57,9 +57,26 @@
                     </StackPanel>
                     <TextBox x:Name="TxtClientId" Height="36" FontSize="13"
                              ui:ControlHelper.PlaceholderText="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/>
+                    <Border CornerRadius="6" Padding="12,10" Margin="0,6,0,0"
+                            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                        <StackPanel>
+                            <TextBlock FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource WarningBrush}"
+                                       Margin="0,0,0,6"
+                                       Text="Persönliches Microsoft-Konto nötig (@outlook.com / @hotmail.com)"/>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.85" Margin="0,0,0,4"
+                                       Text="Schulkonten haben meist keine Rechte, um Apps zu registrieren."/>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80" Margin="0,0,0,3">1.  portal.azure.com mit persönlichem Konto öffnen</TextBlock>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80" Margin="0,0,0,3">2.  App-Registrierungen → Neue Registrierung</TextBlock>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80" Margin="0,0,0,3">3.  Name: SchulnetzSync, Typ: Persönliche Microsoft-Konten</TextBlock>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80" Margin="0,0,0,3">4.  Anwendungs-ID (Client-ID) kopieren und oben einfügen</TextBlock>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80" Margin="0,0,0,3">5.  API-Berechtigungen: Calendars.ReadWrite (delegiert)</TextBlock>
+                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80">6.  Authentifizierung: Öffentlicher Client aktivieren</TextBlock>
+                        </StackPanel>
+                    </Border>
                     <TextBlock Style="{StaticResource NoteText}"
-                               Text="Neu registrieren: portal.azure.com öffnen, «Neue Registrierung», Name «SchulnetzSync», dann unter API-Berechtigungen: Calendars.ReadWrite, unter Authentifizierung: Öffentlicher Client aktivieren."
-                               Margin="0,4,0,16"/>
+                               Text="Outlook-Sync ist optional. Der In-App-Kalender funktioniert ohne Microsoft-Konto."
+                               Margin="0,8,0,16"/>
 
                     <!-- Anmelde-Buttons -->
                     <StackPanel Orientation="Horizontal">

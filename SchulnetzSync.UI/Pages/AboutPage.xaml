@@ -87,11 +87,8 @@
                                FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
                     <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,12"
                                Text="Löscht alle gespeicherten Einstellungen und startet das Onboarding neu. Nützlich vor der Weitergabe des Geräts oder beim Testen."/>
-                    <Border Style="{StaticResource WarningBox}" Margin="0,0,0,12">
-                        <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.85">
-                            Beim Veröffentlichen der App musst du NICHTS zurücksetzen. Andere Nutzer starten automatisch mit einem leeren Profil — nur dein lokales %LocalAppData%\SchulnetzSync wird zurückgesetzt.
-                        </TextBlock>
-                    </Border>
+                    <TextBlock Style="{StaticResource NoteText}" Margin="0,0,0,12"
+                               Text="Andere Nutzer starten nach der Installation automatisch mit einem leeren Profil. Dieser Reset betrifft nur dein eigenes Gerät."/>
                     <Button Content="🗑  App zurücksetzen und neu starten"
                             Style="{StaticResource SecondaryButton}"
                             HorizontalAlignment="Left"
