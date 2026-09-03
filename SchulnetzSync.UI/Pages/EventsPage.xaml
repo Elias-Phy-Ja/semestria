@@ -11,88 +11,103 @@
         </Grid.RowDefinitions>
 
         <!-- ══════════════════════════════════════════════════════════════
-             TOOLBAR
+             TOOLBAR  (2 Zeilen: Hauptleiste + kompakte Filter-Leiste)
              ══════════════════════════════════════════════════════════════ -->
-        <Grid Grid.Row="0" Margin="20,12,20,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>  <!-- Titel -->
-                <ColumnDefinition Width="*"/>     <!-- Monatsnav (zentriert) -->
-                <ColumnDefinition Width="Auto"/>  <!-- Ansicht + Filter + Aktionen -->
-            </Grid.ColumnDefinitions>
+        <Grid Grid.Row="0" Margin="20,10,20,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>   <!-- Hauptleiste -->
+                <RowDefinition Height="Auto"/>   <!-- Filter-Leiste -->
+            </Grid.RowDefinitions>
 
-            <!-- Titel -->
-            <TextBlock Grid.Column="0"
-                       Text="Prüfungen &amp; Termine"
-                       Style="{StaticResource TitleText}"
-                       VerticalAlignment="Center"/>
+            <!-- ── Hauptleiste ───────────────────────────────────────────── -->
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>  <!-- Titel -->
+                    <ColumnDefinition Width="*"/>     <!-- Monatsnav (zentriert) -->
+                    <ColumnDefinition Width="Auto"/>  <!-- Ansicht + Aktionen -->
+                </Grid.ColumnDefinitions>
 
-            <!-- Monatsnavigation zentriert -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal"
-                        HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Button x:Name="BtnPrevMonth" Content="‹" FontSize="20"
-                        Style="{StaticResource SecondaryButton}" Padding="10,4"
-                        Click="BtnPrevMonth_Click"/>
-                <TextBlock x:Name="TxtMonthYear"
-                           FontSize="17" FontWeight="Bold"
-                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                           VerticalAlignment="Center" Margin="16,0"
-                           MinWidth="190" TextAlignment="Center"/>
-                <Button x:Name="BtnNextMonth" Content="›" FontSize="20"
-                        Style="{StaticResource SecondaryButton}" Padding="10,4"
-                        Click="BtnNextMonth_Click"/>
-                <Button x:Name="BtnToday" Content="Heute"
-                        Style="{StaticResource SecondaryButton}"
-                        Padding="12,5" Margin="10,0,0,0"
-                        Click="BtnToday_Click"/>
-            </StackPanel>
+                <!-- Titel -->
+                <TextBlock Grid.Column="0"
+                           Text="Prüfungen &amp; Termine"
+                           Style="{StaticResource TitleText}"
+                           VerticalAlignment="Center"/>
 
-            <!-- Rechts: Ansichts-Toggle + Filter + Aktionen -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                <!-- Monat / Woche Toggle -->
-                <Border CornerRadius="7"
-                        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
-                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                        BorderThickness="1"
-                        Margin="0,0,12,0" Padding="2">
-                    <StackPanel Orientation="Horizontal">
-                        <Button x:Name="BtnViewMonth" Content="Monat"
-                                Style="{StaticResource PrimaryButton}"
-                                Padding="10,4" FontSize="12"
-                                Click="BtnViewMonth_Click"/>
-                        <Button x:Name="BtnViewWeek" Content="Woche"
-                                Style="{StaticResource SecondaryButton}"
-                                Padding="10,4" FontSize="12"
-                                Click="BtnViewWeek_Click"/>
-                    </StackPanel>
-                </Border>
-                <!-- Filter -->
+                <!-- Monatsnavigation zentriert -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button x:Name="BtnPrevMonth" Content="‹" FontSize="20"
+                            Style="{StaticResource SecondaryButton}" Padding="10,4"
+                            Click="BtnPrevMonth_Click"/>
+                    <TextBlock x:Name="TxtMonthYear"
+                               FontSize="17" FontWeight="Bold"
+                               Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                               VerticalAlignment="Center" Margin="16,0"
+                               MinWidth="190" TextAlignment="Center"/>
+                    <Button x:Name="BtnNextMonth" Content="›" FontSize="20"
+                            Style="{StaticResource SecondaryButton}" Padding="10,4"
+                            Click="BtnNextMonth_Click"/>
+                    <Button x:Name="BtnToday" Content="Heute"
+                            Style="{StaticResource SecondaryButton}"
+                            Padding="12,5" Margin="10,0,0,0"
+                            Click="BtnToday_Click"/>
+                </StackPanel>
+
+                <!-- Rechts: Ansichts-Toggle + Aktionen (ohne Filter) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Monat / Woche Toggle -->
+                    <Border CornerRadius="7"
+                            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="1"
+                            Margin="0,0,10,0" Padding="2">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="BtnViewMonth" Content="Monat"
+                                    Style="{StaticResource PrimaryButton}"
+                                    Padding="10,4" FontSize="12"
+                                    Click="BtnViewMonth_Click"/>
+                            <Button x:Name="BtnViewWeek" Content="Woche"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Padding="10,4" FontSize="12"
+                                    Click="BtnViewWeek_Click"/>
+                        </StackPanel>
+                    </Border>
+                    <!-- Aktionsbuttons -->
+                    <Button x:Name="BtnAddEvent" Content="+"
+                            Style="{StaticResource SecondaryButton}"
+                            Padding="10,4" FontSize="15" Margin="0,0,5,0"
+                            ToolTip="Manuellen Eintrag hinzufügen"
+                            Click="BtnAddEvent_Click"/>
+                    <Button x:Name="BtnCalSettings" Content="⚙"
+                            Style="{StaticResource SecondaryButton}"
+                            Padding="9,4" FontSize="13"
+                            ToolTip="Kalender-Einstellungen"
+                            Click="BtnCalSettings_Click"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ── Filter-Leiste (kompakt, zweite Zeile) ─────────────────── -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal"
+                        Margin="0,5,0,0" VerticalAlignment="Center">
+                <TextBlock Text="Anzeigen:"
+                           FontSize="11" Opacity="0.45"
+                           VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <Button x:Name="BtnFilterAll" Content="Alle"
                         Style="{StaticResource PrimaryButton}"
-                        Padding="11,5" FontSize="12" Margin="0,0,5,0"
+                        Padding="9,3" FontSize="11" Margin="0,0,4,0"
                         Click="BtnFilter_Click" Tag="All"/>
                 <Button x:Name="BtnFilterPruefung" Content="Prüfungen"
                         Style="{StaticResource SecondaryButton}"
-                        Padding="11,5" FontSize="12" Margin="0,0,5,0"
+                        Padding="9,3" FontSize="11" Margin="0,0,4,0"
                         Click="BtnFilter_Click" Tag="Pruefung"/>
                 <Button x:Name="BtnFilterTermin" Content="Termine"
                         Style="{StaticResource SecondaryButton}"
-                        Padding="11,5" FontSize="12" Margin="0,0,5,0"
+                        Padding="9,3" FontSize="11" Margin="0,0,4,0"
                         Click="BtnFilter_Click" Tag="Termin"/>
                 <Button x:Name="BtnFilterLektion" Content="Stunden"
                         Style="{StaticResource SecondaryButton}"
-                        Padding="11,5" FontSize="12" Margin="0,0,12,0"
+                        Padding="9,3" FontSize="11"
                         Click="BtnFilter_Click" Tag="Lektion"/>
-                <!-- Aktionsbuttons -->
-                <Button x:Name="BtnAddEvent" Content="+ Eintrag"
-                        Style="{StaticResource SecondaryButton}"
-                        Padding="11,5" FontSize="12" Margin="0,0,6,0"
-                        ToolTip="Manuellen Eintrag hinzufügen"
-                        Click="BtnAddEvent_Click"/>
-                <Button x:Name="BtnCalSettings" Content="⚙"
-                        Style="{StaticResource SecondaryButton}"
-                        Padding="10,5" FontSize="13"
-                        ToolTip="Kalender-Einstellungen"
-                        Click="BtnCalSettings_Click"/>
             </StackPanel>
         </Grid>
 

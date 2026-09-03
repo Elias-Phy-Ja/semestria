@@ -135,9 +135,21 @@ public static class AppState
 
     public static IReadOnlyDictionary<string, string> CategoryColors => _categoryColors;
 
-    /// <summary>Gibt die Hex-Farbe für einen Schlüssel zurück (Fallback: Standardfarbe).</summary>
+    /// <summary>
+    /// Gibt die Hex-Farbe für einen Schlüssel zurück.
+    /// Fallback-Kette für Fachkürzel: spezifisch → globale Lektion-Farbe → Standardfarbe.
+    /// </summary>
     public static string GetEventColor(string key)
-        => _categoryColors.TryGetValue(key, out var c) ? c : DefaultColor(key);
+    {
+        if (_categoryColors.TryGetValue(key, out var c)) return c;
+
+        // Fachkürzel (kein fixes Kategorie-Schlüssel) → globale Lektion-Farbe verwenden
+        if (key != "Pruefung" && key != "Termin" && key != "Lektion" &&
+            _categoryColors.TryGetValue("Lektion", out var lektionColor))
+            return lektionColor;
+
+        return DefaultColor(key);
+    }
 
     private static string DefaultColor(string key) => key switch
     {

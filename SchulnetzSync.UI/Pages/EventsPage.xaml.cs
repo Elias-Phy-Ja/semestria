@@ -507,6 +507,7 @@ public partial class EventsPage : WpfPage
             }
 
             // Zeitbeschriftung links
+            // Erste Stunde (07:00) nicht mit negativem Margin abschneiden lassen
             if (h < hourCount)
             {
                 var lbl = new WpfTextBlock
@@ -516,7 +517,7 @@ public partial class EventsPage : WpfPage
                     Opacity             = 0.42,
                     VerticalAlignment   = VerticalAlignment.Top,
                     HorizontalAlignment = WpfHA.Right,
-                    Margin              = new Thickness(0, -6, 5, 0),
+                    Margin              = new Thickness(0, h == 0 ? 2 : -6, 5, 0),
                     IsHitTestVisible    = false
                 };
                 Grid.SetRow(lbl, slotRow);
@@ -630,7 +631,7 @@ public partial class EventsPage : WpfPage
             tGrid.Children.Add(dayGrid);
         }
 
-        // Aktueller Zeitindikator (roter Strich)
+        // Aktueller Zeitindikator — roter Punkt in der Heute-Spalte, Linie über alle 7 Tage
         var now = DateTime.Now;
         if (now.Date >= weekStart && now.Date <= weekEnd)
         {
@@ -643,6 +644,7 @@ public partial class EventsPage : WpfPage
                 int    nowSlot = (int)slotDbl;
                 double mTop    = (slotDbl - nowSlot) * _slotPx;
 
+                // Punkt am linken Rand der Heute-Spalte
                 var dot = new WpfBorder
                 {
                     Width             = 8,
@@ -650,6 +652,7 @@ public partial class EventsPage : WpfPage
                     CornerRadius      = new CornerRadius(4),
                     Background        = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26)),
                     VerticalAlignment = VerticalAlignment.Top,
+                    HorizontalAlignment = WpfHA.Left,
                     Margin            = new Thickness(-4, mTop - 4, 0, 0),
                     IsHitTestVisible  = false
                 };
@@ -657,6 +660,7 @@ public partial class EventsPage : WpfPage
                 Grid.SetColumn(dot, todayCol);
                 tGrid.Children.Add(dot);
 
+                // Linie über alle 7 Tagesspalten (wie Google Calendar)
                 var nowLine = new WpfBorder
                 {
                     Height            = 2,
@@ -666,7 +670,8 @@ public partial class EventsPage : WpfPage
                     IsHitTestVisible  = false
                 };
                 Grid.SetRow(nowLine, nowSlot);
-                Grid.SetColumn(nowLine, todayCol);
+                Grid.SetColumn(nowLine, 1);          // ab erster Tagesspalte
+                Grid.SetColumnSpan(nowLine, 7);      // über alle 7 Tage
                 tGrid.Children.Add(nowLine);
             }
         }
