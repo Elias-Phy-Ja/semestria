@@ -560,13 +560,15 @@ public partial class EventsPage : WpfPage
         }
 
         // Events in die Spalten zeichnen
+        double containerH = (totalSlots + 1) * _slotPx; // Gesamthöhe des Zeitrasters in Pixeln
+
         for (int d = 0; d < 7; d++)
         {
             var date      = weekStart.AddDays(d);
             var dayEvents = events.Where(e => e.Start.Date == date).OrderBy(e => e.Start).ToList();
 
             // Ganztägige Events werden als kompakte Streifen am Tagesstart gezeigt
-            int allDayRow = 0; // Startzeile für ganztägige Events (oben im Raster)
+            int allDayRow = 0;
             foreach (var ev in dayEvents.Where(e => e.IsAllDay))
             {
                 var strip = MakeWeekAllDayStrip(ev);
@@ -576,36 +578,56 @@ public partial class EventsPage : WpfPage
                 allDayRow = Math.Min(allDayRow + 1, totalSlots - 1);
             }
 
-            // Zeitgebundene Events
-            foreach (var ev in dayEvents.Where(e => !e.IsAllDay))
-            {
-                var local      = ev.Start.LocalDateTime;
-                var localEnd   = ev.End.LocalDateTime;
-                double startH  = local.Hour + local.Minute / 60.0;
-                double endH    = localEnd.Hour + localEnd.Minute / 60.0;
+            // Zeitgebundene Events mit Überschneidungs-Erkennung
+            var timedEvents = dayEvents.Where(e => !e.IsAllDay).ToList();
+            if (timedEvents.Count == 0) continue;
 
-                // Ausserhalb des Rasters → überspringen
+            // Spalten-Zuweisung berechnen (col, span, maxCols pro Event)
+            var colMap  = AssignEventColumns(timedEvents);
+            int maxCols = colMap.Values.Any() ? colMap.Values.Max(v => v.TotalCols) : 1;
+
+            // Pro Tag: ein Grid, das alle Zeilen überspannt, mit sub-Spalten für Überschneidungen
+            var dayGrid = new Grid { IsHitTestVisible = true };
+            for (int c = 0; c < maxCols; c++)
+                dayGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            foreach (var ev in timedEvents)
+            {
+                var local    = ev.Start.LocalDateTime;
+                var localEnd = ev.End.LocalDateTime;
+                double startH = local.Hour   + local.Minute   / 60.0;
+                double endH   = localEnd.Hour + localEnd.Minute / 60.0;
+
+                // Ausserhalb des sichtbaren Rasters → überspringen
                 if (endH <= _weekStartH || startH >= _weekEndH) continue;
                 startH = Math.Max(startH, _weekStartH);
                 endH   = Math.Min(endH,   _weekEndH);
 
-                double offsetH  = startH - _weekStartH;
-                double slotDbl  = offsetH * (60.0 / _slotMin);
-                int    startSlot = (int)slotDbl;
-                double marginTop = (slotDbl - startSlot) * _slotPx;
+                // Pixelposition innerhalb des dayGrid-Containers
+                double topPx   = (startH - _weekStartH) * (60.0 / _slotMin) * _slotPx;
+                double cardH   = Math.Max(4.0, (endH - startH) * (60.0 / _slotMin) * _slotPx - 2.0);
 
-                double durH      = endH - startH;
-                int    spanSlots = Math.Max(1, (int)Math.Round(durH * (60.0 / _slotMin)));
-                // Nicht über Rastergrenze hinausgehen
-                if (startSlot + spanSlots > totalSlots)
-                    spanSlots = totalSlots - startSlot;
+                var (col, span, _) = colMap.TryGetValue(ev, out var t) ? t : (0, maxCols, maxCols);
 
-                var card = MakeWeekEventCard(ev, marginTop);
-                Grid.SetRow(card, startSlot);
-                Grid.SetRowSpan(card, spanSlots);
-                Grid.SetColumn(card, d + 1);
-                tGrid.Children.Add(card);
+                // Horizontaler Abstand: aussen 2px, zwischen Spalten 1px
+                double mLeft  = col == 0         ? 2.0 : 1.0;
+                double mRight = col + span == maxCols ? 2.0 : 1.0;
+
+                var card = MakeWeekEventCard(ev);
+                card.Margin            = new Thickness(mLeft, topPx + 1.0, mRight, 0);
+                card.Height            = cardH;
+                card.VerticalAlignment = VerticalAlignment.Top;
+
+                Grid.SetColumn(card, col);
+                Grid.SetColumnSpan(card, span);
+                dayGrid.Children.Add(card);
             }
+
+            // dayGrid über alle Zeitraster-Zeilen spannen
+            Grid.SetRow(dayGrid, 0);
+            Grid.SetRowSpan(dayGrid, totalSlots + 1);
+            Grid.SetColumn(dayGrid, d + 1);
+            tGrid.Children.Add(dayGrid);
         }
 
         // Aktueller Zeitindikator (roter Strich)
@@ -692,23 +714,23 @@ public partial class EventsPage : WpfPage
         return strip;
     }
 
-    private UIElement MakeWeekEventCard(SchulnetzEvent ev, double topMargin = 0)
+    // Rückgabetyp WpfBorder, damit der Aufrufer Margin/Height direkt setzen kann
+    private WpfBorder MakeWeekEventCard(SchulnetzEvent ev)
     {
         var  color = GetEventColor(ev);
         bool isSel = ev == _selectedEvent;
 
         var card = new WpfBorder
         {
-            Background        = new SolidColorBrush(
-                                    Color.FromArgb(isSel ? (byte)220 : (byte)190,
-                                                   color.R, color.G, color.B)),
-            CornerRadius      = new CornerRadius(4),
-            Margin            = new Thickness(2, topMargin + 1, 2, 1),
-            Padding           = new Thickness(5, 3, 5, 3),
-            Cursor            = WpfCursors.Hand,
-            Tag               = ev,
-            VerticalAlignment = VerticalAlignment.Stretch,
-            ClipToBounds      = true
+            Background   = new SolidColorBrush(
+                               Color.FromArgb(isSel ? (byte)220 : (byte)190,
+                                              color.R, color.G, color.B)),
+            CornerRadius = new CornerRadius(4),
+            Margin       = new Thickness(2, 1, 2, 1), // wird vom Aufrufer überschrieben
+            Padding      = new Thickness(5, 3, 5, 3),
+            Cursor       = WpfCursors.Hand,
+            Tag          = ev,
+            ClipToBounds = true
         };
 
         var timeStr = $"{ev.Start.LocalDateTime:H:mm}–{ev.End.LocalDateTime:H:mm}";
@@ -1396,4 +1418,56 @@ public partial class EventsPage : WpfPage
     private static bool Confirm(string message)
         => MessageBox.Show(message, "Bestätigung",
                MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Spalten-Zuweisung für überschneidende Events (Google-Calendar-Stil)
+    // ══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Weist jedem zeitgebundenen Event eine Spalte innerhalb seines Tages zu.
+    /// Überschneidende Events teilen sich die verfügbare Breite gleichmässig.
+    /// Nicht überschneidende Events erhalten die volle Spaltenbreite (span = maxCols).
+    /// </summary>
+    private static Dictionary<SchulnetzEvent, (int Col, int Span, int TotalCols)>
+        AssignEventColumns(List<SchulnetzEvent> events)
+    {
+        if (events.Count == 0)
+            return new Dictionary<SchulnetzEvent, (int, int, int)>();
+
+        // Greedy-Algorithmus: Event in früheste freie Spalte einordnen
+        var sorted   = events.OrderBy(e => e.Start).ToList();
+        var colEnds  = new List<DateTimeOffset>(); // Ende-Zeit der letzten Belegung pro Spalte
+        var colIndex = new Dictionary<SchulnetzEvent, int>();
+
+        foreach (var ev in sorted)
+        {
+            int col = -1;
+            for (int c = 0; c < colEnds.Count; c++)
+            {
+                if (colEnds[c] <= ev.Start) { col = c; colEnds[c] = ev.End; break; }
+            }
+            if (col < 0) { col = colEnds.Count; colEnds.Add(ev.End); }
+            colIndex[ev] = col;
+        }
+
+        int maxCols = colEnds.Count; // Maximale Anzahl gleichzeitig überschneidender Events
+
+        var result = new Dictionary<SchulnetzEvent, (int, int, int)>();
+        foreach (var ev in events)
+        {
+            int col = colIndex[ev];
+
+            // Gibt es zur Laufzeit des Events gleichzeitig andere Events?
+            bool hasConcurrent = events.Any(other =>
+                !ReferenceEquals(other, ev) &&
+                ev.Start  < other.End &&
+                other.Start < ev.End);
+
+            // Allein stehende Events füllen die gesamte Tagesbreite
+            int span = hasConcurrent ? 1 : maxCols;
+            result[ev] = (col, span, maxCols);
+        }
+
+        return result;
+    }
 }

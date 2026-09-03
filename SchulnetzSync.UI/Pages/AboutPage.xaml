@@ -7,17 +7,19 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="32,28,32,32" MaxWidth="640">
 
-            <TextBlock Text="Über SchulnetzSync"
+            <TextBlock Text="Über Semestria"
                        Style="{StaticResource TitleText}" Margin="0,0,0,24"/>
 
             <!-- ── App-Info ── -->
             <Border Style="{StaticResource Card}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                        <TextBlock Text="📅" FontSize="48" VerticalAlignment="Center"
-                                   Margin="0,0,16,0"/>
+                        <Image Source="pack://application:,,,/Resources/Semestra_Logo.png"
+                               Width="48" Height="48" VerticalAlignment="Center"
+                               Margin="0,0,16,0"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="SchulnetzSync"
+                            <TextBlock Text="Semestria"
                                        FontSize="22" FontWeight="Bold"
                                        Foreground="{StaticResource AccentBrush}"/>
                             <TextBlock Text="Version 1.0.0 · Kostenlos &amp; Open Source"
@@ -25,7 +27,7 @@
                         </StackPanel>
                     </StackPanel>
                     <TextBlock TextWrapping="Wrap" FontSize="13" Opacity="0.8"
-                               Text="SchulnetzSync liest deinen persönlichen Schulnetz-Kalender und schreibt Prüfungen und Schultermine automatisch in deinen Outlook-Kalender. Alles passiert lokal auf deinem Gerät. Keine Daten werden an externe Server gesendet."/>
+                               Text="Semestria liest deinen persönlichen Schulnetz-Kalender und schreibt Prüfungen und Schultermine automatisch in deinen Outlook-Kalender. Alles passiert lokal auf deinem Gerät. Keine Daten werden an externe Server gesendet."/>
                     <Separator Style="{StaticResource Divider}"/>
                     <StackPanel Orientation="Horizontal">
                         <Button Content="⭐  GitHub"
@@ -66,7 +68,7 @@
 
                     <Separator Style="{StaticResource Divider}"/>
                     <TextBlock Style="{StaticResource NoteText}"
-                               Text="SchulnetzSync ist kostenlose Open-Source-Software. Keine Garantie, keine Haftung. Alle Daten bleiben lokal auf deinem Gerät."/>
+                               Text="Semestria ist kostenlose Open-Source-Software. Keine Garantie, keine Haftung. Alle Daten bleiben lokal auf deinem Gerät."/>
                 </StackPanel>
             </Border>
 
@@ -77,11 +79,11 @@
                     <TextBlock Text="Gespeicherte Daten"
                                FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
                     <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,4"
-                               Text="SchulnetzSync speichert ausschliesslich auf deinem Gerät:"/>
+                               Text="Semestria speichert ausschliesslich auf deinem Gerät:"/>
                     <TextBlock FontSize="12" Opacity="0.7" Margin="0,0,0,3">• config.json: Feed-URL (verschlüsselt), Client-ID, Einstellungen</TextBlock>
                     <TextBlock FontSize="12" Opacity="0.7" Margin="0,0,0,3">• MSAL-Token: Microsoft-Anmeldedaten (verschlüsselt)</TextBlock>
                     <TextBlock Style="{StaticResource NoteText}" Margin="0,4,0,16"
-                               Text="Speicherort: %LocalAppData%\SchulnetzSync\"/>
+                               Text="Speicherort: %LocalAppData%\Semestria\"/>
 
                     <TextBlock Text="App vollständig zurücksetzen"
                                FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6"/>
