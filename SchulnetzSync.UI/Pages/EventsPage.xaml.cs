@@ -27,7 +27,7 @@ public partial class EventsPage : WpfPage
     private DateTime? _selectedDate;
     private SchulnetzEvent? _selectedEvent;
     private string    _filter    = "All";
-    private string    _viewMode  = "Month";    // "Month" | "Week"
+    private string    _viewMode  = "Week";     // "Month" | "Week"
     private string    _panelMode = "None";     // "None" | "Detail" | "Settings" | "AddEvent"
 
     // Zeit-Raster Konstanten
@@ -72,7 +72,15 @@ public partial class EventsPage : WpfPage
         _year  = today.Year;
         _month = today.Month;
 
-        Loaded   += (_, _) => { AppState.Changed += OnStateChanged; Refresh(); };
+        Loaded   += (_, _) =>
+        {
+            AppState.Changed += OnStateChanged;
+            // Button-Styles mit dem Standard-Viewmode synchronisieren
+            BtnViewWeek.Style  = (Style)FindResource("PrimaryButton");
+            BtnViewMonth.Style = (Style)FindResource("SecondaryButton");
+            if (!_selectedDate.HasValue) _selectedDate = DateTime.Today;
+            Refresh();
+        };
         Unloaded += (_, _) => AppState.Changed -= OnStateChanged;
     }
 
@@ -683,12 +691,8 @@ public partial class EventsPage : WpfPage
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             Content                       = tGrid
         };
-        scroll.Loaded += (_, _) =>
-        {
-            double targetH  = Math.Max(_weekStartH, Math.Min(_weekEndH - 2, DateTime.Now.TimeOfDay.TotalHours));
-            double offsetPx = (targetH - _weekStartH) * (60.0 / _slotMin) * _slotPx - 80;
-            scroll.ScrollToVerticalOffset(Math.Max(0, offsetPx));
-        };
+        // Immer ganz oben bei 07:00 starten
+        scroll.Loaded += (_, _) => scroll.ScrollToTop();
 
         Grid.SetRow(scroll, 1);
         Grid.SetColumn(scroll, 0);
