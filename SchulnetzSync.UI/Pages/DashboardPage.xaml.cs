@@ -22,9 +22,12 @@ public partial class DashboardPage : Page
             SetBusy(false);
         });
 
-        Loaded   += (_, _) => { AppState.Changed += RefreshStatus; RefreshStatus(); };
-        Unloaded += (_, _) => AppState.Changed -= RefreshStatus;
+        // AppState.Changed feuert vom Hintergrund-Thread → immer dispatchen
+        Loaded   += (_, _) => { AppState.Changed += OnStateChanged; RefreshStatus(); };
+        Unloaded += (_, _) => AppState.Changed -= OnStateChanged;
     }
+
+    private void OnStateChanged() => Dispatcher.Invoke(RefreshStatus);
 
     // -----------------------------------------------------------------------
     // Buttons

@@ -1,3 +1,5 @@
+using System.IO;
+using System.Text.Json;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Model;
 
@@ -32,6 +34,57 @@ public static class AppState
     /// </summary>
     public static IReadOnlyList<SchulnetzEvent> CachedFeedEvents { get; set; }
         = Array.Empty<SchulnetzEvent>();
+
+    // ── Ausgeblendete Events ────────────────────────────────────────────────
+    private static readonly string _suppressedPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "SchulnetzSync", "suppressed.json");
+
+    private static HashSet<string> _suppressedKeys = LoadSuppressed();
+
+    /// <summary>Correlation-Keys (z.B. «P_65100»), die im In-App-Kalender ausgeblendet sind.</summary>
+    public static IReadOnlySet<string> SuppressedKeys => _suppressedKeys;
+
+    /// <summary>Blendet einen Event aus und speichert die Liste.</summary>
+    public static void SuppressEvent(string key)
+    {
+        _suppressedKeys.Add(key);
+        SaveSuppressed();
+        Notify();
+    }
+
+    /// <summary>Macht einen ausgeblendeten Event wieder sichtbar.</summary>
+    public static void UnsuppressEvent(string key)
+    {
+        _suppressedKeys.Remove(key);
+        SaveSuppressed();
+        Notify();
+    }
+
+    private static HashSet<string> LoadSuppressed()
+    {
+        try
+        {
+            if (File.Exists(_suppressedPath))
+                return JsonSerializer.Deserialize<HashSet<string>>(
+                    File.ReadAllText(_suppressedPath)) ?? [];
+        }
+        catch { /* Fehler beim Lesen ignorieren — leer starten */ }
+        return [];
+    }
+
+    private static void SaveSuppressed()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_suppressedPath)!);
+            File.WriteAllText(_suppressedPath,
+                JsonSerializer.Serialize(_suppressedKeys));
+        }
+        catch { /* Fehler beim Schreiben ignorieren */ }
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
 
     /// <summary>Lädt Config neu und benachrichtigt alle Abonnenten.</summary>
     public static void Reload()

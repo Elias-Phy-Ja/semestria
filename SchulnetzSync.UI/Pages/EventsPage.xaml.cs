@@ -1,26 +1,37 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using SchulnetzSync.Core.Model;
 
-// Resolve WPF/WinForms type ambiguities in this file
-using WpfBrushes    = System.Windows.Media.Brushes;
-using WpfButton     = System.Windows.Controls.Button;
-using WpfTextBlock  = System.Windows.Controls.TextBlock;
-using WpfPage       = System.Windows.Controls.Page;
-using WpfBorder     = System.Windows.Controls.Border;
+// WPF/WinForms-Typ-Ambiguität auflösen
+using WpfBorder      = System.Windows.Controls.Border;
+using WpfBrushes     = System.Windows.Media.Brushes;
+using WpfButton      = System.Windows.Controls.Button;
+using WpfCursors     = System.Windows.Input.Cursors;
+using WpfHA          = System.Windows.HorizontalAlignment;
 using WpfOrientation = System.Windows.Controls.Orientation;
-using WpfHA         = System.Windows.HorizontalAlignment;
+using WpfPage        = System.Windows.Controls.Page;
+using WpfTextBlock   = System.Windows.Controls.TextBlock;
 
 namespace SchulnetzSync.UI.Pages;
 
 public partial class EventsPage : WpfPage
 {
-    private int    _year;
-    private int    _month;
+    private int      _year;
+    private int      _month;
     private DateTime? _selectedDate;
-    private string _filter = "All"; // All | Pruefung | Termin
+    private SchulnetzEvent? _selectedEvent;
+    private string   _filter = "All";
+
+    private static readonly CultureInfo _deCH =
+        CultureInfo.GetCultureInfo("de-CH");
+
+    // Farben aus dem Design
+    private static readonly Color _pruefungColor = Color.FromRgb(0xEF, 0x44, 0x44);
+    private static readonly Color _terminColor   = Color.FromRgb(0x3B, 0x82, 0xF6);
+    private static readonly Color _accentColor   = Color.FromRgb(0x5C, 0x6E, 0xF7);
 
     public EventsPage()
     {
@@ -35,355 +46,450 @@ public partial class EventsPage : WpfPage
 
     private void OnStateChanged() => Dispatcher.Invoke(Refresh);
 
-    // -----------------------------------------------------------------------
+    // ══════════════════════════════════════════════════════════════════════
     // Haupt-Refresh
-    // -----------------------------------------------------------------------
+    // ══════════════════════════════════════════════════════════════════════
 
     private void Refresh()
     {
-        var events = FilteredEvents();
-
         bool hasData = AppState.CachedFeedEvents.Count > 0;
         NoDataHint.Visibility = hasData ? Visibility.Collapsed : Visibility.Visible;
         MainLayout.Visibility = hasData ? Visibility.Visible   : Visibility.Collapsed;
-
         if (!hasData) return;
 
-        BuildCalendar(events);
-        ShowSelectedOrUpcoming(events);
+        BuildCalendar(FilteredEvents());
     }
 
     private IReadOnlyList<SchulnetzEvent> FilteredEvents()
     {
-        var all = AppState.CachedFeedEvents;
-        return _filter switch
-        {
-            "Pruefung" => all.Where(e => e.Type == SchulnetzEventType.Pruefung).ToList(),
-            "Termin"   => all.Where(e => e.Type == SchulnetzEventType.Termin).ToList(),
-            _          => all
-        };
+        var suppressed = AppState.SuppressedKeys;
+        return (AppState.CachedFeedEvents
+            .Where(e => !suppressed.Contains(e.Key)))
+            .Where(e => _filter switch
+            {
+                "Pruefung" => e.Type == SchulnetzEventType.Pruefung,
+                "Termin"   => e.Type == SchulnetzEventType.Termin,
+                _          => true
+            })
+            .ToList();
     }
 
-    // -----------------------------------------------------------------------
+    // ══════════════════════════════════════════════════════════════════════
     // Kalender aufbauen
-    // -----------------------------------------------------------------------
+    // ══════════════════════════════════════════════════════════════════════
 
     private void BuildCalendar(IReadOnlyList<SchulnetzEvent> events)
     {
         TxtMonthYear.Text = new DateTime(_year, _month, 1)
-            .ToString("MMMM yyyy",
-                System.Globalization.CultureInfo.GetCultureInfo("de-CH"));
+            .ToString("MMMM yyyy", _deCH);
 
-        // Alte Tag-Buttons entfernen
-        var toRemove = CalendarGrid.Children.OfType<WpfButton>().ToList();
-        foreach (var b in toRemove) CalendarGrid.Children.Remove(b);
+        CalendarGrid.Children.Clear();
 
         var firstDay    = new DateTime(_year, _month, 1);
         int daysInMonth = DateTime.DaysInMonth(_year, _month);
-        int todayDay    = (DateTime.Today.Year == _year && DateTime.Today.Month == _month)
-                          ? DateTime.Today.Day : -1;
-
         // Mo=0 … So=6
-        int startCol = ((int)firstDay.DayOfWeek + 6) % 7;
+        int startCol    = ((int)firstDay.DayOfWeek + 6) % 7;
+        var today       = DateTime.Today;
+        var prevFirst   = firstDay.AddMonths(-1);
+        int prevDays    = DateTime.DaysInMonth(prevFirst.Year, prevFirst.Month);
 
-        for (int d = 1; d <= daysInMonth; d++)
+        for (int cellIdx = 0; cellIdx < 42; cellIdx++)
         {
-            var date      = new DateTime(_year, _month, d);
+            int row = cellIdx / 7;
+            int col = cellIdx % 7;
+
+            DateTime date;
+            bool isCurMonth;
+
+            if (cellIdx < startCol)
+            {
+                // Vormonat
+                date       = new DateTime(prevFirst.Year, prevFirst.Month,
+                                 prevDays - startCol + cellIdx + 1);
+                isCurMonth = false;
+            }
+            else if (cellIdx >= startCol + daysInMonth)
+            {
+                // Nächster Monat
+                date       = firstDay.AddMonths(1)
+                                 .AddDays(cellIdx - startCol - daysInMonth);
+                isCurMonth = false;
+            }
+            else
+            {
+                date       = new DateTime(_year, _month, cellIdx - startCol + 1);
+                isCurMonth = true;
+            }
+
+            bool isToday  = date == today;
+            bool isSel    = _selectedDate.HasValue && date == _selectedDate.Value;
+            bool isWeekend = col >= 5;
+
             var dayEvents = events.Where(e => e.Start.Date == date).ToList();
-            bool isToday  = d == todayDay;
-            bool isSel    = _selectedDate.HasValue && _selectedDate.Value == date;
-
-            int pos = startCol + d - 1;
-            int row = pos / 7;
-            int col = pos % 7;
-
-            var btn = MakeDayButton(d, dayEvents, isToday, isSel);
-            btn.Tag    = date;
-            btn.Click += DayButton_Click;
-            Grid.SetRow(btn, row);
-            Grid.SetColumn(btn, col);
-            CalendarGrid.Children.Add(btn);
+            var cell = MakeCell(date, dayEvents, isCurMonth, isToday, isSel, isWeekend, row, col);
+            Grid.SetRow(cell, row);
+            Grid.SetColumn(cell, col);
+            CalendarGrid.Children.Add(cell);
         }
     }
 
-    private WpfButton MakeDayButton(
-        int day,
-        List<SchulnetzEvent> events,
-        bool isToday,
-        bool isSelected)
+    // ══════════════════════════════════════════════════════════════════════
+    // Zelle erstellen (Outlook-Stil)
+    // ══════════════════════════════════════════════════════════════════════
+
+    private UIElement MakeCell(
+        DateTime date,
+        List<SchulnetzEvent> dayEvents,
+        bool isCurMonth, bool isToday, bool isSelected,
+        bool isWeekend,  int row,      int col)
     {
-        var panel = new StackPanel
-        {
-            HorizontalAlignment = WpfHA.Center,
-            Width = 30
-        };
-
-        // Tages-Zahl in Kreis
-        var numBorder = new WpfBorder
-        {
-            Width       = 28,
-            Height      = 28,
-            CornerRadius = new CornerRadius(14),
-            HorizontalAlignment = WpfHA.Center
-        };
-
-        if (isSelected)
-            numBorder.Background = new SolidColorBrush(Color.FromRgb(0x5C, 0x6E, 0xF7));
-        else if (isToday)
-            numBorder.Background = new SolidColorBrush(Color.FromArgb(60, 0x5C, 0x6E, 0xF7));
+        // Zellen-Hintergrund
+        Brush bg;
+        if (isToday && isCurMonth)
+            bg = new SolidColorBrush(Color.FromArgb(18, _accentColor.R, _accentColor.G, _accentColor.B));
+        else if (isSelected)
+            bg = new SolidColorBrush(Color.FromArgb(25, _accentColor.R, _accentColor.G, _accentColor.B));
+        else if (!isCurMonth || isWeekend)
+            bg = new SolidColorBrush(Color.FromArgb(12, 0x80, 0x80, 0x80));
         else
-            numBorder.Background = WpfBrushes.Transparent;
+            bg = WpfBrushes.Transparent;
 
-        numBorder.Child = new WpfTextBlock
+        var lineColor = new SolidColorBrush(Color.FromArgb(40, 0x80, 0x80, 0x80));
+
+        // Linke Begrenzung nur bei erster Spalte; sonst nur rechts + unten
+        var borderThickness = new Thickness(
+            col == 0 ? 1 : 0,
+            0,
+            1,
+            1);
+
+        var cell = new WpfBorder
         {
-            Text                = day.ToString(),
-            FontSize            = 12,
-            FontWeight          = isToday || isSelected ? FontWeights.Bold : FontWeights.Normal,
-            HorizontalAlignment = WpfHA.Center,
-            VerticalAlignment   = VerticalAlignment.Center,
-            Foreground          = isSelected ? WpfBrushes.White : null
+            Background      = bg,
+            BorderBrush     = lineColor,
+            BorderThickness = borderThickness,
+            Tag             = date,
+            Cursor          = WpfCursors.Hand
         };
-        panel.Children.Add(numBorder);
+        cell.MouseLeftButtonUp += DayCell_MouseUp;
 
-        // Event-Dots
-        if (events.Count > 0)
+        var cellPanel = new StackPanel
         {
-            var dots = new StackPanel
-            {
-                Orientation         = WpfOrientation.Horizontal,
-                HorizontalAlignment = WpfHA.Center,
-                Margin              = new Thickness(0, 2, 0, 0)
-            };
-            bool hasPruefung = events.Any(e => e.Type == SchulnetzEventType.Pruefung);
-            bool hasTermin   = events.Any(e => e.Type == SchulnetzEventType.Termin);
-
-            if (hasPruefung) dots.Children.Add(MakeDot("#EF4444"));
-            if (hasTermin)   dots.Children.Add(MakeDot("#3B82F6", hasPruefung ? 3 : 0));
-
-            panel.Children.Add(dots);
-        }
-
-        return new WpfButton
-        {
-            Content = panel,
-            Style   = (Style)FindResource("DayButton"),
-            Height  = 34,
-            ToolTip = events.Count > 0
-                ? string.Join("\n", events.Select(e =>
-                    $"{e.Start.LocalDateTime:HH:mm}  {e.Summary}"))
-                : null
+            Margin = new Thickness(4, 3, 4, 3),
+            IsHitTestVisible = false  // Klicks gehen durch zum Border
         };
-    }
 
-    private static Ellipse MakeDot(string hex, double leftMargin = 0)
-    {
-        var c = (Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
-        return new Ellipse
+        // Tages-Zahl
+        if (isToday && isCurMonth)
         {
-            Width             = 5,
-            Height            = 5,
-            Fill              = new SolidColorBrush(c),
-            Margin            = new Thickness(leftMargin, 0, 0, 0),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-    }
-
-    // -----------------------------------------------------------------------
-    // Rechte Spalte
-    // -----------------------------------------------------------------------
-
-    private void ShowSelectedOrUpcoming(IReadOnlyList<SchulnetzEvent> events)
-    {
-        EventsPanel.Children.Clear();
-
-        if (_selectedDate.HasValue)
-        {
-            var dayEvents = events
-                .Where(e => e.Start.Date == _selectedDate.Value)
-                .OrderBy(e => e.Start)
-                .ToList();
-
-            TxtSelectedDay.Text = _selectedDate.Value
-                .ToString("dddd, d. MMMM yyyy",
-                    System.Globalization.CultureInfo.GetCultureInfo("de-CH"));
-            TxtSelectedDaySub.Text = dayEvents.Count == 0
-                ? "Keine Einträge an diesem Tag."
-                : $"{dayEvents.Count} Eintr{(dayEvents.Count == 1 ? "ag" : "äge")}";
-
-            if (dayEvents.Count == 0)
-                EventsPanel.Children.Add(MakeEmptyHint("Keine Einträge an diesem Tag."));
-            else
-                foreach (var ev in dayEvents)
-                    EventsPanel.Children.Add(MakeEventCard(ev));
-        }
-        else
-        {
-            var upcoming = events
-                .Where(e => e.Start.Date >= DateTime.Today)
-                .OrderBy(e => e.Start)
-                .Take(20)
-                .ToList();
-
-            TxtSelectedDay.Text    = "Nächste Einträge";
-            TxtSelectedDaySub.Text = "Klicke auf einen Tag im Kalender für Details.";
-
-            if (upcoming.Count == 0)
+            // Heute: Zahl in farbigem Kreis
+            var circle = new WpfBorder
             {
-                EventsPanel.Children.Add(MakeEmptyHint("Keine kommenden Einträge gefunden."));
-            }
-            else
-            {
-                string? lastDate = null;
-                foreach (var ev in upcoming)
+                Width               = 24,
+                Height              = 24,
+                CornerRadius        = new CornerRadius(12),
+                Background          = new SolidColorBrush(_accentColor),
+                HorizontalAlignment = WpfHA.Right,
+                Margin              = new Thickness(0, 0, 2, 2),
+                Child               = new WpfTextBlock
                 {
-                    var dateStr = ev.Start.LocalDateTime.Date
-                        .ToString("dddd, d. MMMM",
-                            System.Globalization.CultureInfo.GetCultureInfo("de-CH"));
-                    if (dateStr != lastDate)
-                    {
-                        EventsPanel.Children.Add(MakeDateHeader(dateStr));
-                        lastDate = dateStr;
-                    }
-                    EventsPanel.Children.Add(MakeEventCard(ev));
+                    Text                = date.Day.ToString(),
+                    FontSize            = 11,
+                    FontWeight          = FontWeights.Bold,
+                    Foreground          = WpfBrushes.White,
+                    HorizontalAlignment = WpfHA.Center,
+                    VerticalAlignment   = VerticalAlignment.Center
                 }
-            }
+            };
+            cellPanel.Children.Add(circle);
         }
-    }
-
-    // -----------------------------------------------------------------------
-    // Event-Karte
-    // -----------------------------------------------------------------------
-
-    private static UIElement MakeEventCard(SchulnetzEvent ev)
-    {
-        bool isPruefung = ev.Type == SchulnetzEventType.Pruefung;
-        var accentColor = isPruefung
-            ? Color.FromRgb(0xEF, 0x44, 0x44)
-            : Color.FromRgb(0x3B, 0x82, 0xF6);
-
-        var timeStr = ev.IsAllDay
-            ? "Ganztägig"
-            : $"{ev.Start.LocalDateTime:HH:mm} – {ev.End.LocalDateTime:HH:mm}";
-
-        var titleRow = new StackPanel
+        else
         {
-            Orientation = WpfOrientation.Horizontal,
-            Margin      = new Thickness(0, 0, 0, 4)
-        };
-        titleRow.Children.Add(new WpfBorder
-        {
-            Background      = new SolidColorBrush(accentColor),
-            CornerRadius    = new CornerRadius(4),
-            Padding         = new Thickness(6, 2, 6, 2),
-            Margin          = new Thickness(0, 0, 8, 0),
-            Child           = new WpfTextBlock
+            cellPanel.Children.Add(new WpfTextBlock
             {
-                Text       = isPruefung ? "Prüfung" : "Termin",
-                FontSize   = 10,
-                FontWeight = FontWeights.SemiBold,
-                Foreground = WpfBrushes.White
-            }
-        });
-        titleRow.Children.Add(new WpfTextBlock
-        {
-            Text              = ev.Summary,
-            FontSize          = 14,
-            FontWeight        = FontWeights.SemiBold,
-            VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming      = TextTrimming.CharacterEllipsis
-        });
-
-        var inner = new StackPanel();
-        inner.Children.Add(titleRow);
-        inner.Children.Add(new WpfTextBlock
-        {
-            Text     = timeStr,
-            FontSize = 12,
-            Opacity  = 0.65,
-            Margin   = new Thickness(0, 0, 0, ev.Location != null ? 3 : 0)
-        });
-        if (!string.IsNullOrWhiteSpace(ev.Location))
-        {
-            inner.Children.Add(new WpfTextBlock
-            {
-                Text     = "📍  " + ev.Location,
-                FontSize = 12,
-                Opacity  = 0.65
+                Text                = date.Day.ToString(),
+                FontSize            = 11,
+                FontWeight          = isToday ? FontWeights.Bold : FontWeights.Normal,
+                Opacity             = isCurMonth ? 0.80 : 0.28,
+                HorizontalAlignment = WpfHA.Right,
+                Margin              = new Thickness(0, 0, 4, 2)
             });
         }
 
-        return new WpfBorder
+        // Event-Pills (max. 4, dann "+N weitere")
+        const int maxPills = 4;
+        for (int i = 0; i < Math.Min(dayEvents.Count, maxPills); i++)
+            cellPanel.Children.Add(MakeEventPill(dayEvents[i], isCurMonth));
+
+        if (dayEvents.Count > maxPills)
         {
-            Background      = (Brush)Application.Current.FindResource(
-                                  "SystemControlBackgroundChromeMediumLowBrush"),
-            CornerRadius    = new CornerRadius(0, 10, 10, 0),
-            BorderBrush     = new SolidColorBrush(accentColor),
-            BorderThickness = new Thickness(3, 0, 0, 0),
-            Padding         = new Thickness(14, 12, 14, 12),
-            Margin          = new Thickness(0, 0, 0, 10),
-            Child           = inner
-        };
+            var more = new WpfTextBlock
+            {
+                Text    = $"+{dayEvents.Count - maxPills} weitere",
+                FontSize = 9,
+                Opacity  = 0.55,
+                Margin   = new Thickness(3, 1, 0, 0)
+            };
+            cellPanel.Children.Add(more);
+        }
+
+        cell.Child = cellPanel;
+        return cell;
     }
 
-    private static UIElement MakeDateHeader(string text)
-        => new WpfTextBlock
-        {
-            Text       = text,
-            FontSize   = 12,
-            FontWeight = FontWeights.SemiBold,
-            Opacity    = 0.5,
-            Margin     = new Thickness(0, 10, 0, 6)
-        };
+    // ══════════════════════════════════════════════════════════════════════
+    // Event-Pill (anklickbar)
+    // ══════════════════════════════════════════════════════════════════════
 
-    private static UIElement MakeEmptyHint(string text)
-        => new WpfTextBlock
-        {
-            Text                = text,
-            FontSize            = 13,
-            Opacity             = 0.45,
-            Margin              = new Thickness(0, 20, 0, 0),
-            HorizontalAlignment = WpfHA.Center
-        };
-
-    // -----------------------------------------------------------------------
-    // Ereignis-Handler
-    // -----------------------------------------------------------------------
-
-    private void DayButton_Click(object sender, RoutedEventArgs e)
+    private UIElement MakeEventPill(SchulnetzEvent ev, bool isCurMonth = true)
     {
-        if (sender is WpfButton btn && btn.Tag is DateTime date)
+        bool isPruefung = ev.Type == SchulnetzEventType.Pruefung;
+        var  color      = isPruefung ? _pruefungColor : _terminColor;
+        bool isSelected = ev == _selectedEvent;
+
+        // Hintergrund: gefüllt wenn ausgewählt, sonst leicht transparent
+        Brush pillBg = isSelected
+            ? new SolidColorBrush(Color.FromArgb(120, color.R, color.G, color.B))
+            : new SolidColorBrush(Color.FromArgb(30,  color.R, color.G, color.B));
+
+        var pill = new WpfBorder
         {
-            _selectedDate = (_selectedDate == date) ? null : date;
-            Refresh();
+            Background      = pillBg,
+            BorderBrush     = new SolidColorBrush(Color.FromArgb(160, color.R, color.G, color.B)),
+            BorderThickness = new Thickness(1),
+            CornerRadius    = new CornerRadius(3),
+            Padding         = new Thickness(4, 1, 4, 1),
+            Margin          = new Thickness(0, 1, 0, 1),
+            Cursor          = WpfCursors.Hand,
+            Opacity         = isCurMonth ? 1.0 : 0.5,
+            Tag             = ev,
+            IsHitTestVisible = true
+        };
+
+        var timePrefix = ev.IsAllDay ? "" : ev.Start.LocalDateTime.ToString("H:mm", _deCH) + " ";
+        var text = new WpfTextBlock
+        {
+            Text         = timePrefix + ev.Summary,
+            FontSize     = 10,
+            Foreground   = isSelected
+                ? WpfBrushes.White
+                : new SolidColorBrush(Color.FromArgb(230, color.R, color.G, color.B)),
+            TextTrimming = TextTrimming.CharacterEllipsis
+        };
+        pill.Child = text;
+        pill.MouseLeftButtonUp += EventPill_MouseUp;
+        return pill;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Detail-Panel befüllen
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void ShowDetailPanel(SchulnetzEvent ev)
+    {
+        bool isPruefung = ev.Type == SchulnetzEventType.Pruefung;
+        var  color      = isPruefung ? _pruefungColor : _terminColor;
+        var  label      = isPruefung ? "PRÜFUNG" : "TERMIN";
+
+        TxtDetailBadge.Text     = label;
+        TxtDetailBadge.Foreground = new SolidColorBrush(color);
+        BtnDeleteFromApp.Tag    = ev;
+
+        DetailContent.Children.Clear();
+
+        // Titel
+        DetailContent.Children.Add(new WpfTextBlock
+        {
+            Text        = ev.Summary,
+            FontSize    = 18,
+            FontWeight  = FontWeights.Bold,
+            TextWrapping = TextWrapping.Wrap,
+            Margin      = new Thickness(0, 0, 0, 18)
+        });
+
+        // Farbstreifen unter dem Titel
+        DetailContent.Children.Add(new WpfBorder
+        {
+            Height              = 3,
+            CornerRadius        = new CornerRadius(2),
+            Background          = new SolidColorBrush(color),
+            Margin              = new Thickness(0, 0, 0, 18),
+            HorizontalAlignment = WpfHA.Left,
+            Width               = 40
+        });
+
+        // Datum
+        var dateStr = ev.Start.LocalDateTime.ToString("dddd, d. MMMM yyyy", _deCH);
+        DetailContent.Children.Add(MakeDetailRow("📅", dateStr));
+
+        // Zeit
+        var timeStr = ev.IsAllDay
+            ? "Ganztägig"
+            : $"{ev.Start.LocalDateTime:HH:mm} – {ev.End.LocalDateTime:HH:mm} Uhr";
+        DetailContent.Children.Add(MakeDetailRow("🕐", timeStr));
+
+        // Ort
+        if (!string.IsNullOrWhiteSpace(ev.Location))
+            DetailContent.Children.Add(MakeDetailRow("📍", ev.Location!));
+
+        // Typ-Erklärung
+        var hint = isPruefung
+            ? "Dieser Eintrag wurde als Prüfung klassifiziert."
+            : "Dieser Eintrag wurde als Schultermin klassifiziert.";
+        DetailContent.Children.Add(new WpfTextBlock
+        {
+            Text        = hint,
+            FontSize    = 11,
+            Opacity     = 0.45,
+            TextWrapping = TextWrapping.Wrap,
+            Margin      = new Thickness(0, 14, 0, 0)
+        });
+
+        // Panel einblenden
+        DetailPanel.Visibility   = Visibility.Visible;
+        DetailColumnDef.Width    = new GridLength(330);
+    }
+
+    private void HideDetailPanel()
+    {
+        _selectedEvent         = null;
+        DetailPanel.Visibility = Visibility.Collapsed;
+        DetailColumnDef.Width  = new GridLength(0);
+    }
+
+    private static UIElement MakeDetailRow(string icon, string text)
+    {
+        var row = new StackPanel
+        {
+            Orientation = WpfOrientation.Horizontal,
+            Margin      = new Thickness(0, 0, 0, 10)
+        };
+        row.Children.Add(new WpfTextBlock
+        {
+            Text              = icon,
+            FontSize          = 14,
+            Margin            = new Thickness(0, 0, 10, 0),
+            VerticalAlignment = VerticalAlignment.Top
+        });
+        row.Children.Add(new WpfTextBlock
+        {
+            Text              = text,
+            FontSize          = 13,
+            TextWrapping      = TextWrapping.Wrap,
+            Opacity           = 0.90,
+            VerticalAlignment = VerticalAlignment.Top
+        });
+        return row;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Event-Handler
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void EventPill_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is WpfBorder pill && pill.Tag is SchulnetzEvent ev)
+        {
+            _selectedEvent = ev;
+            _selectedDate  = ev.Start.Date;
+            ShowDetailPanel(ev);
+            BuildCalendar(FilteredEvents()); // Selektion aktualisieren
+            e.Handled = true;               // Nicht an Zelle weitergeben
         }
+    }
+
+    private void DayCell_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not WpfBorder border || border.Tag is not DateTime date) return;
+
+        // Anderen Monat angewählt → dorthin navigieren
+        if (date.Year != _year || date.Month != _month)
+        {
+            _year = date.Year; _month = date.Month;
+        }
+
+        // Gleichen Tag nochmal klicken → abwählen
+        if (_selectedDate == date && _selectedEvent == null)
+        {
+            _selectedDate = null;
+        }
+        else
+        {
+            _selectedDate  = date;
+            _selectedEvent = null;
+            HideDetailPanel();
+        }
+
+        BuildCalendar(FilteredEvents());
+    }
+
+    private void BtnCloseDetail_Click(object sender, RoutedEventArgs e)
+    {
+        _selectedEvent = null;
+        HideDetailPanel();
+        BuildCalendar(FilteredEvents());
+    }
+
+    private void BtnDeleteFromApp_Click(object sender, RoutedEventArgs e)
+    {
+        if (BtnDeleteFromApp.Tag is not SchulnetzEvent ev) return;
+
+        var result = MessageBox.Show(
+            $"«{ev.Summary}» aus dem In-App-Kalender ausblenden?\n\n" +
+            "Der Eintrag bleibt im Schulnetz-Feed und kehrt beim nächsten " +
+            "«Feed laden» nicht mehr zurück, solange er ausgeblendet ist.",
+            "Eintrag ausblenden",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        AppState.SuppressEvent(ev.Key); // Speichert + benachrichtigt → Refresh läuft via OnStateChanged
+        HideDetailPanel();
     }
 
     private void BtnPrevMonth_Click(object sender, RoutedEventArgs e)
     {
         var d = new DateTime(_year, _month, 1).AddMonths(-1);
-        _year = d.Year; _month = d.Month;
-        _selectedDate = null;
-        Refresh();
+        _year  = d.Year; _month = d.Month;
+        _selectedDate  = null;
+        _selectedEvent = null;
+        HideDetailPanel();
+        BuildCalendar(FilteredEvents());
     }
 
     private void BtnNextMonth_Click(object sender, RoutedEventArgs e)
     {
         var d = new DateTime(_year, _month, 1).AddMonths(1);
-        _year = d.Year; _month = d.Month;
-        _selectedDate = null;
-        Refresh();
+        _year  = d.Year; _month = d.Month;
+        _selectedDate  = null;
+        _selectedEvent = null;
+        HideDetailPanel();
+        BuildCalendar(FilteredEvents());
+    }
+
+    private void BtnToday_Click(object sender, RoutedEventArgs e)
+    {
+        var today = DateTime.Today;
+        _year  = today.Year; _month = today.Month;
+        _selectedDate  = today;
+        _selectedEvent = null;
+        HideDetailPanel();
+        BuildCalendar(FilteredEvents());
     }
 
     private void BtnFilter_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not WpfButton btn) return;
-        _filter       = btn.Tag as string ?? "All";
-        _selectedDate = null;
+        _filter        = btn.Tag as string ?? "All";
+        _selectedDate  = null;
+        _selectedEvent = null;
+        HideDetailPanel();
 
         BtnFilterAll.Style      = (Style)FindResource(_filter == "All"      ? "PrimaryButton" : "SecondaryButton");
         BtnFilterPruefung.Style = (Style)FindResource(_filter == "Pruefung" ? "PrimaryButton" : "SecondaryButton");
         BtnFilterTermin.Style   = (Style)FindResource(_filter == "Termin"   ? "PrimaryButton" : "SecondaryButton");
 
-        Refresh();
+        BuildCalendar(FilteredEvents());
     }
 }
