@@ -44,6 +44,9 @@ public sealed class SyncConfig
     /// <summary>Version of the legal documents the user accepted. 0 = never accepted.</summary>
     public int AcceptedLegalVersion { get; set; }
 
+    /// <summary>Theme preference: "Light" | "Dark" | null = System.</summary>
+    public string? ThemePreference { get; set; }
+
     /// <summary>Converts config to a <see cref="SyncOptions"/> for the diff engine.</summary>
     public SyncOptions ToSyncOptions() => new()
     {

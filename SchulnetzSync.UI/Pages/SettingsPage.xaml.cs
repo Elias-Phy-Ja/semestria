@@ -3,6 +3,8 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ModernWpf;
+using WpfRadioButton = System.Windows.Controls.RadioButton;
 using SchulnetzSync.Core.Calendar;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Model;
@@ -12,6 +14,7 @@ namespace SchulnetzSync.UI.Pages;
 public partial class SettingsPage : Page
 {
     private readonly Dictionary<string, string> _calendarMap = new();
+    private bool _loadingUi; // Verhindert Theme_Changed während Initialisierung
 
     public SettingsPage()
     {
@@ -29,18 +32,31 @@ public partial class SettingsPage : Page
 
     private void LoadUi()
     {
-        var config = AppState.Config;
-        // Feed-URL: NIEMALS Token anzeigen — nur Pfad
-        var raw = ConfigManager.GetFeedUrl(config);
-        TxtFeedUrl.Text = raw ?? "";
+        _loadingUi = true;
+        try
+        {
+            var config = AppState.Config;
+            // Feed-URL: NIEMALS Token anzeigen — nur Pfad
+            var raw = ConfigManager.GetFeedUrl(config);
+            TxtFeedUrl.Text = raw ?? "";
 
-        TxtClientId.Text = config.ClientId ?? AppConstants.ClientId;
-        if (TxtClientId.Text == "YOUR-CLIENT-ID-HERE") TxtClientId.Text = "";
+            TxtClientId.Text = config.ClientId ?? AppConstants.ClientId;
+            if (TxtClientId.Text == "YOUR-CLIENT-ID-HERE") TxtClientId.Text = "";
 
-        ChkPruefungen.IsChecked = config.EnabledTypes.Contains(SchulnetzEventType.Pruefung);
-        ChkTermine.IsChecked    = config.EnabledTypes.Contains(SchulnetzEventType.Termin);
-        ChkCancel.IsChecked     = config.CancelInsteadOfDelete;
-        ChkEnrich.IsChecked     = config.EnrichExamLocationFromLesson;
+            ChkPruefungen.IsChecked = config.EnabledTypes.Contains(SchulnetzEventType.Pruefung);
+            ChkTermine.IsChecked    = config.EnabledTypes.Contains(SchulnetzEventType.Termin);
+            ChkCancel.IsChecked     = config.CancelInsteadOfDelete;
+            ChkEnrich.IsChecked     = config.EnrichExamLocationFromLesson;
+
+            // Theme-RadioButton setzen
+            switch (config.ThemePreference)
+            {
+                case "Light": RbLight.IsChecked  = true; break;
+                case "Dark":  RbDark.IsChecked   = true; break;
+                default:      RbSystem.IsChecked = true; break;
+            }
+        }
+        finally { _loadingUi = false; }
     }
 
     // -----------------------------------------------------------------------
@@ -72,6 +88,27 @@ public partial class SettingsPage : Page
         {
             SetAccountState(false, "Status unbekannt", "Anmeldestatus konnte nicht geprüft werden.");
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Theme-Umschalter
+    // -----------------------------------------------------------------------
+
+    private void Theme_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loadingUi) return; // Keine Aktion während Initialisierung
+        if (sender is not WpfRadioButton rb) return;
+
+        var pref = rb.Tag as string;
+        ThemeManager.Current.ApplicationTheme = pref switch
+        {
+            "Light" => (ApplicationTheme?)ApplicationTheme.Light,
+            "Dark"  => (ApplicationTheme?)ApplicationTheme.Dark,
+            _       => null
+        };
+
+        AppState.Config.ThemePreference = (pref == "System") ? null : pref;
+        ConfigManager.Save(AppState.Config);
     }
 
     private void BtnOpenAzure_Click(object sender, RoutedEventArgs e)

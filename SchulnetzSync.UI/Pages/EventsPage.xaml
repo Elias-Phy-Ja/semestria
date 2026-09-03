@@ -7,7 +7,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- Toolbar -->
-            <RowDefinition Height="*"/>     <!-- Kalender + Detail -->
+            <RowDefinition Height="*"/>     <!-- Kalender + Panel -->
         </Grid.RowDefinitions>
 
         <!-- ══════════════════════════════════════════════════════════════
@@ -17,7 +17,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>  <!-- Titel -->
                 <ColumnDefinition Width="*"/>     <!-- Monatsnav (zentriert) -->
-                <ColumnDefinition Width="Auto"/>  <!-- Ansicht + Filter -->
+                <ColumnDefinition Width="Auto"/>  <!-- Ansicht + Filter + Aktionen -->
             </Grid.ColumnDefinitions>
 
             <!-- Titel -->
@@ -46,7 +46,7 @@
                         Click="BtnToday_Click"/>
             </StackPanel>
 
-            <!-- Ansichts-Toggle + Filter rechts -->
+            <!-- Rechts: Ansichts-Toggle + Filter + Aktionen -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                 <!-- Monat / Woche Toggle -->
                 <Border CornerRadius="7"
@@ -76,8 +76,23 @@
                         Click="BtnFilter_Click" Tag="Pruefung"/>
                 <Button x:Name="BtnFilterTermin" Content="Termine"
                         Style="{StaticResource SecondaryButton}"
-                        Padding="11,5" FontSize="12"
+                        Padding="11,5" FontSize="12" Margin="0,0,5,0"
                         Click="BtnFilter_Click" Tag="Termin"/>
+                <Button x:Name="BtnFilterLektion" Content="Stunden"
+                        Style="{StaticResource SecondaryButton}"
+                        Padding="11,5" FontSize="12" Margin="0,0,12,0"
+                        Click="BtnFilter_Click" Tag="Lektion"/>
+                <!-- Aktionsbuttons -->
+                <Button x:Name="BtnAddEvent" Content="+ Eintrag"
+                        Style="{StaticResource SecondaryButton}"
+                        Padding="11,5" FontSize="12" Margin="0,0,6,0"
+                        ToolTip="Manuellen Eintrag hinzufügen"
+                        Click="BtnAddEvent_Click"/>
+                <Button x:Name="BtnCalSettings" Content="⚙"
+                        Style="{StaticResource SecondaryButton}"
+                        Padding="10,5" FontSize="13"
+                        ToolTip="Kalender-Einstellungen"
+                        Click="BtnCalSettings_Click"/>
             </StackPanel>
         </Grid>
 
@@ -102,7 +117,7 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════════════════════
-             HAUPT-LAYOUT: Kalender + Detail-Panel
+             HAUPT-LAYOUT: Kalender + rechtes Panel
              ══════════════════════════════════════════════════════════════ -->
         <Grid x:Name="MainLayout" Grid.Row="1" Margin="20,8,20,20" Visibility="Collapsed">
             <Grid.ColumnDefinitions>
@@ -113,8 +128,8 @@
             <!-- ── Kalender-Bereich ── -->
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="26"/>  <!-- Wochentag-Köpfe (nur Monat) -->
-                    <RowDefinition Height="*"/>   <!-- Zellen / Wochenansicht -->
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <!-- Wochentag-Köpfe (Monatsansicht) -->
@@ -151,7 +166,7 @@
                     </Border>
                 </Grid>
 
-                <!-- Monatsansicht: 6×7 Zellen (per Code befüllt) -->
+                <!-- Monatsansicht: 6×7 Zellen -->
                 <Grid Grid.Row="1" x:Name="CalendarGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -172,9 +187,8 @@
                     </Grid.ColumnDefinitions>
                 </Grid>
 
-                <!-- Wochenansicht: 7 Spalten (per Code befüllt, überspannt beide Zeilen) -->
-                <Grid Grid.Row="0" Grid.RowSpan="2" x:Name="WeekGrid"
-                      Visibility="Collapsed">
+                <!-- Wochenansicht -->
+                <Grid Grid.Row="0" Grid.RowSpan="2" x:Name="WeekGrid" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
@@ -187,7 +201,7 @@
                 </Grid>
             </Grid>
 
-            <!-- ── Detail-Panel (rechts, versteckt) ── -->
+            <!-- ── Rechtes Panel (Detail / Einstellungen / Neuer Eintrag) ── -->
             <Border x:Name="DetailPanel"
                     Grid.Column="1"
                     Margin="10,0,0,0"
@@ -198,43 +212,127 @@
                     BorderThickness="1">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>  <!-- Header -->
+                        <RowDefinition Height="*"/>     <!-- Scrollbarer Inhalt -->
+                        <RowDefinition Height="Auto"/>  <!-- Footer mit Aktionen -->
                     </Grid.RowDefinitions>
 
-                    <!-- Header -->
+                    <!-- Panel-Header -->
                     <Grid Grid.Row="0" Margin="16,12,16,12">
-                        <TextBlock x:Name="TxtDetailBadge"
+                        <TextBlock x:Name="TxtPanelTitle"
                                    FontSize="11" FontWeight="Bold"
                                    Opacity="0.60" VerticalAlignment="Center"/>
-                        <Button x:Name="BtnCloseDetail" Content="✕"
+                        <Button x:Name="BtnClosePanel" Content="✕"
                                 HorizontalAlignment="Right"
                                 Style="{StaticResource SecondaryButton}"
                                 Padding="8,3" FontSize="11"
-                                Click="BtnCloseDetail_Click"/>
+                                Click="BtnClosePanel_Click"/>
                     </Grid>
                     <Separator Grid.Row="0" VerticalAlignment="Bottom"
                                Margin="0" Style="{StaticResource Divider}"/>
 
+                    <!-- Scrollbarer Inhalt -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="DetailContent" Margin="16,14,16,0"/>
+                        <StackPanel Margin="16,14,16,8">
+                            <!-- Detail-Inhalt (per Code befüllt) -->
+                            <StackPanel x:Name="DetailContent"/>
+
+                            <!-- Einstellungs-Inhalt (per Code befüllt) -->
+                            <StackPanel x:Name="SettingsContent" Visibility="Collapsed"/>
+
+                            <!-- Neuer-Eintrag-Formular (statisch in XAML) -->
+                            <StackPanel x:Name="AddEventSection" Visibility="Collapsed">
+
+                                <TextBlock Text="Titel *"
+                                           FontWeight="SemiBold" FontSize="13"
+                                           Margin="0,0,0,5"/>
+                                <TextBox x:Name="TxtNewTitle"
+                                         Height="34"
+                                         FontSize="13"
+                                         Margin="0,0,0,14"/>
+
+                                <TextBlock Text="Datum *"
+                                           FontWeight="SemiBold" FontSize="13"
+                                           Margin="0,0,0,5"/>
+                                <DatePicker x:Name="DpNewDate"
+                                            Height="34"
+                                            FontSize="13"
+                                            Margin="0,0,0,14"/>
+
+                                <CheckBox x:Name="ChkNewAllDay"
+                                          Content="Ganztägig"
+                                          FontSize="13"
+                                          Margin="0,0,0,12"
+                                          Checked="ChkNewAllDay_Changed"
+                                          Unchecked="ChkNewAllDay_Changed"/>
+
+                                <StackPanel x:Name="TimePickers" Margin="0,0,0,14">
+                                    <StackPanel Orientation="Horizontal">
+                                        <StackPanel Margin="0,0,16,0">
+                                            <TextBlock Text="Von"
+                                                       FontWeight="SemiBold" FontSize="13"
+                                                       Margin="0,0,0,5"/>
+                                            <TextBox x:Name="TxtStartTime"
+                                                     Width="75" Height="34" FontSize="13"
+                                                     Text="08:00"/>
+                                        </StackPanel>
+                                        <StackPanel>
+                                            <TextBlock Text="Bis"
+                                                       FontWeight="SemiBold" FontSize="13"
+                                                       Margin="0,0,0,5"/>
+                                            <TextBox x:Name="TxtEndTime"
+                                                     Width="75" Height="34" FontSize="13"
+                                                     Text="09:00"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <TextBlock Text="Typ"
+                                           FontWeight="SemiBold" FontSize="13"
+                                           Margin="0,0,0,5"/>
+                                <ComboBox x:Name="CmbNewType"
+                                          Height="34" FontSize="13"
+                                          Margin="0,0,0,14">
+                                    <ComboBoxItem Content="Prüfung" Tag="Pruefung" IsSelected="True"/>
+                                    <ComboBoxItem Content="Termin"  Tag="Termin"/>
+                                </ComboBox>
+
+                                <TextBlock Text="Ort (optional)"
+                                           FontWeight="SemiBold" FontSize="13"
+                                           Margin="0,0,0,5"/>
+                                <TextBox x:Name="TxtNewLocation"
+                                         Height="34" FontSize="13"/>
+
+                            </StackPanel>
+                        </StackPanel>
                     </ScrollViewer>
 
+                    <!-- Panel-Footer -->
                     <Border Grid.Row="2"
                             BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
                             BorderThickness="0,1,0,0" Padding="16,12">
-                        <StackPanel>
-                            <Button x:Name="BtnDeleteFromApp"
-                                    Content="🚫  Aus App ausblenden"
-                                    Style="{StaticResource SecondaryButton}"
+                        <Grid>
+                            <!-- Detail-Footer: Ausblenden -->
+                            <StackPanel x:Name="DetailFooter">
+                                <Button x:Name="BtnDeleteFromApp"
+                                        Content="🚫  Aus App ausblenden"
+                                        Style="{StaticResource SecondaryButton}"
+                                        HorizontalAlignment="Stretch"
+                                        Margin="0,0,0,6"
+                                        Click="BtnDeleteFromApp_Click"/>
+                                <TextBlock FontSize="10" Opacity="0.45"
+                                           TextAlignment="Center" TextWrapping="Wrap"
+                                           Text="Bleibt im Schulnetz-Feed. Hier dauerhaft ausgeblendet."/>
+                            </StackPanel>
+
+                            <!-- AddEvent-Footer: Speichern -->
+                            <Button x:Name="BtnSaveManualEvent"
+                                    Visibility="Collapsed"
+                                    Content="✓  Eintrag hinzufügen"
+                                    Style="{StaticResource PrimaryButton}"
                                     HorizontalAlignment="Stretch"
-                                    Margin="0,0,0,8"
-                                    Click="BtnDeleteFromApp_Click"/>
-                            <TextBlock FontSize="10" Opacity="0.45"
-                                       TextAlignment="Center" TextWrapping="Wrap"
-                                       Text="Bleibt im Schulnetz-Feed. Hier dauerhaft ausgeblendet."/>
-                        </StackPanel>
+                                    Click="BtnSaveManualEvent_Click"/>
+                        </Grid>
                     </Border>
                 </Grid>
             </Border>

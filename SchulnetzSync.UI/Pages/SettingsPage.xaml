@@ -11,6 +11,32 @@
                        Style="{StaticResource TitleText}"
                        Margin="0,0,0,24"/>
 
+            <!-- ═══ DARSTELLUNG ═══ -->
+            <TextBlock Text="DARSTELLUNG" Style="{StaticResource SectionLabel}"/>
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Erscheinungsbild"
+                               Style="{StaticResource HeadlineText}"
+                               Margin="0,0,0,14"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <RadioButton x:Name="RbSystem" GroupName="Theme"
+                                     Content="System"
+                                     IsChecked="True"
+                                     Margin="0,0,24,0"
+                                     Checked="Theme_Changed" Tag="System"/>
+                        <RadioButton x:Name="RbLight" GroupName="Theme"
+                                     Content="Hell"
+                                     Margin="0,0,24,0"
+                                     Checked="Theme_Changed" Tag="Light"/>
+                        <RadioButton x:Name="RbDark" GroupName="Theme"
+                                     Content="Dunkel"
+                                     Checked="Theme_Changed" Tag="Dark"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource NoteText}"
+                               Text="Wechselt sofort — kein Neustart nötig."/>
+                </StackPanel>
+            </Border>
+
             <!-- ═══ FEED-URL ═══ -->
             <TextBlock Text="SCHULNETZ" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">

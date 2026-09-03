@@ -18,7 +18,13 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        ThemeManager.Current.ApplicationTheme = null;
+        // Theme aus Config laden (null = Systemstandard)
+        ThemeManager.Current.ApplicationTheme = AppState.Config.ThemePreference switch
+        {
+            "Light" => (ApplicationTheme?)ApplicationTheme.Light,
+            "Dark"  => (ApplicationTheme?)ApplicationTheme.Dark,
+            _       => null
+        };
 
         _tray = new TrayService();
 
@@ -58,8 +64,8 @@ public partial class App : Application
     {
         var main = new MainWindow();
         MainWindow = main;
-        // Ab jetzt schliesst die App wenn das Hauptfenster geschlossen wird
         ShutdownMode = ShutdownMode.OnMainWindowClose;
+        main.WindowState = WindowState.Maximized; // Vollbild beim Start
         main.Show();
     }
 
