@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Model;
 
@@ -38,11 +39,57 @@ public static class AppState
     /// <summary>Ob gerade ein Sync läuft.</summary>
     public static bool IsSyncing { get; set; }
 
+    // ── Persistierter Feed-Cache ─────────────────────────────────────────────
+    private static readonly string _cachePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "SchulnetzSync", "cached-events.json");
+
+    // Enums als Strings serialisieren damit SchulnetzEventType korrekt rund-reist
+    private static readonly JsonSerializerOptions _eventJsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters                  = { new JsonStringEnumConverter() }
+    };
+
+    private static IReadOnlyList<SchulnetzEvent> _cachedFeedEvents = LoadCachedEvents();
+
     /// <summary>
     /// Zuletzt geparste Feed-Events — wird nach jedem Sync-Lauf (inkl. Dry-Run) befüllt.
+    /// Wird auf Disk persistiert und beim nächsten Start automatisch geladen.
     /// </summary>
-    public static IReadOnlyList<SchulnetzEvent> CachedFeedEvents { get; set; }
-        = Array.Empty<SchulnetzEvent>();
+    public static IReadOnlyList<SchulnetzEvent> CachedFeedEvents
+    {
+        get => _cachedFeedEvents;
+        set
+        {
+            _cachedFeedEvents = value;
+            SaveCachedEvents();
+        }
+    }
+
+    private static IReadOnlyList<SchulnetzEvent> LoadCachedEvents()
+    {
+        try
+        {
+            if (File.Exists(_cachePath))
+                return JsonSerializer.Deserialize<List<SchulnetzEvent>>(
+                    File.ReadAllText(_cachePath), _eventJsonOpts)
+                    ?? [];
+        }
+        catch { /* bei korrupten Daten leer starten */ }
+        return [];
+    }
+
+    private static void SaveCachedEvents()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_cachePath)!);
+            File.WriteAllText(_cachePath,
+                JsonSerializer.Serialize(_cachedFeedEvents, _eventJsonOpts));
+        }
+        catch { }
+    }
 
     // ── Ausgeblendete Events ─────────────────────────────────────────────────
     private static readonly string _suppressedPath = Path.Combine(

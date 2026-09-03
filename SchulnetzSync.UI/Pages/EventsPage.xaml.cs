@@ -796,50 +796,43 @@ public partial class EventsPage : WpfPage
 
     private UIElement MakeCategoryColorRow(string key, string label)
     {
-        var color = GetColorForKey(key);
-        var hex   = AppState.GetEventColor(key);
+        var hex = AppState.GetEventColor(key);
 
-        var row = new Grid { Margin = new Thickness(0, 0, 0, 8) };
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        // Vertikales Layout: Label oben, Palette darunter — kein Abschneiden
+        var container = new StackPanel { Margin = new Thickness(0, 0, 0, 14) };
 
-        row.Children.Add(new WpfTextBlock
+        container.Children.Add(new WpfTextBlock
         {
-            Text              = label,
-            FontSize          = 12,
-            Opacity           = 0.85,
-            VerticalAlignment = VerticalAlignment.Center
+            Text       = label,
+            FontSize   = 12,
+            FontWeight = FontWeights.SemiBold,
+            Opacity    = 0.85,
+            Margin     = new Thickness(0, 0, 0, 6)
         });
 
-        // Farbpalette für diese Kategorie
-        var palette = new WpfWrapPanel { Orientation = WpfOrientation.Horizontal, HorizontalAlignment = WpfHA.Right };
+        var palette = new WpfWrapPanel { Orientation = WpfOrientation.Horizontal };
         foreach (var (pHex, pName) in _palette)
         {
+            bool isActive = string.Equals(pHex, hex, StringComparison.OrdinalIgnoreCase);
             var dot = new WpfBorder
             {
-                Width        = 18,
-                Height       = 18,
-                CornerRadius = new CornerRadius(9),
-                Margin       = new Thickness(2, 0, 0, 0),
+                Width        = isActive ? 20 : 22,
+                Height       = isActive ? 20 : 22,
+                CornerRadius = new CornerRadius(11),
+                Margin       = new Thickness(0, 0, 5, 5),
                 Cursor       = WpfCursors.Hand,
                 Background   = new SolidColorBrush(
                                    (Color)System.Windows.Media.ColorConverter.ConvertFromString(pHex)),
                 ToolTip      = pName,
-                Tag          = (key, pHex)
+                Tag          = (key, pHex),
+                BorderThickness = isActive ? new Thickness(2) : new Thickness(0),
+                BorderBrush     = isActive ? WpfBrushes.White : null
             };
-            if (string.Equals(pHex, hex, StringComparison.OrdinalIgnoreCase))
-            {
-                dot.BorderThickness = new Thickness(2);
-                dot.BorderBrush     = WpfBrushes.White;
-                dot.Width           = 16;
-                dot.Height          = 16;
-            }
             dot.MouseLeftButtonUp += ColorDot_Click;
             palette.Children.Add(dot);
         }
-        Grid.SetColumn(palette, 1);
-        row.Children.Add(palette);
-        return row;
+        container.Children.Add(palette);
+        return container;
     }
 
     private void AddSettingsButton(string label, string hint, bool isDanger, Action onClick)

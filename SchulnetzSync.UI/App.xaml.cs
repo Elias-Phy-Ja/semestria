@@ -67,6 +67,23 @@ public partial class App : Application
         ShutdownMode = ShutdownMode.OnMainWindowClose;
         main.WindowState = WindowState.Maximized; // Vollbild beim Start
         main.Show();
+
+        // ModernWPF-Workaround: Theme nach erstem Render einmal kurz toggling,
+        // damit alle DynamicResources korrekt aktualisiert werden.
+        main.ContentRendered += (_, _) => ForceThemeRefresh();
+    }
+
+    /// <summary>
+    /// Erzwingt eine Theme-Aktualisierung aller DynamicResources.
+    /// Nötig weil ModernWPF beim Startup manchmal den Zustand nicht vollständig überträgt.
+    /// </summary>
+    private static void ForceThemeRefresh()
+    {
+        var current = ThemeManager.Current.ApplicationTheme;
+        // Kurz auf das Gegenteil wechseln, dann zurück — erzwingt Resource-Reload
+        ThemeManager.Current.ApplicationTheme =
+            current == ApplicationTheme.Light ? ApplicationTheme.Dark : ApplicationTheme.Light;
+        ThemeManager.Current.ApplicationTheme = current;
     }
 
     protected override void OnExit(ExitEventArgs e)

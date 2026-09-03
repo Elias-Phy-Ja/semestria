@@ -14,11 +14,12 @@ namespace SchulnetzSync.UI.Pages;
 public partial class SettingsPage : Page
 {
     private readonly Dictionary<string, string> _calendarMap = new();
-    private bool _loadingUi; // Verhindert Theme_Changed während Initialisierung
+    // Startet als true — verhindert Theme_Changed während XAML-Init (IsChecked="True" feuert Checked)
+    private bool _loadingUi = true;
 
     public SettingsPage()
     {
-        InitializeComponent();
+        InitializeComponent(); // Hier feuert RbSystem.Checked — _loadingUi=true blockt es
         Loaded += async (_, _) =>
         {
             LoadUi();
