@@ -1,4 +1,5 @@
 using SchulnetzSync.Core.Configuration;
+using SchulnetzSync.Core.Model;
 
 namespace SchulnetzSync.UI;
 
@@ -24,6 +25,13 @@ public static class AppState
 
     /// <summary>Ob gerade ein Sync läuft.</summary>
     public static bool IsSyncing { get; set; }
+
+    /// <summary>
+    /// Zuletzt geparste Feed-Events — wird nach jedem Sync-Lauf (inkl. Dry-Run) befüllt.
+    /// Leer wenn noch kein Sync gemacht wurde oder der letzte Sync fehlschlug.
+    /// </summary>
+    public static IReadOnlyList<SchulnetzEvent> CachedFeedEvents { get; set; }
+        = Array.Empty<SchulnetzEvent>();
 
     /// <summary>Lädt Config neu und benachrichtigt alle Abonnenten.</summary>
     public static void Reload()

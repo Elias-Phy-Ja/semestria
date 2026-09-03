@@ -62,6 +62,12 @@ public sealed class SyncService
         var config   = AppState.Config;
         var clientId = config.ClientId ?? AppConstants.ClientId;
 
+        // Freundliche Fehlermeldung bevor wir MSAL aufrufen — verhindert den
+        // «YOUR-CLIENT-ID-HERE»-Fehler von Microsoft im Browser
+        if (!IsValidClientId(clientId))
+            throw new InvalidOperationException(
+                "Kein Microsoft-Konto konfiguriert. Gehe zu Einstellungen um dich anzumelden.");
+
         var plainUrl = ConfigManager.GetFeedUrl(config)
             ?? throw new InvalidOperationException(
                 "Keine Feed-URL konfiguriert. Bitte Einstellungen öffnen.");
@@ -72,6 +78,11 @@ public sealed class SyncService
         var icsContent   = await source.FetchAsync(ct);
         var feedHealth   = FeedParser.CheckPlausibility(icsContent);
         var feedEvents   = FeedParser.Parse(icsContent);
+
+        // Feed-Events cachen — EventsPage braucht das immer (auch bei Dry-Run)
+        AppState.CachedFeedEvents = feedEvents;
+        AppState.Notify();
+
         Report($"✅ {feedEvents.Count} Einträge im Feed.");
 
         IReadOnlyList<TrackedEvent> tracked = [];
@@ -137,14 +148,19 @@ public sealed class SyncService
     private static string SanitizeException(Exception ex)
     {
         var msg = ex.InnerException?.Message ?? ex.Message;
-        // URLs incl. Query-String entfernen
         msg = System.Text.RegularExpressions.Regex.Replace(
             msg, @"https?://\S+", "[URL ausgeblendet]");
         msg = System.Text.RegularExpressions.Regex.Replace(
             msg, @"webcal://\S+", "[URL ausgeblendet]");
-        // Nur erste Zeile
         var first = msg.Split('\n')[0].Trim();
         return first.Length > 200 ? first[..200] + "…" : first;
+    }
+
+    private static bool IsValidClientId(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return false;
+        if (id.Contains("YOUR", StringComparison.OrdinalIgnoreCase)) return false;
+        return id.Length >= 32 && id.Contains('-');
     }
 }
 

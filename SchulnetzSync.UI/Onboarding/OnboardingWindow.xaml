@@ -213,14 +213,18 @@
                                HorizontalAlignment="Center" Margin="0,0,0,8"/>
                     <TextBlock TextAlignment="Center" TextWrapping="Wrap"
                                FontSize="13" Opacity="0.65" Margin="0,0,0,20"
-                               Text="SchulnetzSync braucht Zugriff auf deinen Outlook-Kalender."/>
+                               Text="Dieser Schritt ist optional. Du kannst ihn überspringen und den In-App-Kalender nutzen — oder später in den Einstellungen einrichten."/>
 
                     <Border Style="{StaticResource InfoBox}" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock Text="Was SchulnetzSync darf:"
+                            <TextBlock Text="Wozu ist die Outlook-Anmeldung gut?"
                                        FontWeight="SemiBold" Margin="0,0,0,8"/>
-                            <TextBlock FontSize="13" Margin="0,0,0,4">✅  Kalendereinträge lesen, erstellen, bearbeiten</TextBlock>
-                            <TextBlock FontSize="13">❌  Keine E-Mails, Kontakte oder anderen Daten</TextBlock>
+                            <TextBlock FontSize="13" Margin="0,0,0,4">✅  Prüfungen erscheinen direkt in Outlook und Teams</TextBlock>
+                            <TextBlock FontSize="13" Margin="0,0,0,4">✅  Benachrichtigungen auf allen deinen Geräten</TextBlock>
+                            <TextBlock FontSize="13" Margin="0,0,0,4">❌  Keine E-Mails, Kontakte oder anderen Daten</TextBlock>
+                            <TextBlock FontSize="13" Opacity="0.7" Margin="0,8,0,0">
+                                Ohne Anmeldung: In-App-Kalender funktioniert trotzdem vollständig.
+                            </TextBlock>
                         </StackPanel>
                     </Border>
 

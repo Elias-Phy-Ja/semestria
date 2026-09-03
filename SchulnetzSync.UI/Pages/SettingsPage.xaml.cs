@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -71,6 +72,17 @@ public partial class SettingsPage : Page
         {
             SetAccountState(false, "Status unbekannt", "Anmeldestatus konnte nicht geprüft werden.");
         }
+    }
+
+    private void BtnOpenAzure_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(
+                "https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade")
+            { UseShellExecute = true });
+        }
+        catch { /* Browser nicht verfügbar */ }
     }
 
     private async void BtnSignIn_Click(object sender, RoutedEventArgs e)

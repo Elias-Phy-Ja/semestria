@@ -96,9 +96,18 @@ public partial class DashboardPage : Page
             TxtStatDetail.Text  = "Noch kein Lauf";
         }
 
-        TxtStatPruefung.Text = "·";
-        TxtStatTermin.Text   = "·";
-        TxtHeaderSub.Text    = hasFeed ? "Alles im Blick." : "Fast fertig. Feed-URL in den Einstellungen eintragen.";
+        var cached = AppState.CachedFeedEvents;
+        if (cached.Count > 0)
+        {
+            TxtStatPruefung.Text = cached.Count(e => e.Type == SchulnetzSync.Core.Model.SchulnetzEventType.Pruefung).ToString();
+            TxtStatTermin.Text   = cached.Count(e => e.Type == SchulnetzSync.Core.Model.SchulnetzEventType.Termin).ToString();
+        }
+        else
+        {
+            TxtStatPruefung.Text = "·";
+            TxtStatTermin.Text   = "·";
+        }
+        TxtHeaderSub.Text = hasFeed ? "Alles im Blick." : "Fast fertig. Feed-URL in den Einstellungen eintragen.";
     }
 
     private void AppendLog(string line)

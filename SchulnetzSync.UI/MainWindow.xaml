@@ -12,6 +12,7 @@
                        PaneDisplayMode="Left"
                        IsSettingsVisible="False"
                        IsPaneToggleButtonVisible="True"
+                       IsBackButtonVisible="Collapsed"
                        OpenPaneLength="220"
                        SelectionChanged="NavView_SelectionChanged"
                        Loaded="NavView_Loaded">

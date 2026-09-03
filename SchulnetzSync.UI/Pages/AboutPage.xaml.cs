@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -9,11 +10,10 @@ public partial class AboutPage : Page
     public AboutPage() => InitializeComponent();
 
     private void BtnGitHub_Click(object sender, RoutedEventArgs e)
-        => Process.Start(new ProcessStartInfo(AppConstants.GitHubUrl) { UseShellExecute = true });
+        => OpenUrl(AppConstants.GitHubUrl);
 
     private void BtnBug_Click(object sender, RoutedEventArgs e)
-        => Process.Start(new ProcessStartInfo(
-            AppConstants.GitHubUrl + "/issues/new") { UseShellExecute = true });
+        => OpenUrl(AppConstants.GitHubUrl + "/issues/new");
 
     private void BtnAgb_Click(object sender, RoutedEventArgs e)
         => ShowLegal("Nutzungsbedingungen (AGB)", LegalTexts.Agb);
@@ -26,8 +26,55 @@ public partial class AboutPage : Page
 
     private void ShowLegal(string title, string text)
     {
-        TxtLegalTitle.Text   = title;
-        TxtLegalContent.Text = text;
+        TxtLegalTitle.Text     = title;
+        TxtLegalContent.Text   = text;
         LegalViewer.Visibility = Visibility.Visible;
+    }
+
+    // -----------------------------------------------------------------------
+    // App zurücksetzen
+    // -----------------------------------------------------------------------
+
+    private void BtnReset_Click(object sender, RoutedEventArgs e)
+    {
+        var result = MessageBox.Show(
+            "Alle Einstellungen (Feed-URL, Konto, Einstellungen) werden gelöscht " +
+            "und das Onboarding startet neu.\n\nFortfahren?",
+            "App zurücksetzen",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        try
+        {
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SchulnetzSync");
+
+            if (Directory.Exists(dir))
+                Directory.Delete(dir, recursive: true);
+
+            // App neu starten
+            var exe = Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrEmpty(exe))
+                Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
+
+            Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                "Zurücksetzen fehlgeschlagen:\n" + ex.Message,
+                "Fehler",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private static void OpenUrl(string url)
+    {
+        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+        catch { /* Browser nicht verfügbar */ }
     }
 }

@@ -44,13 +44,21 @@
                                Margin="0,0,0,16"/>
 
                     <!-- Client-ID -->
-                    <TextBlock Text="Azure App Client-ID:"
-                               FontWeight="SemiBold" FontSize="13"
-                               Margin="0,0,0,6"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Text="App-ID (Client-ID):"
+                                   FontWeight="SemiBold" FontSize="13"
+                                   VerticalAlignment="Center"/>
+                        <Button x:Name="BtnOpenAzure"
+                                Content="portal.azure.com öffnen"
+                                FontSize="11" Margin="10,0,0,0"
+                                Padding="8,3" VerticalAlignment="Center"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="BtnOpenAzure_Click"/>
+                    </StackPanel>
                     <TextBox x:Name="TxtClientId" Height="36" FontSize="13"
                              ui:ControlHelper.PlaceholderText="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/>
                     <TextBlock Style="{StaticResource NoteText}"
-                               Text="portal.azure.com → App registrations → Delegated: Calendars.ReadWrite, Platform: Public client, Redirect: http://localhost"
+                               Text="Neu registrieren: portal.azure.com öffnen, «Neue Registrierung», Name «SchulnetzSync», dann unter API-Berechtigungen: Calendars.ReadWrite, unter Authentifizierung: Öffentlicher Client aktivieren."
                                Margin="0,4,0,16"/>
 
                     <!-- Anmelde-Buttons -->
