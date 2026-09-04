@@ -5,7 +5,7 @@ namespace SchulnetzSync.Core.Calendar;
 
 /// <summary>
 /// MSAL-based authentication provider for Microsoft Graph.
-/// Token cache is persisted under %LOCALAPPDATA%\SchulnetzSync via DPAPI.
+/// Token cache is persisted under %LOCALAPPDATA%\Semestria via DPAPI.
 /// </summary>
 public sealed class MsalAuthProvider
 {
@@ -86,7 +86,7 @@ public sealed class MsalAuthProvider
     {
         var cacheDir  = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SchulnetzSync");
+            "Semestria");
 
         Directory.CreateDirectory(cacheDir);
 

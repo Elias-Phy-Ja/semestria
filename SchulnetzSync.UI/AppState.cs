@@ -42,7 +42,7 @@ public static class AppState
     // ── Persistierter Feed-Cache ─────────────────────────────────────────────
     private static readonly string _cachePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "SchulnetzSync", "cached-events.json");
+        "Semestria", "cached-events.json");
 
     // Enums als Strings serialisieren damit SchulnetzEventType korrekt rund-reist
     private static readonly JsonSerializerOptions _eventJsonOpts = new()
@@ -94,7 +94,7 @@ public static class AppState
     // ── Ausgeblendete Events ─────────────────────────────────────────────────
     private static readonly string _suppressedPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "SchulnetzSync", "suppressed.json");
+        "Semestria", "suppressed.json");
 
     private static HashSet<string> _suppressedKeys = LoadSuppressed();
 
@@ -129,7 +129,7 @@ public static class AppState
     // ── Kategoriefarben ──────────────────────────────────────────────────────
     private static readonly string _colorsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "SchulnetzSync", "colors.json");
+        "Semestria", "colors.json");
 
     private static Dictionary<string, string> _categoryColors = LoadColors();
 
@@ -197,7 +197,7 @@ public static class AppState
     // ── Manuelle Events ──────────────────────────────────────────────────────
     private static readonly string _manualPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "SchulnetzSync", "manual-events.json");
+        "Semestria", "manual-events.json");
 
     private static List<ManualEventData> _manualEvents = LoadManual();
     public static IReadOnlyList<ManualEventData> ManualEvents => _manualEvents;

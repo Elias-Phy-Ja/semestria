@@ -12,7 +12,7 @@ public static class ConfigManager
 {
     private static readonly string ConfigDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "SchulnetzSync");
+        "Semestria");
 
     private static readonly string ConfigPath = Path.Combine(ConfigDir, "config.json");
 
