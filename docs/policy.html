@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datenschutz & AGB — Semestria</title>
+<meta name="description" content="Datenschutzerklärung und Nutzungsbedingungen der App Semestria.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap">
+
+<style>
+:root {
+  --bg:        #0D0F18;
+  --surface:   #13162A;
+  --border:    #252A42;
+  --accent:    #5C6EF7;
+  --text:      #E2E5F4;
+  --muted:     #7A81A0;
+  --faint:     #3D4260;
+  --f-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --f-body:    'Inter', system-ui, sans-serif;
+  --f-mono:    'JetBrains Mono', monospace;
+  --radius:    7px;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:      #F1F3FD;
+    --surface: #FFFFFF;
+    --border:  #D4D8F0;
+    --text:    #0D0F18;
+    --muted:   #5B628A;
+    --faint:   #B0B6D8;
+  }
+}
+:root[data-theme="light"] {
+  --bg:      #F1F3FD;
+  --surface: #FFFFFF;
+  --border:  #D4D8F0;
+  --text:    #0D0F18;
+  --muted:   #5B628A;
+  --faint:   #B0B6D8;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: var(--f-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Nav */
+nav {
+  border-bottom: 1px solid var(--border);
+  padding: 16px 0;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(16px);
+  position: sticky; top: 0; z-index: 20;
+}
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+.nav-inner { display: flex; align-items: center; justify-content: space-between; }
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--f-display); font-weight: 700; font-size: 1rem;
+  color: var(--text); text-decoration: none;
+}
+.logo:hover { text-decoration: none; }
+.logo-mark {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--accent); display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: #fff;
+}
+.nav-back {
+  font-size: .8rem; color: var(--muted);
+  display: flex; align-items: center; gap: 5px;
+}
+.nav-back:hover { color: var(--text); text-decoration: none; }
+
+/* Page header */
+.page-header {
+  padding: 56px 0 40px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 48px;
+}
+.page-label {
+  font-family: var(--f-mono); font-size: .68rem;
+  text-transform: uppercase; letter-spacing: .1em;
+  color: var(--accent); margin-bottom: 14px;
+}
+h1 {
+  font-family: var(--f-display);
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 800; letter-spacing: -.02em;
+  line-height: 1.15; margin-bottom: 12px;
+}
+.page-meta {
+  font-family: var(--f-mono); font-size: .72rem; color: var(--faint);
+}
+
+/* Tab switcher */
+.tabs {
+  display: flex; gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+.tab {
+  padding: 9px 18px;
+  font-size: .85rem; font-weight: 500;
+  border: none; background: none; cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: var(--f-body);
+  transition: color .15s, border-color .15s;
+}
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Document content */
+.doc { display: none; }
+.doc.active { display: block; }
+
+/* Section */
+.section { margin-bottom: 36px; }
+.section-num {
+  font-family: var(--f-mono); font-size: .68rem;
+  color: var(--accent); margin-bottom: 6px;
+}
+h2 {
+  font-family: var(--f-display);
+  font-size: 1rem; font-weight: 700;
+  margin-bottom: 12px; letter-spacing: -.01em;
+}
+p { color: var(--muted); font-size: .9rem; margin-bottom: 10px; }
+p:last-child { margin-bottom: 0; }
+
+/* Data table */
+.data-table {
+  width: 100%; border-collapse: collapse;
+  margin: 14px 0; font-size: .84rem;
+}
+.data-table th {
+  text-align: left; padding: 7px 12px;
+  font-size: .7rem; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--faint);
+  border-bottom: 1px solid var(--border);
+}
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted); vertical-align: top;
+}
+.data-table td:first-child { color: var(--text); font-weight: 500; }
+.data-table tr:last-child td { border-bottom: none; }
+
+/* Chip list */
+.chip-list { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0; }
+.chip {
+  font-size: .75rem; font-family: var(--f-mono);
+  padding: 3px 10px; border-radius: 4px;
+  border: 1px solid var(--border); color: var(--muted);
+  background: var(--surface);
+}
+.chip.no { border-color: rgba(220,38,38,.3); color: #DC2626; background: rgba(220,38,38,.06); }
+
+/* Callout */
+.callout {
+  border-left: 3px solid var(--accent);
+  background: rgba(92,110,247,.07);
+  padding: 14px 16px; border-radius: 0 var(--radius) var(--radius) 0;
+  margin: 16px 0; font-size: .88rem; color: var(--muted);
+}
+.callout strong { color: var(--text); }
+
+/* Divider */
+hr { height: 1px; background: var(--border); border: none; margin: 40px 0; }
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 28px 0; margin-top: 64px;
+}
+.foot-inner {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+}
+.foot-brand { font-family: var(--f-display); font-size: .85rem; font-weight: 700; }
+.foot-meta  { font-size: .72rem; color: var(--faint); margin-top: 2px; }
+.foot-links { display: flex; gap: 18px; }
+.foot-links a { font-size: .78rem; color: var(--muted); }
+.foot-links a:hover { color: var(--text); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-inner">
+    <a class="logo" href="https://elias-phy-ja.github.io/semestria/">
+      <div class="logo-mark">S</div>
+      Semestria
+    </a>
+    <a class="nav-back" href="https://elias-phy-ja.github.io/semestria/">← Zurück zur Startseite</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="page-header">
+    <p class="page-label">Rechtliches</p>
+    <h1>Datenschutz &amp; Nutzungsbedingungen</h1>
+    <p class="page-meta">Version 1.0 · Stand: September 2026</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('datenschutz', this)">Datenschutzerklärung</button>
+    <button class="tab" onclick="switchTab('agb', this)">Nutzungsbedingungen</button>
+  </div>
+
+  <!-- ── Datenschutzerklärung ──────────────────────────────────────── -->
+  <div id="datenschutz" class="doc active">
+
+    <div class="section">
+      <p class="section-num">01</p>
+      <h2>Verantwortlicher</h2>
+      <p>EliasWyss («Entwickler»). Semestria ist ein privates Non-Profit-Projekt.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">02</p>
+      <h2>Grundsatz: Keine Cloud, keine Telemetrie</h2>
+      <p>Semestria verarbeitet alle Daten ausschliesslich lokal auf deinem Gerät.</p>
+      <div class="chip-list">
+        <span class="chip no">Keine Telemetrie</span>
+        <span class="chip no">Keine Nutzungsstatistiken</span>
+        <span class="chip no">Kein Tracking</span>
+        <span class="chip no">Keine Werbung</span>
+        <span class="chip no">Kein Backend-Server</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-num">03</p>
+      <h2>Welche Daten werden verarbeitet?</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Datenkategorie</th>
+            <th>Speicherort</th>
+            <th>Übertragung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Feed-URL (Schulnetz-Kalender)</td>
+            <td><code style="font-family:var(--f-mono);font-size:.8em">%LOCALAPPDATA%\Semestria\config.json</code><br>DPAPI-verschlüsselt</td>
+            <td>Nur zum Schulnetz-Server (direkter Abruf)</td>
+          </tr>
+          <tr>
+            <td>Microsoft-Zugangstoken</td>
+            <td><code style="font-family:var(--f-mono);font-size:.8em">%LOCALAPPDATA%\Semestria\token_cache.bin</code><br>DPAPI-verschlüsselt</td>
+            <td>Nur zu Microsoft Graph API</td>
+          </tr>
+          <tr>
+            <td>Konfigurationsdaten</td>
+            <td><code style="font-family:var(--f-mono);font-size:.8em">%LOCALAPPDATA%\Semestria\config.json</code></td>
+            <td>Keine Übertragung</td>
+          </tr>
+          <tr>
+            <td>Kalendereinträge</td>
+            <td>Arbeitsspeicher (nicht persistiert)</td>
+            <td>Microsoft Graph API → dein Outlook-Kalender</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <strong>DPAPI</strong> — Die Feed-URL und das Microsoft-Token werden mit dem Windows Data Protection API verschlüsselt, das an dein Windows-Benutzerkonto gebunden ist. Nur du (auf diesem Gerät) kannst diese Daten entschlüsseln.
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-num">04</p>
+      <h2>Drittanbieter-Dienste</h2>
+      <p>Die App nutzt folgende externe Dienste, auf deren Datenschutzpraktiken wir keinen Einfluss haben:</p>
+      <table class="data-table">
+        <tbody>
+          <tr>
+            <td>Microsoft Graph API</td>
+            <td><a href="https://privacy.microsoft.com" target="_blank" rel="noopener">privacy.microsoft.com</a></td>
+          </tr>
+          <tr>
+            <td>Schulnetz / Centerboard</td>
+            <td>Dein persönlicher iCal-Feed</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <p class="section-num">05</p>
+      <h2>Deine Rechte</h2>
+      <p>Du kannst jederzeit:</p>
+      <div class="chip-list">
+        <span class="chip">Alle App-Daten löschen<br><small>%LOCALAPPDATA%\Semestria\ entfernen</small></span>
+        <span class="chip">Microsoft-Zugriff widerrufen<br><small>account.microsoft.com/privacy</small></span>
+        <span class="chip">App deinstallieren</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-num">06</p>
+      <h2>Datensicherheit</h2>
+      <p>Feed-URL und Microsoft-Token sind mit DPAPI verschlüsselt. Es findet keine Übertragung an Dritte ausser Microsoft (Kalender-Sync) und deinem Schulnetz-Anbieter (Feed-Abruf) statt.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">07</p>
+      <h2>Minderjährige</h2>
+      <p>Die App richtet sich an Schülerinnen und Schüler. Es werden keine besonderen Kategorien personenbezogener Daten verarbeitet.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">08</p>
+      <h2>Kontakt &amp; Änderungen</h2>
+      <p>Bei Fragen oder Anmerkungen: <a href="https://github.com/Elias-Phy-Ja/semestria/issues" target="_blank" rel="noopener">github.com/Elias-Phy-Ja/semestria/issues</a></p>
+      <p>Bei wesentlichen Änderungen dieser Erklärung wird beim nächsten App-Start die aktualisierte Version angezeigt.</p>
+    </div>
+
+  </div>
+
+  <!-- ── Nutzungsbedingungen ───────────────────────────────────────── -->
+  <div id="agb" class="doc">
+
+    <div class="section">
+      <p class="section-num">01</p>
+      <h2>Geltungsbereich</h2>
+      <p>Diese Nutzungsbedingungen gelten für die Verwendung der App «Semestria». Mit der Verwendung erklärst du dich mit diesen Bedingungen einverstanden.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">02</p>
+      <h2>Leistungsbeschreibung</h2>
+      <p>Semestria ist eine kostenlose, quelloffene Desktop-App für Windows. Sie liest deinen persönlichen Schulnetz-Kalender und schreibt Prüfungen sowie Schultermine in deinen Microsoft Outlook-Kalender. Die App funktioniert rein lokal auf deinem Gerät — es werden keine Daten an eigene Server übertragen.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">03</p>
+      <h2>Kostenlose Nutzung</h2>
+      <p>Die App wird kostenlos zur Verfügung gestellt. Es besteht kein Anspruch auf Support, Updates oder Weiterentwicklung.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">04</p>
+      <h2>Haftungsausschluss</h2>
+      <p>Die App wird «so wie sie ist» bereitgestellt, ohne jegliche Garantie. Der Entwickler übernimmt keine Haftung für:</p>
+      <div class="chip-list">
+        <span class="chip">Fehler bei der Synchronisation</span>
+        <span class="chip">Verlust von Kalenderdaten</span>
+        <span class="chip">Schäden durch Nutzung oder Nicht-Nutzung</span>
+        <span class="chip">Unterbrüche der Verfügbarkeit</span>
+      </div>
+      <p style="margin-top:12px">Es liegt in deiner Verantwortung, die synchronisierten Daten auf Korrektheit zu prüfen — besonders vor wichtigen Prüfungen.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">05</p>
+      <h2>Schulnetz-Zugangsdaten</h2>
+      <p>Die Feed-URL enthält ein persönliches Token. Du bist selbst verantwortlich für die sichere Aufbewahrung. Teile deine Feed-URL mit niemandem.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">06</p>
+      <h2>Microsoft-Konto</h2>
+      <p>Die App greift mit deinem expliziten Einverständnis auf deinen Outlook-Kalender zu. Du kannst diesen Zugriff jederzeit unter <a href="https://account.microsoft.com/privacy" target="_blank" rel="noopener">account.microsoft.com/privacy</a> widerrufen.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">07</p>
+      <h2>Open Source</h2>
+      <p>Der Quellcode steht unter der MIT-Lizenz auf <a href="https://github.com/Elias-Phy-Ja/semestria" target="_blank" rel="noopener">GitHub</a> zur Verfügung. Du darfst den Code verwenden, verändern und weitergeben, sofern du die Lizenzbedingungen einhältst.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">08</p>
+      <h2>Änderungen</h2>
+      <p>Der Entwickler behält sich vor, diese Nutzungsbedingungen jederzeit zu ändern. Bei wesentlichen Änderungen wird beim nächsten Start die aktualisierte Version angezeigt.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">09</p>
+      <h2>Anwendbares Recht</h2>
+      <p>Es gilt schweizerisches Recht. Gerichtsstand ist Bern, Schweiz.</p>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  <div class="wrap foot-inner">
+    <div>
+      <div class="foot-brand">Semestria</div>
+      <div class="foot-meta">© 2026 EliasWyss · Non-Profit · MIT-Lizenz</div>
+    </div>
+    <div class="foot-links">
+      <a href="https://elias-phy-ja.github.io/semestria/">Startseite</a>
+      <a href="https://github.com/Elias-Phy-Ja/semestria" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/Elias-Phy-Ja/semestria/issues" target="_blank" rel="noopener">Issues</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.doc').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
