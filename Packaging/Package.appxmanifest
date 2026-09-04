@@ -33,7 +33,7 @@
   <!-- ── Store-Metadaten ─────────────────────────────────────────────── -->
   <Properties>
     <DisplayName>Semestria</DisplayName>
-    <PublisherDisplayName>Elias Wyss</PublisherDisplayName>
+    <PublisherDisplayName>EliasWyss</PublisherDisplayName>
     <Logo>Assets\StoreLogo.scale-100.png</Logo>
     <Description>Schulnetz-Prüfungen und Termine automatisch in Outlook.</Description>
   </Properties>
