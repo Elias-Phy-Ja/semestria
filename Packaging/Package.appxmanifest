@@ -26,7 +26,7 @@
   <!-- ── Paket-Identität ─────────────────────────────────────────────── -->
   <Identity
     Name="EliasWyss.Semestria"
-    Publisher="CN=EliasWyss"
+    Publisher="CN=0FAC95B3-81E8-450F-9C41-2C238B2075E0"
     Version="1.0.0.0"
     ProcessorArchitecture="x64" />
 
