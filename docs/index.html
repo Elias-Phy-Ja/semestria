@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semestria</title>
+<meta name="description" content="Schulnetz-Prüfungen und Termine automatisch in deinen Outlook-Kalender. Kostenlos, lokal, Open Source.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* ─── Design Tokens ─────────────────────────────────────────────────── */
+:root {
+  --bg:          #0D0F18;
+  --surface:     #13162A;
+  --surface-2:   #1A1D2E;
+  --border:      #252A42;
+  --border-faint:#1A1D30;
+  --accent:      #5C6EF7;
+  --accent-dim:  rgba(92,110,247,.14);
+  --text:        #E2E5F4;
+  --muted:       #7A81A0;
+  --faint:       #3D4260;
+  --red:         #DC2626;
+  --red-dim:     rgba(220,38,38,.18);
+  --amber:       #D97706;
+  --amber-dim:   rgba(217,119,6,.18);
+  --blue:        #2563EB;
+  --blue-dim:    rgba(37,99,235,.18);
+
+  --f-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --f-body:    'Inter', system-ui, sans-serif;
+  --f-mono:    'JetBrains Mono', monospace;
+  --radius: 7px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:          #F1F3FD;
+    --surface:     #FFFFFF;
+    --surface-2:   #EAECF9;
+    --border:      #D4D8F0;
+    --border-faint:#E8EAF8;
+    --accent-dim:  rgba(92,110,247,.10);
+    --text:        #0D0F18;
+    --muted:       #5B628A;
+    --faint:       #B0B6D8;
+    --red-dim:     rgba(220,38,38,.10);
+    --amber-dim:   rgba(217,119,6,.10);
+    --blue-dim:    rgba(37,99,235,.10);
+  }
+}
+:root[data-theme="light"] {
+  --bg:          #F1F3FD;
+  --surface:     #FFFFFF;
+  --surface-2:   #EAECF9;
+  --border:      #D4D8F0;
+  --border-faint:#E8EAF8;
+  --accent-dim:  rgba(92,110,247,.10);
+  --text:        #0D0F18;
+  --muted:       #5B628A;
+  --faint:       #B0B6D8;
+  --red-dim:     rgba(220,38,38,.10);
+  --amber-dim:   rgba(217,119,6,.10);
+  --blue-dim:    rgba(37,99,235,.10);
+}
+
+/* ─── Reset ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: var(--f-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ─── Wrap ───────────────────────────────────────────────────────────── */
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+/* ─── Nav ────────────────────────────────────────────────────────────── */
+nav {
+  border-bottom: 1px solid var(--border);
+  padding: 16px 0;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(16px);
+  position: sticky; top: 0; z-index: 20;
+}
+.nav-inner { display: flex; align-items: center; justify-content: space-between; }
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--f-display); font-weight: 700; font-size: 1.05rem;
+}
+.logo-mark {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--accent); display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -.02em;
+}
+.nav-right { display: flex; align-items: center; gap: 20px; }
+.nav-link { font-size: .85rem; color: var(--muted); transition: color .15s; }
+.nav-link:hover { color: var(--text); }
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 18px; border-radius: var(--radius);
+  font-family: var(--f-body); font-size: .85rem; font-weight: 500;
+  cursor: pointer; border: 1px solid transparent;
+  transition: opacity .15s, transform .1s;
+  white-space: nowrap;
+}
+.btn:hover { opacity: .88; }
+.btn:active { transform: scale(.98); }
+.btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-outline { background: transparent; border-color: var(--border); color: var(--text); }
+
+/* ─── Hero ───────────────────────────────────────────────────────────── */
+.hero {
+  padding: 80px 0 72px;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 64px; align-items: center;
+}
+@media (max-width: 800px) {
+  .hero { grid-template-columns: 1fr; gap: 48px; }
+  .hero-visual { order: -1; }
+}
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: .7rem; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 22px;
+}
+.eyebrow::before {
+  content: ''; display: block; width: 18px; height: 2px;
+  background: var(--accent); border-radius: 2px;
+}
+h1 {
+  font-family: var(--f-display);
+  font-size: clamp(2rem, 3.8vw, 2.9rem);
+  font-weight: 800; line-height: 1.1; letter-spacing: -.025em;
+  text-wrap: balance; margin-bottom: 20px;
+}
+.hero-sub {
+  font-size: 1.0625rem; color: var(--muted); line-height: 1.72;
+  max-width: 430px; margin-bottom: 36px;
+}
+.hero-cta { display: flex; gap: 10px; flex-wrap: wrap; }
+.hero-note {
+  margin-top: 20px; font-size: .7rem;
+  font-family: var(--f-mono); color: var(--faint);
+  display: flex; align-items: center; gap: 8px;
+}
+.hero-note::before {
+  content: '';
+  display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%; background: var(--accent); flex-shrink: 0;
+}
+
+/* ─── Mini Calendar Preview ──────────────────────────────────────────── */
+.cal-wrap {
+  border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 32px 80px rgba(0,0,0,.45);
+}
+.cal-topbar {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  padding: 9px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cal-topbar-title {
+  font-family: var(--f-display); font-size: .78rem; font-weight: 600;
+}
+.cal-topbar-kw {
+  font-family: var(--f-mono); font-size: .68rem; color: var(--muted);
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: 34px repeat(5, 1fr);
+}
+/* header row */
+.cal-head-gutter {
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.cal-head {
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 7px 4px 6px;
+  text-align: center;
+}
+.cal-head:last-child { border-right: none; }
+.cal-head-day {
+  font-size: .6rem; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted);
+  display: block; margin-bottom: 4px;
+}
+.cal-head-num {
+  font-family: var(--f-display); font-size: .9rem; font-weight: 700;
+  color: var(--text);
+}
+.cal-head-num.today {
+  display: inline-flex; width: 24px; height: 24px;
+  background: var(--accent); color: #fff;
+  border-radius: 50%; align-items: center; justify-content: center;
+  font-size: .8rem;
+}
+/* time cells */
+.cal-time {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-faint);
+  height: 42px;
+  display: flex; align-items: flex-start; padding: 3px 3px 0 2px;
+  font-family: var(--f-mono); font-size: .52rem; color: var(--faint);
+}
+.cal-cell {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-faint);
+  height: 42px; position: relative; padding: 2px;
+}
+.cal-cell:last-child { border-right: none; }
+.cal-cell.today-col { background: var(--accent-dim); }
+/* events */
+.ev {
+  position: absolute; inset: 2px;
+  border-radius: 3px; padding: 2px 5px;
+  font-size: .6rem; font-weight: 600; color: #fff;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.ev-b { background: rgba(37,99,235,.85); }
+.ev-r { background: rgba(220,38,38,.90); }
+.ev-a { background: rgba(217,119,6,.85); }
+/* span 2 rows */
+.cal-cell.span2 { height: 84px; }
+.cal-cell.span2 .ev { inset: 2px; }
+/* time-line indicator */
+.cal-nowline {
+  grid-column: 1 / -1;
+  height: 2px; background: var(--red);
+  position: relative;
+}
+.cal-nowline::before {
+  content: '';
+  position: absolute; left: 33px; top: -3px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red);
+}
+
+/* ─── Section divider ────────────────────────────────────────────────── */
+hr { height: 1px; background: var(--border); border: none; }
+
+/* ─── Features ───────────────────────────────────────────────────────── */
+.features { padding: 72px 0; }
+.section-label {
+  font-size: .7rem; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--faint);
+  margin-bottom: 40px;
+  font-family: var(--f-mono);
+}
+.feat-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+@media (max-width: 640px) { .feat-grid { grid-template-columns: 1fr; } }
+.feat {
+  padding: 30px 26px;
+  border-right: 1px solid var(--border);
+}
+.feat:last-child { border-right: none; }
+@media (max-width: 640px) {
+  .feat { border-right: none; border-bottom: 1px solid var(--border); }
+  .feat:last-child { border-bottom: none; }
+}
+.feat-icon {
+  width: 38px; height: 38px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; margin-bottom: 16px;
+}
+.feat h3 {
+  font-family: var(--f-display); font-size: .95rem; font-weight: 700;
+  margin-bottom: 8px;
+}
+.feat p { font-size: .85rem; color: var(--muted); line-height: 1.65; }
+
+/* ─── Event types ────────────────────────────────────────────────────── */
+.evtypes { padding: 0 0 72px; }
+.evtype-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+}
+@media (max-width: 560px) { .evtype-grid { grid-template-columns: 1fr; } }
+.evtype {
+  border-radius: var(--radius); padding: 20px;
+  border: 1px solid var(--border);
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.evtype-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+}
+.evtype h4 {
+  font-family: var(--f-display); font-size: .9rem; font-weight: 700; margin-bottom: 4px;
+}
+.evtype p { font-size: .8rem; color: var(--muted); line-height: 1.55; }
+
+/* ─── Steps ──────────────────────────────────────────────────────────── */
+.how { padding: 72px 0; }
+.steps { margin-top: 40px; }
+.step {
+  display: grid; grid-template-columns: 56px 1fr;
+  border-top: 1px solid var(--border);
+  padding: 26px 0;
+  gap: 0;
+}
+.step:last-child { border-bottom: 1px solid var(--border); }
+.step-n {
+  font-family: var(--f-mono); font-size: .72rem;
+  color: var(--faint); padding-top: 3px;
+}
+.step h4 {
+  font-family: var(--f-display); font-size: 1rem; font-weight: 700; margin-bottom: 6px;
+}
+.step p { font-size: .875rem; color: var(--muted); line-height: 1.65; }
+code {
+  font-family: var(--f-mono); font-size: .78em;
+  background: var(--surface-2); color: var(--muted);
+  padding: 1px 6px; border-radius: 3px;
+}
+
+/* ─── Tech pills ─────────────────────────────────────────────────────── */
+.tech {
+  padding: 36px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.tech-inner { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tech-label {
+  font-size: .68rem; color: var(--faint); font-family: var(--f-mono); margin-right: 4px;
+}
+.pill {
+  font-size: .68rem; font-family: var(--f-mono);
+  padding: 3px 9px; border-radius: 4px;
+  border: 1px solid var(--border); color: var(--muted);
+}
+
+/* ─── CTA ────────────────────────────────────────────────────────────── */
+.cta { padding: 88px 0; text-align: center; }
+.cta h2 {
+  font-family: var(--f-display);
+  font-size: clamp(1.6rem, 3vw, 2.25rem);
+  font-weight: 800; letter-spacing: -.02em;
+  text-wrap: balance; margin-bottom: 14px;
+}
+.cta p { font-size: 1rem; color: var(--muted); margin-bottom: 32px; }
+.cta-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* ─── Footer ─────────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 26px 0;
+}
+.foot-inner {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;
+}
+.foot-brand {
+  font-family: var(--f-display); font-size: .85rem; font-weight: 700;
+}
+.foot-meta { font-size: .75rem; color: var(--faint); margin-top: 2px; }
+.foot-links { display: flex; gap: 20px; }
+.foot-links a { font-size: .8rem; color: var(--muted); transition: color .15s; }
+.foot-links a:hover { color: var(--text); }
+
+@media (max-width: 520px) { .nav-right .btn-outline { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- ── Nav ─────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="wrap nav-inner">
+    <div class="logo">
+      <div class="logo-mark">S</div>
+      Semestria
+    </div>
+    <div class="nav-right">
+      <a class="nav-link" href="#how">Einrichtung</a>
+      <a class="nav-link" href="https://github.com/Elias-Phy-Ja/semestria" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-accent" href="https://github.com/Elias-Phy-Ja/semestria/releases/latest" target="_blank" rel="noopener">Download</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ────────────────────────────────────────────────────────── -->
+<section>
+  <div class="wrap hero">
+
+    <!-- Left: copy -->
+    <div>
+      <div class="eyebrow">Windows · Kostenlos · Open Source</div>
+      <h1>Dein Schulnetz-Kalender, direkt in Outlook.</h1>
+      <p class="hero-sub">
+        Semestria liest deinen persönlichen Schulnetz-Feed und schreibt Prüfungen und Schultermine automatisch in Microsoft Outlook — lokal auf deinem Gerät, ohne Cloud.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-accent" href="https://github.com/Elias-Phy-Ja/semestria/releases/latest" target="_blank" rel="noopener">
+          ↓ &nbsp;Download für Windows
+        </a>
+        <a class="btn btn-outline" href="https://github.com/Elias-Phy-Ja/semestria" target="_blank" rel="noopener">
+          Quellcode ansehen
+        </a>
+      </div>
+      <p class="hero-note">Windows 10/11 · .NET 9 · Microsoft-Konto erforderlich</p>
+    </div>
+
+    <!-- Right: mini calendar -->
+    <div class="hero-visual">
+      <div class="cal-wrap">
+        <div class="cal-topbar">
+          <span class="cal-topbar-title">Prüfungen &amp; Termine</span>
+          <span class="cal-topbar-kw">KW 36 · 31. Aug. – 4. Sept.</span>
+        </div>
+
+        <div class="cal-grid">
+          <!-- Header row -->
+          <div class="cal-head-gutter"></div>
+          <div class="cal-head">
+            <span class="cal-head-day">Mo</span>
+            <span class="cal-head-num">31</span>
+          </div>
+          <div class="cal-head">
+            <span class="cal-head-day">Di</span>
+            <span class="cal-head-num">1</span>
+          </div>
+          <div class="cal-head">
+            <span class="cal-head-day">Mi</span>
+            <span class="cal-head-num">2</span>
+          </div>
+          <div class="cal-head" style="background:var(--accent-dim)">
+            <span class="cal-head-day" style="color:var(--accent)">Do</span>
+            <span class="cal-head-num today">3</span>
+          </div>
+          <div class="cal-head">
+            <span class="cal-head-day">Fr</span>
+            <span class="cal-head-num">4</span>
+          </div>
+
+          <!-- 07:00 -->
+          <div class="cal-time">07:00</div>
+          <div class="cal-cell"></div>
+          <div class="cal-cell"></div>
+          <div class="cal-cell"></div>
+          <div class="cal-cell today-col"></div>
+          <div class="cal-cell"></div>
+
+          <!-- 08:00 -->
+          <div class="cal-time">08:00</div>
+          <div class="cal-cell">
+            <div class="ev ev-b">TEU_I26A</div>
+          </div>
+          <div class="cal-cell">
+            <div class="ev ev-b">FRA_I26A</div>
+          </div>
+          <div class="cal-cell">
+            <div class="ev ev-b">INF_I26A</div>
+          </div>
+          <div class="cal-cell today-col"></div>
+          <div class="cal-cell"></div>
+
+          <!-- 09:00 -->
+          <div class="cal-time">09:00</div>
+          <div class="cal-cell">
+            <div class="ev ev-b">ENG_I26A</div>
+          </div>
+          <div class="cal-cell">
+            <div class="ev ev-b">FRA_I26A</div>
+          </div>
+          <div class="cal-cell">
+            <div class="ev ev-b">INF_I26A</div>
+          </div>
+          <div class="cal-cell today-col">
+            <div class="ev ev-b">TEU_I26A</div>
+          </div>
+          <div class="cal-cell"></div>
+
+          <!-- 10:00 -->
+          <div class="cal-time">10:00</div>
+          <div class="cal-cell">
+            <div class="ev ev-b">ENG_I26A</div>
+          </div>
+          <div class="cal-cell"></div>
+          <div class="cal-cell">
+            <div class="ev ev-b">INF_I26A</div>
+          </div>
+          <div class="cal-cell today-col">
+            <div class="ev ev-r" style="font-size:.56rem">Zwischenprüfung</div>
+          </div>
+          <div class="cal-cell">
+            <div class="ev ev-b">DEU_I26A</div>
+          </div>
+
+          <!-- Current time indicator -->
+          <div class="cal-nowline"></div>
+
+          <!-- 11:00 -->
+          <div class="cal-time">11:00</div>
+          <div class="cal-cell">
+            <div class="ev ev-b">MAT_I26A</div>
+          </div>
+          <div class="cal-cell"></div>
+          <div class="cal-cell">
+            <div class="ev ev-b">INF_I26A</div>
+          </div>
+          <div class="cal-cell today-col">
+            <div class="ev ev-r" style="font-size:.55rem; opacity:.75">spm 1.1 IMS</div>
+          </div>
+          <div class="cal-cell">
+            <div class="ev ev-b">ABT_I26A</div>
+          </div>
+
+          <!-- 12:00 -->
+          <div class="cal-time">12:00</div>
+          <div class="cal-cell"></div>
+          <div class="cal-cell"></div>
+          <div class="cal-cell"></div>
+          <div class="cal-cell today-col"></div>
+          <div class="cal-cell"></div>
+
+          <!-- 13:00 -->
+          <div class="cal-time">13:00</div>
+          <div class="cal-cell">
+            <div class="ev ev-b" style="font-size:.56rem">DEU_I26A_SmiJa</div>
+          </div>
+          <div class="cal-cell">
+            <div class="ev ev-b">INF_I26A</div>
+          </div>
+          <div class="cal-cell"></div>
+          <div class="cal-cell today-col"></div>
+          <div class="cal-cell">
+            <div class="ev ev-a">Elternabend</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr>
+
+<!-- ── Features ────────────────────────────────────────────────────── -->
+<section class="features">
+  <div class="wrap">
+    <p class="section-label">Warum Semestria</p>
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="feat-icon" style="background:var(--accent-dim)">🔒</div>
+        <h3>100 % lokal</h3>
+        <p>Keine Cloud, kein Backend, keine Telemetrie. Feed-URL und Microsoft-Token werden mit Windows DPAPI verschlüsselt auf deinem Gerät gespeichert.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-icon" style="background:var(--red-dim)">📅</div>
+        <h3>Prüfungen erkannt</h3>
+        <p>Semestria klassifiziert Events ausschliesslich über die UID — nicht über unsichere Textsuche. Prüfungen werden zuverlässig erkannt und korrekt synchronisiert.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-icon" style="background:var(--blue-dim)">⭐</div>
+        <h3>Open Source</h3>
+        <p>MIT-Lizenz, öffentlicher Quellcode. Keine versteckten Abhängigkeiten. Du kannst den Code selbst prüfen, forken und weiterentwickeln.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Event types ──────────────────────────────────────────────────── -->
+<section class="evtypes">
+  <div class="wrap">
+    <p class="section-label">Drei Ereignistypen</p>
+    <div class="evtype-grid">
+      <div class="evtype" style="border-color:rgba(220,38,38,.3); background:var(--red-dim)">
+        <div class="evtype-dot" style="background:var(--red)"></div>
+        <div>
+          <h4>Prüfungen</h4>
+          <p>Werden automatisch erkannt und mit Datum, Uhrzeit und Raum in den Outlook-Kalender geschrieben.</p>
+        </div>
+      </div>
+      <div class="evtype" style="border-color:rgba(217,119,6,.3); background:var(--amber-dim)">
+        <div class="evtype-dot" style="background:var(--amber)"></div>
+        <div>
+          <h4>Schultermine</h4>
+          <p>Elternabende, Ausflüge, schulische Veranstaltungen — ebenfalls automatisch übertragen.</p>
+        </div>
+      </div>
+      <div class="evtype" style="border-color:rgba(37,99,235,.3); background:var(--blue-dim)">
+        <div class="evtype-dot" style="background:var(--blue)"></div>
+        <div>
+          <h4>Stunden</h4>
+          <p>Im App-Kalender sichtbar für den Überblick — werden aber <em>nicht</em> in Outlook geschrieben.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<!-- ── How it works ─────────────────────────────────────────────────── -->
+<section class="how" id="how">
+  <div class="wrap">
+    <p class="section-label">Einrichtung in drei Schritten</p>
+    <div class="steps">
+      <div class="step">
+        <span class="step-n">01</span>
+        <div>
+          <h4>Feed-URL aus Schulnetz kopieren</h4>
+          <p>Melde dich in deinem Schulnetz-Portal an, öffne die Kalender-Einstellungen und kopiere die persönliche iCal-URL. Diese enthält ein privates Token — teile sie mit niemandem.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-n">02</span>
+        <div>
+          <h4>Microsoft-Konto verbinden</h4>
+          <p>Semestria öffnet einen Anmelde-Dialog für dein Microsoft-Konto. Die App benötigt nur die Berechtigung <code>Calendars.ReadWrite</code> — du kannst den Zugriff jederzeit unter <code>account.microsoft.com</code> entziehen.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-n">03</span>
+        <div>
+          <h4>Fertig — Semestria synchronisiert automatisch</h4>
+          <p>Prüfungen und Schultermine erscheinen in deinem Outlook-Kalender. Bei jedem Start prüft die App den Feed auf Änderungen und aktualisiert den Kalender entsprechend.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Tech strip ───────────────────────────────────────────────────── -->
+<div class="tech">
+  <div class="wrap">
+    <div class="tech-inner">
+      <span class="tech-label">Technologie —</span>
+      <span class="pill">.NET 9 / WPF</span>
+      <span class="pill">Microsoft Graph v5</span>
+      <span class="pill">MSAL.NET</span>
+      <span class="pill">Ical.Net 5</span>
+      <span class="pill">DPAPI</span>
+      <span class="pill">ModernWpfUI</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── CTA ──────────────────────────────────────────────────────────── -->
+<section class="cta">
+  <div class="wrap">
+    <h2>Nie wieder eine Prüfung im Kalender vergessen.</h2>
+    <p>Kostenlos, lokal, Open Source. Für Windows 10 und 11.</p>
+    <div class="cta-btns">
+      <a class="btn btn-accent" href="https://github.com/Elias-Phy-Ja/semestria/releases/latest" target="_blank" rel="noopener">
+        ↓ &nbsp;Jetzt herunterladen
+      </a>
+      <a class="btn btn-outline" href="https://github.com/Elias-Phy-Ja/semestria/issues/new" target="_blank" rel="noopener">
+        🐛 &nbsp;Bug melden
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────────────────── -->
+<footer>
+  <div class="wrap foot-inner">
+    <div>
+      <div class="foot-brand">Semestria</div>
+      <div class="foot-meta">© 2026 Elias Wyss · Non-Profit · MIT-Lizenz</div>
+    </div>
+    <div class="foot-links">
+      <a href="https://github.com/Elias-Phy-Ja/semestria" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/Elias-Phy-Ja/semestria/releases" target="_blank" rel="noopener">Releases</a>
+      <a href="https://github.com/Elias-Phy-Ja/semestria/issues" target="_blank" rel="noopener">Issues</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
