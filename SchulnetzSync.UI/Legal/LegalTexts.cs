@@ -1,4 +1,4 @@
-namespace Semestria.UI.Legal;
+namespace SchulnetzSync.UI.Legal;
 
 /// <summary>
 /// Rechtsdokumente als eingebettete Strings.
