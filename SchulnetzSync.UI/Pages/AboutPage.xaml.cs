@@ -50,7 +50,7 @@ public partial class AboutPage : Page
         {
             var dir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "SchulnetzSync");
+                "Semestria");
 
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);

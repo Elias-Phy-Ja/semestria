@@ -21,5 +21,5 @@ public static class AppConstants
     public const int LegalVersion = 1;
 
     /// <summary>GitHub-Link für Feedback / Issues.</summary>
-    public const string GitHubUrl = "https://github.com/Elias-Phy-Ja/schulnetzsync";
+    public const string GitHubUrl = "https://github.com/Elias-Phy-Ja/semestria";
 }
