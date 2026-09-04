@@ -482,3 +482,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# MSIX Build-Artefakte (generiert durch Packaging/build-msix.ps1)
+Packaging/_publish/
+Packaging/_pack/
+Packaging/_out/
+Packaging/helper.csproj

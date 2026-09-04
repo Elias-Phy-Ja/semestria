@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ╔══════════════════════════════════════════════════════════════════════╗
+  ║  MSIX Package Manifest — Semestria                                  ║
+  ║                                                                      ║
+  ║  VOR DEM STORE-UPLOAD folgende Werte ersetzen:                      ║
+  ║                                                                      ║
+  ║  1. Identity Name + Publisher                                        ║
+  ║     → Partner Center → Produkt-Identität                            ║
+  ║       Paketname:        z.B. 12345EliasWyss.Semestria               ║
+  ║       Publisher:        z.B. CN=XXXXXXXX-XXXX-XXXX-XXXX-XXXX       ║
+  ║                                                                      ║
+  ║  2. Version  (Format: a.b.c.0 — immer vierstellig)                 ║
+  ║                                                                      ║
+  ║  FÜR LOKALE TESTS:                                                  ║
+  ║  Publisher = "CN=EliasWyss" mit passendem selbstsignierten Zertif.  ║
+  ╚══════════════════════════════════════════════════════════════════════╝
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap3 rescap">
+
+  <!-- ── Paket-Identität ─────────────────────────────────────────────── -->
+  <Identity
+    Name="EliasWyss.Semestria"
+    Publisher="CN=EliasWyss"
+    Version="1.0.0.0"
+    ProcessorArchitecture="x64" />
+
+  <!-- ── Store-Metadaten ─────────────────────────────────────────────── -->
+  <Properties>
+    <DisplayName>Semestria</DisplayName>
+    <PublisherDisplayName>Elias Wyss</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.scale-100.png</Logo>
+    <Description>Schulnetz-Prüfungen und Termine automatisch in Outlook.</Description>
+  </Properties>
+
+  <!-- ── Zielplattform ───────────────────────────────────────────────── -->
+  <Dependencies>
+    <!-- Windows 10 1809 (17763) oder neuer -->
+    <TargetDeviceFamily
+      Name="Windows.Desktop"
+      MinVersion="10.0.17763.0"
+      MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <!-- ── Ressourcen ──────────────────────────────────────────────────── -->
+  <Resources>
+    <Resource Language="de-CH" />
+    <Resource Language="de" />
+  </Resources>
+
+  <!-- ── App-Einstiegspunkt ──────────────────────────────────────────── -->
+  <Applications>
+    <Application
+      Id="App"
+      Executable="SchulnetzSync.UI.exe"
+      EntryPoint="Windows.FullTrustApplication">
+
+      <uap:VisualElements
+        DisplayName="Semestria"
+        Description="Schulnetz-Prüfungen und Termine automatisch in Outlook."
+        BackgroundColor="#0D0F18"
+        Square150x150Logo="Assets\Square150x150Logo.scale-100.png"
+        Square44x44Logo="Assets\Square44x44Logo.scale-100.png">
+
+        <uap:DefaultTile
+          ShortName="Semestria"
+          Square71x71Logo="Assets\Square44x44Logo.scale-125.png"
+          Wide310x150Logo="Assets\Wide310x150Logo.scale-100.png"
+          Square310x310Logo="Assets\LargeTile.scale-100.png">
+          <uap:ShowNameOnTiles>
+            <uap:ShowOn Tile="square150x150Logo"/>
+            <uap:ShowOn Tile="wide310x150Logo"/>
+            <uap:ShowOn Tile="square310x310Logo"/>
+          </uap:ShowNameOnTiles>
+        </uap:DefaultTile>
+
+        <uap:SplashScreen Image="Assets\SplashScreen.scale-100.png" BackgroundColor="#0D0F18"/>
+
+        <uap:LockScreen Notification="badge" BadgeLogo="Assets\Square44x44Logo.scale-100.png"/>
+
+      </uap:VisualElements>
+
+      <!-- Protokoll-Aktivierung (optional, für künftige URI-Links) -->
+      <!-- <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="semestria"/>
+        </uap:Extension>
+      </Extensions> -->
+
+    </Application>
+  </Applications>
+
+  <!-- ── Berechtigungen ──────────────────────────────────────────────── -->
+  <Capabilities>
+    <!-- Pflicht für jede Desktop-Bridge-App (WPF/Win32 als MSIX) -->
+    <rescap:Capability Name="runFullTrust" />
+    <!-- Netzwerkzugriff: Microsoft Graph API + iCal-Feed -->
+    <Capability Name="internetClient" />
+  </Capabilities>
+
+</Package>

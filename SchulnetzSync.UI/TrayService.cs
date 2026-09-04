@@ -20,7 +20,7 @@ public sealed class TrayService : IDisposable
     {
         _trayIcon = new NotifyIcon
         {
-            Text    = "SchulnetzSync",
+            Text    = "Semestria",
             Icon    = SystemIcons.Application, // replaced by real icon in production
             Visible = true,
         };
@@ -46,7 +46,7 @@ public sealed class TrayService : IDisposable
     /// </summary>
     public void RunSilentSync()
     {
-        _trayIcon.ShowBalloonTip(2000, "SchulnetzSync",
+        _trayIcon.ShowBalloonTip(2000, "Semestria",
             "Synchronisation wird gestartet…", ToolTipIcon.Info);
 
         // Fire-and-forget on the thread-pool; result shown as balloon tip.
@@ -60,7 +60,7 @@ public sealed class TrayService : IDisposable
             catch (InteractiveLoginRequiredException)
             {
                 ShowBalloon("Anmeldung nötig",
-                    "Bitte öffne SchulnetzSync und melde dich an.", ToolTipIcon.Warning);
+                    "Bitte öffne Semestria und melde dich an.", ToolTipIcon.Warning);
             }
             catch (Exception ex)
             {
