@@ -1,4 +1,4 @@
-namespace SchulnetzSync.UI.Legal;
+namespace Semestria.UI.Legal;
 
 /// <summary>
 /// Rechtsdokumente als eingebettete Strings.
@@ -7,17 +7,17 @@ namespace SchulnetzSync.UI.Legal;
 public static class LegalTexts
 {
     public const string Agb = """
-        NUTZUNGSBEDINGUNGEN – SchulnetzSync
+        NUTZUNGSBEDINGUNGEN – Semestria
         Version 1.0 · Stand: September 2026
         ════════════════════════════════════
 
         1. GELTUNGSBEREICH
-        Diese Nutzungsbedingungen gelten für die Verwendung der App «SchulnetzSync»
+        Diese Nutzungsbedingungen gelten für die Verwendung der App «Semestria»
         (nachfolgend «App»). Mit der Verwendung der App erklärst du dich mit diesen
         Bedingungen einverstanden.
 
         2. LEISTUNGSBESCHREIBUNG
-        SchulnetzSync ist eine kostenlose, quelloffene Desktop-App für Windows. Sie
+        Semestria ist eine kostenlose, quelloffene Desktop-App für Windows. Sie
         liest deinen persönlichen Schulnetz-Kalender und schreibt Prüfungen sowie
         Schultermine in deinen Microsoft Outlook-Kalender. Die App funktioniert rein
         lokal auf deinem Gerät – es werden keine Daten an externe Server übertragen.
@@ -61,11 +61,11 @@ public static class LegalTexts
         Es gilt schweizerisches Recht. Gerichtsstand ist Bern, Schweiz.
 
         ════════════════════════════════════
-        Entwickler: Elias Wyss · SchulnetzSync
+        Entwickler: Elias Wyss · Semestria
         """;
 
     public const string Datenschutz = """
-        DATENSCHUTZERKLÄRUNG – SchulnetzSync
+        DATENSCHUTZERKLÄRUNG – Semestria
         Version 1.0 · Stand: September 2026
         ════════════════════════════════════
 
@@ -74,7 +74,7 @@ public static class LegalTexts
         Die App ist ein privates Non-Profit-Projekt.
 
         2. GRUNDSATZ: KEINE CLOUD, KEINE TELEMETRIE
-        SchulnetzSync verarbeitet alle Daten ausschliesslich lokal auf deinem Gerät.
+        Semestria verarbeitet alle Daten ausschliesslich lokal auf deinem Gerät.
         Es gibt:
         · Keine Telemetrie
         · Keine Nutzungsstatistiken
@@ -86,7 +86,7 @@ public static class LegalTexts
 
         3.1 Feed-URL (Schulnetz-Kalender)
         Deine Feed-URL wird verschlüsselt auf deinem Gerät gespeichert.
-        Speicherort: %LOCALAPPDATA%\SchulnetzSync\config.json
+        Speicherort: %LOCALAPPDATA%\Semestria\config.json
         Die Verschlüsselung erfolgt mit dem Windows-Datenschutz-API (DPAPI),
         das an dein Windows-Benutzerkonto gebunden ist. Niemand ausser dir
         (auf diesem Gerät) kann die URL entschlüsseln.
@@ -94,14 +94,14 @@ public static class LegalTexts
 
         3.2 Microsoft-Zugangstoken
         Nach der Anmeldung speichert die App ein Zugriffstoken für Microsoft Graph.
-        Speicherort: %LOCALAPPDATA%\SchulnetzSync\token_cache.bin
+        Speicherort: %LOCALAPPDATA%\Semestria\token_cache.bin
         Das Token verlässt dein Gerät nur um API-Anfragen an Microsoft Graph zu stellen
         (Lesen/Schreiben deines Outlook-Kalenders). Du kannst den Zugriff jederzeit
         unter account.microsoft.com/privacy entziehen.
 
         3.3 Konfigurationsdaten
         Die App speichert Einstellungen (z.B. Kalender-ID, letzte Sync-Zeit) lokal:
-        %LOCALAPPDATA%\SchulnetzSync\config.json
+        %LOCALAPPDATA%\Semestria\config.json
         Diese Daten werden nicht übertragen.
 
         3.4 Kalenderdaten
@@ -116,7 +116,7 @@ public static class LegalTexts
 
         5. DEINE RECHTE
         Du kannst jederzeit:
-        · Alle lokalen App-Daten löschen (Ordner %LOCALAPPDATA%\SchulnetzSync\ entfernen)
+        · Alle lokalen App-Daten löschen (Ordner %LOCALAPPDATA%\Semestria\ entfernen)
         · Den Microsoft-Zugriff unter account.microsoft.com widerrufen
         · Die App deinstallieren
 
@@ -130,12 +130,12 @@ public static class LegalTexts
         besonderen Kategorien personenbezogener Daten.
 
         8. KONTAKT
-        Bei Fragen: github.com/Elias-Phy-Ja/schulnetzsync/issues
+        Bei Fragen: github.com/Elias-Phy-Ja/semestria/issues
 
         9. ÄNDERUNGEN
         Bei wesentlichen Änderungen wird beim nächsten Start die neue Version angezeigt.
 
         ════════════════════════════════════
-        Entwickler: Elias Wyss · SchulnetzSync
+        Entwickler: Elias Wyss · Semestria
         """;
 }
