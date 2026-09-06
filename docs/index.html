@@ -373,6 +373,34 @@ footer {
 .foot-links a:hover { color: var(--text); }
 
 @media (max-width: 520px) { .nav-right .btn-outline { display: none; } }
+
+/* ─── Store badge ────────────────────────────────────────────────────── */
+.btn-store {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 9px 18px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--f-body); font-size: .85rem; font-weight: 500;
+  cursor: pointer; transition: opacity .15s, transform .1s; white-space: nowrap;
+}
+.btn-store:hover { opacity: .82; }
+.btn-store:active { transform: scale(.98); }
+.btn-store svg { flex-shrink: 0; }
+.store-section {
+  padding: 52px 0; border-top: 1px solid var(--border);
+}
+.store-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 32px; flex-wrap: wrap;
+}
+.store-text h3 {
+  font-family: var(--f-display); font-size: 1.1rem; font-weight: 700;
+  margin-bottom: 6px;
+}
+.store-text p { font-size: .88rem; color: var(--muted); }
+.store-id {
+  font-family: var(--f-mono); font-size: .72rem; color: var(--faint); margin-top: 6px;
+}
+.store-btns { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 </style>
 </head>
 <body>
@@ -398,20 +426,26 @@ footer {
 
     <!-- Left: copy -->
     <div>
-      <div class="eyebrow">Windows · Kostenlos · Open Source</div>
+      <div class="eyebrow">Windows · Kostenlos · Microsoft Store</div>
       <h1>Dein Schulnetz-Kalender, direkt in Outlook.</h1>
       <p class="hero-sub">
-        Semestria liest deinen persönlichen Schulnetz-Feed und schreibt Prüfungen und Schultermine automatisch in Microsoft Outlook — lokal auf deinem Gerät, ohne Cloud.
+        Semestria liest deinen persönlichen Schulnetz-Feed und schreibt Prüfungen und Schultermine automatisch in Microsoft Outlook, lokal auf deinem Gerät, ohne Cloud.
       </p>
       <div class="hero-cta">
-        <a class="btn btn-accent" href="https://github.com/Elias-Phy-Ja/semestria/releases/latest" target="_blank" rel="noopener">
-          ↓ &nbsp;Download für Windows
+        <a class="btn-store" href="https://apps.microsoft.com/detail/9NJV8F0X7XMZ" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
+            <rect x="13" y="1" width="10" height="10" fill="#7FBA00"/>
+            <rect x="1" y="13" width="10" height="10" fill="#00A4EF"/>
+            <rect x="13" y="13" width="10" height="10" fill="#FFB900"/>
+          </svg>
+          Im Microsoft Store
         </a>
-        <a class="btn btn-outline" href="https://github.com/Elias-Phy-Ja/semestria" target="_blank" rel="noopener">
-          Quellcode ansehen
+        <a class="btn btn-outline" href="https://github.com/Elias-Phy-Ja/semestria/releases/latest" target="_blank" rel="noopener">
+          ↓ &nbsp;Direkt herunterladen
         </a>
       </div>
-      <p class="hero-note">Windows 10/11 · .NET 9 · Microsoft-Konto erforderlich</p>
+      <p class="hero-note">Windows 10/11 · .NET 9 · Store-ID: 9NJV8F0X7XMZ</p>
     </div>
 
     <!-- Right: mini calendar -->
@@ -650,14 +684,45 @@ footer {
   </div>
 </div>
 
+<!-- ── Store ─────────────────────────────────────────────────────────── -->
+<section class="store-section">
+  <div class="wrap store-inner">
+    <div class="store-text">
+      <h3>Verfügbar im Microsoft Store</h3>
+      <p>Automatische Updates, sichere Installation, kein Setup — direkt aus dem Store.</p>
+      <p class="store-id">Store-ID: 9NJV8F0X7XMZ · Publisher: EliasWyss</p>
+    </div>
+    <div class="store-btns">
+      <a class="btn-store" href="https://apps.microsoft.com/detail/9NJV8F0X7XMZ" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
+          <rect x="13" y="1" width="10" height="10" fill="#7FBA00"/>
+          <rect x="1" y="13" width="10" height="10" fill="#00A4EF"/>
+          <rect x="13" y="13" width="10" height="10" fill="#FFB900"/>
+        </svg>
+        Im Microsoft Store öffnen
+      </a>
+      <a class="btn btn-outline" href="https://github.com/Elias-Phy-Ja/semestria/releases/latest" target="_blank" rel="noopener">
+        ↓ &nbsp;MSIX direkt laden
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- ── CTA ──────────────────────────────────────────────────────────── -->
 <section class="cta">
   <div class="wrap">
     <h2>Nie wieder eine Prüfung im Kalender vergessen.</h2>
     <p>Kostenlos, lokal, Open Source. Für Windows 10 und 11.</p>
     <div class="cta-btns">
-      <a class="btn btn-accent" href="https://github.com/Elias-Phy-Ja/semestria/releases/latest" target="_blank" rel="noopener">
-        ↓ &nbsp;Jetzt herunterladen
+      <a class="btn-store" href="https://apps.microsoft.com/detail/9NJV8F0X7XMZ" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
+          <rect x="13" y="1" width="10" height="10" fill="#7FBA00"/>
+          <rect x="1" y="13" width="10" height="10" fill="#00A4EF"/>
+          <rect x="13" y="13" width="10" height="10" fill="#FFB900"/>
+        </svg>
+        Microsoft Store
       </a>
       <a class="btn btn-outline" href="https://github.com/Elias-Phy-Ja/semestria/issues/new" target="_blank" rel="noopener">
         🐛 &nbsp;Bug melden
