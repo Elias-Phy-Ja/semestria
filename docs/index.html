@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" href="logo.png">
 
 <style>
 /* ─── Design Tokens ─────────────────────────────────────────────────── */
@@ -97,9 +99,9 @@ nav {
 }
 .logo-mark {
   width: 30px; height: 30px; border-radius: 8px;
-  background: var(--accent); display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -.02em;
+  overflow: hidden; flex-shrink: 0;
 }
+.logo-mark img { width: 100%; height: 100%; display: block; }
 .nav-right { display: flex; align-items: center; gap: 20px; }
 .nav-link { font-size: .85rem; color: var(--muted); transition: color .15s; }
 .nav-link:hover { color: var(--text); }
@@ -409,7 +411,7 @@ footer {
 <nav>
   <div class="wrap nav-inner">
     <div class="logo">
-      <div class="logo-mark">S</div>
+      <div class="logo-mark"><img src="logo.png" alt="Semestria Logo"></div>
       Semestria
     </div>
     <div class="nav-right">
