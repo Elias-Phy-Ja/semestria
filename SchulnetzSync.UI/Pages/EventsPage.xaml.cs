@@ -91,7 +91,7 @@ public partial class EventsPage : WpfPage
     /// <summary>Leitet den Farb-Schlüssel für ein Event ab.</summary>
     private static string GetColorKey(SchulnetzEvent ev)
     {
-        if (ev.Key.StartsWith("MANUAL_", StringComparison.Ordinal))
+        if (EventKeys.IsManual(ev.Key))
             return ev.Type == SchulnetzEventType.Pruefung ? "Pruefung" : "Termin";
         return ev.Type switch
         {
@@ -158,8 +158,7 @@ public partial class EventsPage : WpfPage
         var feedEvents = AppState.CachedFeedEvents
             .Where(e => !suppressed.Contains(e.Key) && MatchFilter(e));
 
-        var manualEvents = AppState.ManualEvents
-            .Select(ToSchulnetzEvent)
+        var manualEvents = AppState.ManualAsEvents()
             .Where(e => !suppressed.Contains(e.Key) && MatchFilter(e));
 
         return feedEvents.Concat(manualEvents).ToList();
@@ -172,17 +171,6 @@ public partial class EventsPage : WpfPage
         "Lektion"  => e.Type == SchulnetzEventType.Lektion,
         _          => true
     };
-
-    private static SchulnetzEvent ToSchulnetzEvent(ManualEventData m)
-        => new(
-            Key:      "MANUAL_" + m.Id.ToString("N"),
-            RawUid:   "MANUAL_" + m.Id.ToString("N"),
-            Type:     m.TypeKey == "Pruefung" ? SchulnetzEventType.Pruefung : SchulnetzEventType.Termin,
-            Start:    m.Start,
-            End:      m.End,
-            IsAllDay: m.IsAllDay,
-            Summary:  m.Title,
-            Location: m.Location);
 
     // ══════════════════════════════════════════════════════════════════════
     // MONATSANSICHT
@@ -812,7 +800,7 @@ public partial class EventsPage : WpfPage
         var  colorKey   = GetColorKey(ev);
         bool isPruefung = ev.Type == SchulnetzEventType.Pruefung;
         bool isLektion  = ev.Type == SchulnetzEventType.Lektion;
-        bool isManual   = ev.Key.StartsWith("MANUAL_", StringComparison.Ordinal);
+        bool isManual   = EventKeys.IsManual(ev.Key);
 
         // Panel-Titel
         TxtPanelTitle.Text       = isPruefung ? "⚠  PRÜFUNG" : isLektion ? "📘  STUNDE" : "📌  TERMIN";
@@ -1283,11 +1271,11 @@ public partial class EventsPage : WpfPage
     private void BtnDeleteManual_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not WpfButton btn || btn.Tag is not SchulnetzEvent ev) return;
-        if (!ev.Key.StartsWith("MANUAL_", StringComparison.Ordinal)) return;
+        if (!EventKeys.IsManual(ev.Key)) return;
 
         if (!Confirm($"«{ev.Summary}» wirklich löschen?")) return;
 
-        var id = Guid.ParseExact(ev.Key["MANUAL_".Length..], "N");
+        var id = Guid.ParseExact(ev.Key[EventKeys.ManualPrefix.Length..], "N");
         AppState.RemoveManualEvent(id);
         _selectedEvent = null;
         ClosePanel();

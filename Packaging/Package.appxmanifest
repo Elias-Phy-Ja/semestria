@@ -27,7 +27,7 @@
   <Identity
     Name="EliasWyss.Semestria"
     Publisher="CN=0FAC95B3-81E8-450F-9C41-2C238B2075E0"
-    Version="1.0.0.0"
+    Version="2.0.0.0"
     ProcessorArchitecture="x64" />
 
   <!-- ── Store-Metadaten ─────────────────────────────────────────────── -->
@@ -63,7 +63,7 @@
       <uap:VisualElements
         DisplayName="Semestria"
         Description="Schulnetz-Prüfungen und Termine automatisch in Outlook."
-        BackgroundColor="#0D0F18"
+        BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.scale-100.png"
         Square44x44Logo="Assets\Square44x44Logo.scale-100.png">
 

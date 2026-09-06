@@ -38,6 +38,7 @@ public partial class MainWindow : Window
         switch (tag)
         {
             case "Dashboard": NavView.SelectedItem = NavDashboard; break;
+            case "Events":    NavView.SelectedItem = NavEvents;    break;
             case "Settings":  NavView.SelectedItem = NavSettings;  break;
         }
     }

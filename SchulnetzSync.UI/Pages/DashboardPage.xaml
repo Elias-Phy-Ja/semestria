@@ -63,12 +63,17 @@
                                    Style="{StaticResource HeadlineText}"/>
                     </StackPanel>
 
-                    <TextBlock x:Name="TxtLastRun"
-                               Grid.Row="1" Text="Noch nie synchronisiert"
-                               Style="{StaticResource BodyText}" Margin="0,0,0,2"/>
+                    <StackPanel Grid.Row="1" Margin="0,0,0,2">
+                        <TextBlock x:Name="TxtLastFeed"
+                                   Text="Feed: noch nie geladen"
+                                   Style="{StaticResource BodyText}"/>
+                        <TextBlock x:Name="TxtLastRun"
+                                   Text="Outlook: noch nie synchronisiert"
+                                   Style="{StaticResource BodyText}"/>
+                    </StackPanel>
                     <TextBlock x:Name="TxtLastResult"
                                Grid.Row="2" Text=""
-                               Style="{StaticResource BodyText}" Margin="0,0,0,16"/>
+                               Style="{StaticResource NoteText}" Margin="0,2,0,16"/>
 
                     <StackPanel Grid.Row="3" Orientation="Horizontal">
                         <!-- Outlook-Sync -->
@@ -85,10 +90,20 @@
                                 Click="BtnDryRun_Click"/>
                     </StackPanel>
 
-                    <ui:ProgressRing x:Name="SyncRing"
-                                     Grid.Column="1" Grid.RowSpan="4"
-                                     IsActive="False" Width="44" Height="44"
-                                     VerticalAlignment="Center" Margin="16,0,0,0"/>
+                    <StackPanel Grid.Column="1" Grid.RowSpan="4"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center"
+                                Margin="16,0,0,0">
+                        <ui:ProgressRing x:Name="SyncRing"
+                                         IsActive="False" Width="44" Height="44"
+                                         HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="TxtBusyHint"
+                                   Text="" Visibility="Collapsed"
+                                   Style="{StaticResource NoteText}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   MaxWidth="120"/>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -153,6 +168,35 @@
                     </StackPanel>
                 </Border>
             </Grid>
+
+            <!-- NÄCHSTE 7 TAGE -->
+            <Border x:Name="UpcomingCard" Style="{StaticResource Card}"
+                    Visibility="Collapsed" Margin="0,16,0,0">
+                <StackPanel>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="TxtUpcomingTitle"
+                                   Grid.Column="0"
+                                   Text="NÄCHSTE 7 TAGE"
+                                   Style="{StaticResource SectionLabel}"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Column="1"
+                                Content="Kalender öffnen"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="BtnGoEvents_Click"/>
+                    </Grid>
+
+                    <TextBlock x:Name="TxtUpcomingEmpty"
+                               Text=""
+                               Style="{StaticResource BodyText}"
+                               Visibility="Collapsed"/>
+
+                    <StackPanel x:Name="UpcomingList"/>
+                </StackPanel>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

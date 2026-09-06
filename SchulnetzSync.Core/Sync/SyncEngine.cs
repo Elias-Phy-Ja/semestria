@@ -45,12 +45,30 @@ public static class SyncEngine
         DateTimeOffset? feedMax = effective.Count > 0 ? effective.Max(e => e.Start) : null;
 
         // Build fast-lookup maps keyed by the stable Schulnetz key.
-        var feedByKey    = effective.Where(e => options.EnabledTypes.Contains(e.Type))
+        // Manuelle Einträge kommen aus der lokalen Liste des Benutzers, nicht aus
+        // dem Feed. Sie werden immer synchronisiert — die Typ-Schalter steuern,
+        // wie viel aus dem Feed übernommen wird, nicht was der Benutzer selbst
+        // angelegt hat.
+        bool IsSyncable(SchulnetzEventType type, string key)
+            => EventKeys.IsManual(key) || options.EnabledTypes.Contains(type);
+
+        var feedByKey    = effective.Where(e => IsSyncable(e.Type, e.Key))
                                     .ToDictionary(e => e.Key);
-        var trackedByKey = tracked.ToDictionary(t => t.Key);
+
+        // Derselbe Schlüssel kann mehrfach im Kalender stehen, wenn ein früherer
+        // Lauf die bestehenden Einträge nicht erkannt und neu angelegt hat.
+        // Der erste Eintrag gilt, die übrigen werden entfernt.
+        var byKey        = tracked.GroupBy(t => t.Key).ToList();
+        var canonical    = byKey.Select(g => g.First()).ToList();
+        var trackedByKey = canonical.ToDictionary(t => t.Key);
 
         var actions  = new List<SyncAction>();
         var blockers = new List<string>();
+
+        foreach (var group in byKey)
+            foreach (var surplus in group.Skip(1))
+                actions.Add(new SyncAction(SyncActionKind.DeleteDuplicate, null, surplus,
+                    "Doppelter Eintrag mit gleichem Schlüssel"));
 
         // ----------------------------------------------------------------
         // Step 2 — Feed → Calendar: Create / Update / ClearMissing
@@ -58,7 +76,7 @@ public static class SyncEngine
         foreach (var ev in effective)
         {
             // Lektionen and disabled types are completely ignored.
-            if (!options.EnabledTypes.Contains(ev.Type))
+            if (!IsSyncable(ev.Type, ev.Key))
                 continue;
 
             string hash = ComputeHash(ev);
@@ -90,15 +108,26 @@ public static class SyncEngine
         // ----------------------------------------------------------------
         // Step 3 — Calendar → Feed: FlagMissing / Delete / MarkCancelled
         // ----------------------------------------------------------------
-        foreach (var tr in tracked)
+        foreach (var tr in canonical)
         {
             // Only process enabled types.
-            if (!options.EnabledTypes.Contains(tr.Type))
+            if (!IsSyncable(tr.Type, tr.Key))
                 continue;
 
             // Already handled above (event still in feed).
             if (feedByKey.ContainsKey(tr.Key))
                 continue;
+
+            // Rule 5e — manuelle Einträge: Die lokale Liste ist die einzige
+            // Quelle. Fehlt der Eintrag dort, hat der Benutzer ihn gelöscht.
+            // Die Schutzregeln unten sichern gegen einen kaputten Feed ab und
+            // ergeben hier keinen Sinn — also sofort entfernen.
+            if (EventKeys.IsManual(tr.Key))
+            {
+                actions.Add(new SyncAction(SyncActionKind.Delete, null, tr,
+                    "Manueller Eintrag wurde in der App gelöscht"));
+                continue;
+            }
 
             // Rule 5a — outside the feed window → ignore (feed may not cover old events).
             if (feedMin.HasValue && feedMax.HasValue)
@@ -144,8 +173,8 @@ public static class SyncEngine
         // Blocker B: an enabled type has tracked entries but zero feed entries.
         foreach (var type in options.EnabledTypes)
         {
-            int trackedCount = tracked.Count(t => t.Type == type);
-            int feedCount    = effective.Count(e => e.Type == type);
+            int trackedCount = canonical.Count(t => t.Type == type && !EventKeys.IsManual(t.Key));
+            int feedCount    = effective.Count(e => e.Type == type && !EventKeys.IsManual(e.Key));
             if (trackedCount > 0 && feedCount == 0)
                 blockers.Add(
                     $"Kalender hat {trackedCount} {type}-Einträge, Feed enthält aber keine — " +
@@ -157,7 +186,8 @@ public static class SyncEngine
         {
             int deletions = actions.Count(a =>
                 a.Kind is SyncActionKind.Delete or SyncActionKind.MarkCancelled
-                && a.Existing?.Type == type);
+                && a.Existing?.Type == type
+                && !EventKeys.IsManual(a.Existing.Key));
 
             int managed = tracked.Count(t => t.Type == type);
 

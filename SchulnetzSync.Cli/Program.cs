@@ -77,9 +77,9 @@ rootCmd.SetHandler(async ctx =>
         var token   = await GetTokenAsync(config, silent, ctx); if (ctx.ExitCode != 0) return;
         var target  = new GraphCalendarTarget(token!);
         Console.WriteLine($"Lösche alle {purgeType}-Einträge...");
-        await target.PurgeAsync(purgeType, config.CalendarId,
+        var purged = await target.PurgeAsync(purgeType, config.CalendarId,
             new Progress<string>(Console.WriteLine), ctx.GetCancellationToken());
-        Console.WriteLine("Fertig.");
+        Console.WriteLine($"Fertig. {purged} Einträge gelöscht.");
         ctx.ExitCode = 0; return;
     }
 
@@ -151,7 +151,9 @@ rootCmd.SetHandler(async ctx =>
 
         var from = feedEvents.Count > 0 ? feedEvents.Min(e => e.Start).AddDays(-1) : DateTimeOffset.UtcNow;
         var to   = feedEvents.Count > 0 ? feedEvents.Max(e => e.Start).AddDays(1)  : DateTimeOffset.UtcNow.AddYears(1);
-        tracked  = await target.GetTrackedEventsAsync(from, to, options.CalendarId, ctx.GetCancellationToken());
+        tracked  = await target.GetTrackedEventsAsync(
+            from, to, options.CalendarId,
+            new Progress<string>(Console.WriteLine), ctx.GetCancellationToken());
     }
 
     // Build plan

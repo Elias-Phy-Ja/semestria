@@ -72,10 +72,14 @@ public partial class App : Application
         main.WindowState = WindowState.Maximized; // Vollbild beim Start
         main.Show();
 
-        // Nach dem ersten Render: Theme fixieren + Feed im Hintergrund laden
+        // Nach dem ersten Render: Theme fixieren + Feed im Hintergrund laden.
+        // ContentRendered kann mehrfach feuern — der Auto-Refresh läuft nur einmal pro Start.
+        bool startupRefreshDone = false;
         main.ContentRendered += (_, _) =>
         {
             ForceThemeRefresh();
+            if (startupRefreshDone) return;
+            startupRefreshDone = true;
             if (AppState.Config.AutoRefreshFeed)
                 _ = TryAutoRefreshFeedAsync();
         };
@@ -105,6 +109,10 @@ public partial class App : Application
         var plainUrl = ConfigManager.GetFeedUrl(AppState.Config);
         if (string.IsNullOrEmpty(plainUrl)) return;
 
+        // Ladezustand sichtbar machen — das Dashboard zeigt Ring + Statuszeile
+        AppState.IsRefreshingFeed = true;
+        AppState.Notify();
+
         try
         {
             using var http   = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
@@ -114,12 +122,17 @@ public partial class App : Application
             if (AppState.IsSyncing) return; // Nochmals prüfen — manueller Sync hat eventuell begonnen
             var feedEvents = FeedParser.Parse(icsContent);
             AppState.CachedFeedEvents = feedEvents;
-            AppState.Notify();
+            AppState.MarkFeedRefreshed(DateTimeOffset.Now);
         }
         catch
         {
             // Kein Internet, Timeout oder anderer Fehler →
             // gecachte Daten aus der letzten Session weiternutzen (kein UI-Fehler)
+        }
+        finally
+        {
+            AppState.IsRefreshingFeed = false;
+            AppState.Notify();
         }
     }
 

@@ -1,6 +1,7 @@
 <Page x:Class="SchulnetzSync.UI.Pages.AboutPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="clr-namespace:SchulnetzSync.UI"
       xmlns:ui="http://schemas.modernwpf.com/2019"
       Title="Über &amp; Rechtliches">
 
@@ -22,8 +23,9 @@
                             <TextBlock Text="Semestria"
                                        FontSize="22" FontWeight="Bold"
                                        Foreground="{StaticResource AccentBrush}"/>
-                            <TextBlock Text="Version 1.0.0 · Kostenlos &amp; Open Source"
-                                       Style="{StaticResource BodyText}"/>
+                            <TextBlock Style="{StaticResource BodyText}">
+                                <Run Text="Version "/><Run Text="{x:Static local:AppConstants.Version}"/><Run Text=" · Kostenlos &amp; Open Source"/>
+                            </TextBlock>
                         </StackPanel>
                     </StackPanel>
                     <TextBlock TextWrapping="Wrap" FontSize="13" Opacity="0.8"

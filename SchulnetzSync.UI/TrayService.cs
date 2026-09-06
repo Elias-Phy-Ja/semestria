@@ -5,6 +5,7 @@ using SchulnetzSync.Core.Calendar;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Feed;
 using SchulnetzSync.Core.Sync;
+using SchulnetzSync.UI.Services;
 
 namespace SchulnetzSync.UI;
 
@@ -103,8 +104,8 @@ public sealed class TrayService : IDisposable
     {
         var config = ConfigManager.Load();
 
-        if (config.ClientId is null)
-            throw new InvalidOperationException("Keine Client-ID konfiguriert.");
+        var clientId = MicrosoftAccount.Resolve(config)
+            ?? throw new InvalidOperationException("Outlook-Sync ist nicht verfügbar.");
 
         var plainUrl = ConfigManager.GetFeedUrl(config);
         if (plainUrl is null)
@@ -118,7 +119,7 @@ public sealed class TrayService : IDisposable
         var feedEvents   = FeedParser.Parse(icsContent);
 
         // Acquire token silently (throws InteractiveLoginRequiredException if expired)
-        var auth  = new MsalAuthProvider(config.ClientId);
+        var auth  = new MsalAuthProvider(clientId);
         var token = await auth.AcquireTokenSilentAsync();
 
         var calendar = new GraphCalendarTarget(token);
@@ -127,6 +128,7 @@ public sealed class TrayService : IDisposable
         var from    = feedEvents.Count > 0 ? feedEvents.Min(e => e.Start).AddDays(-1) : DateTimeOffset.UtcNow;
         var to      = feedEvents.Count > 0 ? feedEvents.Max(e => e.Start).AddDays(1)  : DateTimeOffset.UtcNow.AddYears(1);
         var tracked = await calendar.GetTrackedEventsAsync(from, to, options.CalendarId);
+
 
         var plan = SyncEngine.Build(feedEvents, tracked, options, feedHealth, DateTimeOffset.Now);
         if (!plan.CanExecute)

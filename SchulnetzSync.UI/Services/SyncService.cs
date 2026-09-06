@@ -79,11 +79,19 @@ public sealed class SyncService
 
         // Cache befüllen → EventsPage zeigt Kalender sofort
         AppState.CachedFeedEvents = feedEvents;
-        AppState.Notify();
+        AppState.MarkFeedRefreshed(DateTimeOffset.Now);
 
         var pruefCount  = feedEvents.Count(e => e.Type == SchulnetzEventType.Pruefung);
         var terminCount = feedEvents.Count(e => e.Type == SchulnetzEventType.Termin);
         Report($"✅ {pruefCount} Prüfungen + {terminCount} Termine geladen.");
+
+        // Selbst erstellte Einträge werden immer mitsynchronisiert. Sie gehören
+        // NICHT in CachedFeedEvents — Kalender und Dashboard holen sie separat,
+        // sonst erschienen sie doppelt.
+        var manual   = AppState.ManualAsEvents().ToList();
+        var toSync   = feedEvents.Concat(manual).ToList();
+        if (manual.Count > 0)
+            Report($"✏️  {manual.Count} eigene Einträge kommen dazu.");
 
         // ── Nur Feed laden (kein Outlook nötig) ────────────────────────────
         if (dryRun)
@@ -98,17 +106,15 @@ public sealed class SyncService
                 UpdateCount: 0,
                 DeleteCount: 0,
                 FeedCount:   feedEvents.Count,
-                Plan: SyncEngine.Build(feedEvents, [],
+                Plan: SyncEngine.Build(toSync, [],
                     config.ToSyncOptions(), feedHealth, DateTimeOffset.Now));
         }
 
         // ── Outlook-Sync: Microsoft-Konto prüfen ───────────────────────────
-        var clientId = config.ClientId ?? AppConstants.ClientId;
-        if (!IsValidClientId(clientId))
-            throw new InvalidOperationException(
-                "Kein Microsoft-Konto konfiguriert.\n" +
-                "Gehe zu Einstellungen > Microsoft-Konto.\n" +
-                "Tipp: Der In-App-Kalender (Prüfungen & Termine) funktioniert bereits ohne Outlook.");
+        var clientId = MicrosoftAccount.Resolve(config)
+            ?? throw new InvalidOperationException(
+                "Outlook-Sync ist in dieser Version nicht verfügbar.\n" +
+                "Der Kalender in der App funktioniert weiterhin vollständig.");
 
         Report("🔐 Microsoft-Anmeldung…");
         var auth  = new MsalAuthProvider(clientId);
@@ -119,12 +125,15 @@ public sealed class SyncService
 
         var calendar = new GraphCalendarTarget(token);
         var options  = config.ToSyncOptions();
-        var from     = feedEvents.Count > 0 ? feedEvents.Min(e => e.Start).AddDays(-1) : DateTimeOffset.UtcNow;
-        var to       = feedEvents.Count > 0 ? feedEvents.Max(e => e.Start).AddDays(1)  : DateTimeOffset.UtcNow.AddYears(1);
-        var tracked  = await calendar.GetTrackedEventsAsync(from, to, options.CalendarId, ct);
-        Report($"📅 {tracked.Count} bestehende Einträge im Outlook-Kalender.");
+        // Das Lesefenster muss auch die eigenen Einträge abdecken, sonst findet
+        // der Sync sie im Kalender nicht wieder.
+        var from     = toSync.Count > 0 ? toSync.Min(e => e.Start).AddDays(-1) : DateTimeOffset.UtcNow;
+        var to       = toSync.Count > 0 ? toSync.Max(e => e.Start).AddDays(1)  : DateTimeOffset.UtcNow.AddYears(1);
+        var tracked  = await calendar.GetTrackedEventsAsync(
+            from, to, options.CalendarId,
+            new Progress<string>(msg => Report("📅 " + msg)), ct);
 
-        var plan = SyncEngine.Build(feedEvents, tracked, options, feedHealth, DateTimeOffset.Now);
+        var plan = SyncEngine.Build(toSync, tracked, options, feedHealth, DateTimeOffset.Now);
 
         if (!plan.CanExecute)
             throw new InvalidOperationException(
@@ -139,7 +148,8 @@ public sealed class SyncService
 
         var syncSummary = plan.Actions.Count == 0
             ? "Alles aktuell. Nichts zu tun."
-            : $"{plan.CreateCount} neu,  {plan.UpdateCount} aktualisiert,  {plan.DeleteCount} gelöscht";
+            : $"{plan.CreateCount} neu,  {plan.UpdateCount} aktualisiert,  {plan.DeleteCount} gelöscht"
+              + (plan.DuplicateCount > 0 ? $",  {plan.DuplicateCount} Duplikate entfernt" : "");
 
         Report($"✅  {syncSummary}");
         return new SyncResult(
@@ -168,12 +178,6 @@ public sealed class SyncService
         return first.Length > 200 ? first[..200] + "…" : first;
     }
 
-    private static bool IsValidClientId(string? id)
-    {
-        if (string.IsNullOrWhiteSpace(id)) return false;
-        if (id.Contains("YOUR", StringComparison.OrdinalIgnoreCase)) return false;
-        return id.Length >= 32 && id.Contains('-');
-    }
 }
 
 /// <summary>Ergebnis eines abgeschlossenen Sync-Laufs.</summary>

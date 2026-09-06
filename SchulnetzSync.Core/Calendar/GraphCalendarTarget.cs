@@ -20,6 +20,15 @@ public sealed class GraphCalendarTarget : ICalendarTarget
     private const string CategoryPruefung  = "Schulnetz: Prüfung";
     private const string CategoryTermin    = "Schulnetz: Termin";
     private const int    MaxBatchSize      = 20;
+
+    /// <summary>How far back and forward a purge looks for the app's own events.</summary>
+    private const int    PurgeYears        = 5;
+
+    /// <summary>
+    /// Slice size for purge reads. Graph rejects a calendarView spanning more
+    /// than a few years, so the window is walked in chunks.
+    /// </summary>
+    private const int    PurgeWindowDays   = 365;
     private const int    MaxRetries        = 5;
 
     private readonly GraphServiceClient _graph;
@@ -37,15 +46,21 @@ public sealed class GraphCalendarTarget : ICalendarTarget
 
     public async Task<IReadOnlyList<TrackedEvent>> GetTrackedEventsAsync(
         DateTimeOffset from, DateTimeOffset to, string? calendarId,
+        IProgress<string>? progress = null,
         CancellationToken ct = default)
     {
-        var expandFilter = string.Join(",", new[]
+        // Graph erlaubt nur EIN singleValueExtendedProperties-Expand; mehrere
+        // Ausdrücke nebeneinander liefern nicht alle Eigenschaften zurück.
+        // Alle vier IDs gehören darum in einen Filter, verknüpft mit "or".
+        var idFilter = string.Join(" or ", new[]
         {
-            $"singleValueExtendedProperties($filter=id eq '{ExtendedPropertyIds.Key}')",
-            $"singleValueExtendedProperties($filter=id eq '{ExtendedPropertyIds.Type}')",
-            $"singleValueExtendedProperties($filter=id eq '{ExtendedPropertyIds.Hash}')",
-            $"singleValueExtendedProperties($filter=id eq '{ExtendedPropertyIds.MissingSince}')",
-        });
+            ExtendedPropertyIds.Key,
+            ExtendedPropertyIds.Type,
+            ExtendedPropertyIds.Hash,
+            ExtendedPropertyIds.MissingSince,
+        }.Select(id => $"id eq '{id}'"));
+
+        var expandFilter = $"singleValueExtendedProperties($filter={idFilter})";
 
         var events  = new List<Event>();
         string? nextLink = null;
@@ -88,12 +103,21 @@ public sealed class GraphCalendarTarget : ICalendarTarget
         } while (nextLink is not null);
 
         // Only return events that SchulnetzSync created (have the key property).
-        return events
+        var tracked = events
             .Select(TryMapToTracked)
             .Where(t => t is not null)
             .Select(t => t!)
-            .ToList()
-            .AsReadOnly();
+            .ToList();
+
+        if (progress is not null)
+        {
+            int withProps = events.Count(e => e.SingleValueExtendedProperties is { Count: > 0 });
+            progress.Report(
+                $"Kalender gelesen: {events.Count} Einträge, " +
+                $"{withProps} mit Zusatzdaten, {tracked.Count} von Semestria.");
+        }
+
+        return tracked.AsReadOnly();
     }
 
     // -----------------------------------------------------------------------
@@ -121,6 +145,7 @@ public sealed class GraphCalendarTarget : ICalendarTarget
                     break;
 
                 case SyncActionKind.Delete:
+                case SyncActionKind.DeleteDuplicate:
                     await DeleteEventAsync(action.Existing!.CalendarEventId, ct);
                     break;
 
@@ -147,21 +172,59 @@ public sealed class GraphCalendarTarget : ICalendarTarget
         }
     }
 
-    public async Task PurgeAsync(
+    public Task<int> PurgeAsync(
         SchulnetzEventType type, string? calendarId,
         IProgress<string>? progress = null,
         CancellationToken  ct       = default)
-    {
-        // Read a very wide window to catch everything the app ever wrote.
-        var from    = DateTimeOffset.UtcNow.AddYears(-5);
-        var to      = DateTimeOffset.UtcNow.AddYears(5);
-        var tracked = await GetTrackedEventsAsync(from, to, calendarId, ct);
+        => PurgeWhereAsync(t => t.Type == type, calendarId, progress, ct);
 
-        foreach (var ev in tracked.Where(t => t.Type == type))
+    public Task<int> PurgeAllAsync(
+        string? calendarId,
+        IProgress<string>? progress = null,
+        CancellationToken  ct       = default)
+        => PurgeWhereAsync(_ => true, calendarId, progress, ct);
+
+    /// <summary>
+    /// Deletes the tracked events matching <paramref name="predicate"/>.
+    /// Only events carrying the schulnetzKey property are ever considered, so
+    /// entries the user created themselves can never be caught by this.
+    /// </summary>
+    private async Task<int> PurgeWhereAsync(
+        Func<TrackedEvent, bool> predicate, string? calendarId,
+        IProgress<string>? progress, CancellationToken ct)
+    {
+        // Ein sehr weites Fenster, um alles zu erwischen, was die App je schrieb.
+        var from = DateTimeOffset.UtcNow.AddYears(-PurgeYears);
+        var to   = DateTimeOffset.UtcNow.AddYears(PurgeYears);
+
+        // Graph begrenzt die Spanne von calendarView ("The range between the
+        // start and end date is too large"), darum in Scheiben lesen.
+        // Ein Termin auf einer Scheibengrenze taucht zweimal auf → nach ID
+        // deduplizieren.
+        var targets = new Dictionary<string, TrackedEvent>();
+
+        for (var winStart = from; winStart < to; winStart = winStart.AddDays(PurgeWindowDays))
         {
-            progress?.Report($"Lösche: {ev.Key}");
-            await DeleteEventAsync(ev.CalendarEventId, ct);
+            ct.ThrowIfCancellationRequested();
+            var winEnd = winStart.AddDays(PurgeWindowDays);
+            if (winEnd > to) winEnd = to;
+
+            progress?.Report($"Suche Einträge… {winStart:yyyy}");
+
+            foreach (var ev in await GetTrackedEventsAsync(winStart, winEnd, calendarId, progress, ct))
+                if (predicate(ev))
+                    targets[ev.CalendarEventId] = ev;
         }
+
+        int deleted = 0;
+        foreach (var ev in targets.Values)
+        {
+            ct.ThrowIfCancellationRequested();
+            progress?.Report($"Lösche {deleted + 1}/{targets.Count}: {ev.Key}");
+            await DeleteEventAsync(ev.CalendarEventId, ct);
+            deleted++;
+        }
+        return deleted;
     }
 
     public async Task<IReadOnlyList<(string Id, string Name)>> GetCalendarsAsync(
@@ -189,7 +252,13 @@ public sealed class GraphCalendarTarget : ICalendarTarget
         AddExtendedProperties(body, ev.Key,
             ev.Type.ToString(), hash, missingSince: null);
 
-        await _graph.Me.Events.PostAsync(body, cancellationToken: ct);
+        // Ohne den Ziel-Kalender landet alles im Primärkalender, während das
+        // Lesen im gewählten Kalender sucht — die App fände ihre eigenen
+        // Einträge dann nie wieder.
+        if (opts.CalendarId is { Length: > 0 } calendarId)
+            await _graph.Me.Calendars[calendarId].Events.PostAsync(body, cancellationToken: ct);
+        else
+            await _graph.Me.Events.PostAsync(body, cancellationToken: ct);
     }
 
     private async Task UpdateEventAsync(string id, SchulnetzEvent ev, SyncOptions opts, CancellationToken ct)
@@ -292,8 +361,23 @@ public sealed class GraphCalendarTarget : ICalendarTarget
     {
         if (ev.Id is null) return null;
 
-        string? GetProp(string id) => ev.SingleValueExtendedProperties?
-            .FirstOrDefault(p => p.Id == id)?.Value;
+        // Graph gibt die Property-ID nicht zwingend zeichengleich zurück
+        // (GUID-Schreibweise, Abstände). Darum erst unabhängig von Gross-/
+        // Kleinschreibung vergleichen, dann über den Namen am Ende.
+        string? GetProp(string id)
+        {
+            var props = ev.SingleValueExtendedProperties;
+            if (props is null || props.Count == 0) return null;
+
+            var exact = props.FirstOrDefault(
+                p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
+            if (exact is not null) return exact.Value;
+
+            var name = id[(id.LastIndexOf(' ') + 1)..];
+            return props.FirstOrDefault(
+                p => p.Id is not null &&
+                     p.Id.EndsWith(" " + name, StringComparison.OrdinalIgnoreCase))?.Value;
+        }
 
         var key  = GetProp(ExtendedPropertyIds.Key);
         if (key is null) return null;   // not a SchulnetzSync event

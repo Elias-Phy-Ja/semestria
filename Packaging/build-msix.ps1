@@ -44,6 +44,7 @@ $sdkTools = "$env:USERPROFILE\.nuget\packages\microsoft.windows.sdk.buildtools"
 $sdkVer   = (Get-ChildItem $sdkTools | Sort-Object Name -Descending | Select-Object -First 1).Name
 $toolsDir = "$sdkTools\$sdkVer\bin\10.0.26100.0\x64"
 $makeappx = "$toolsDir\makeappx.exe"
+$makepri  = "$toolsDir\makepri.exe"
 $signtool = "$toolsDir\signtool.exe"
 
 if (-not (Test-Path $makeappx)) {
@@ -58,7 +59,7 @@ Write-Host ""
 
 # ── 1. Publish ────────────────────────────────────────────────────────────────
 
-Write-Host "[1/4] dotnet publish (self-contained, win-x64, Release)..."
+Write-Host "[1/5] dotnet publish (self-contained, win-x64, Release)..."
 if (Test-Path $publishOut) { Remove-Item $publishOut -Recurse -Force }
 
 & dotnet publish $uiProj `
@@ -76,7 +77,7 @@ Write-Host "  → $publishOut" -ForegroundColor Green
 # ── 2. Pack-Verzeichnis aufbauen ──────────────────────────────────────────────
 
 Write-Host ""
-Write-Host "[2/4] Pack-Verzeichnis erstellen..."
+Write-Host "[2/5] Pack-Verzeichnis erstellen..."
 if (Test-Path $packDir) { Remove-Item $packDir -Recurse -Force }
 New-Item -ItemType Directory $packDir | Out-Null
 
@@ -91,10 +92,37 @@ Copy-Item $assetsDir "$packDir\Assets" -Recurse
 
 Write-Host "  → $packDir" -ForegroundColor Green
 
-# ── 3. MSIX packen ───────────────────────────────────────────────────────────
+# ── 3. resources.pri erzeugen ────────────────────────────────────────────────
+#
+# Ohne PRI-Datei kann Windows die Asset-Varianten nicht aufloesen: Es findet nur
+# die eine Datei, die woertlich im Manifest steht, und legt das Taskleisten-Icon
+# auf eine Flaeche in BackgroundColor. Erst mit PRI werden die
+# targetsize-*_altform-unplated-Varianten gefunden — also das Icon ohne
+# Hintergrund.
 
 Write-Host ""
-Write-Host "[3/4] MSIX packen..."
+Write-Host "[3/5] resources.pri erzeugen..."
+
+$priConfig = "$PSScriptRoot\_pack\priconfig.xml"
+$priFile   = "$PSScriptRoot\_pack\resources.pri"
+
+& $makepri createconfig /cf $priConfig /dq en-US /o | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "makepri createconfig fehlgeschlagen" }
+
+& $makepri new /pr $packDir /cf $priConfig /of $priFile /mn "$packDir\AppxManifest.xml" /o | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "makepri new fehlgeschlagen" }
+
+# Die Konfigurationsdatei gehoert nicht ins Paket
+Remove-Item $priConfig -Force
+
+if (-not (Test-Path $priFile)) { throw "resources.pri wurde nicht erzeugt" }
+Write-Host "  -> $priFile" -ForegroundColor Green
+
+
+# ── 4. MSIX packen ───────────────────────────────────────────────────────────
+
+Write-Host ""
+Write-Host "[4/5] MSIX packen..."
 New-Item -ItemType Directory -Force $outDir | Out-Null
 if (Test-Path $msixPath) { Remove-Item $msixPath -Force }
 
@@ -106,7 +134,7 @@ Write-Host "  → $msixPath" -ForegroundColor Green
 
 if ($Sign) {
     Write-Host ""
-    Write-Host "[4/4] Selbstsigniertes Testzertifikat erstellen und signieren..."
+    Write-Host "[5/5] Selbstsigniertes Testzertifikat erstellen und signieren..."
 
     # Publisher aus Manifest
     $publisher = $mf.Package.Identity.Publisher   # z.B. "CN=EliasWyss"
@@ -148,7 +176,7 @@ if ($Sign) {
     Write-Host "Doppelklick auf $msixName zum Installieren." -ForegroundColor Yellow
 } else {
     Write-Host ""
-    Write-Host "[4/4] Keine Signatur (für Microsoft Store-Upload nicht nötig)." -ForegroundColor DarkGray
+    Write-Host "[5/5] Keine Signatur (für Microsoft Store-Upload nicht nötig)." -ForegroundColor DarkGray
 }
 
 # ── Zusammenfassung ───────────────────────────────────────────────────────────

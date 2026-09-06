@@ -2,6 +2,7 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.modernwpf.com/2019"
+      xmlns:local="clr-namespace:SchulnetzSync.UI"
       Title="Einstellungen">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -52,7 +53,7 @@
             </Border>
 
             <!-- ═══ MICROSOFT ═══ -->
-            <TextBlock Text="MICROSOFT-KONTO" Style="{StaticResource SectionLabel}"/>
+            <TextBlock Text="OUTLOOK (OPTIONAL)" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
 
@@ -69,45 +70,76 @@
                                Style="{StaticResource NoteText}"
                                Margin="0,0,0,16"/>
 
-                    <!-- Client-ID -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <TextBlock Text="App-ID (Client-ID):"
-                                   FontWeight="SemiBold" FontSize="13"
-                                   VerticalAlignment="Center"/>
-                        <Button x:Name="BtnOpenAzure"
-                                Content="portal.azure.com öffnen"
-                                FontSize="11" Margin="10,0,0,0"
-                                Padding="8,3" VerticalAlignment="Center"
-                                Style="{StaticResource SecondaryButton}"
-                                Click="BtnOpenAzure_Click"/>
-                    </StackPanel>
-                    <TextBox x:Name="TxtClientId" Height="36" FontSize="13"
-                             ui:ControlHelper.PlaceholderText="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/>
-                    <Border CornerRadius="6" Padding="12,10" Margin="0,6,0,0"
-                            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                    <!-- Wozu das Ganze -->
+                    <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,10"
+                               Text="{x:Static local:OutlookSetupText.Benefit}"/>
+                    <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,16"
+                               Text="{x:Static local:OutlookSetupText.SkipConsequence}"/>
+
+                    <Border Style="{StaticResource InfoBox}" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource WarningBrush}"
-                                       Margin="0,0,0,6"
-                                       Text="Persönliches Microsoft-Konto nötig (@outlook.com / @hotmail.com)"/>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.85" Margin="0,0,0,4"
-                                       Text="Schulkonten haben meist keine Rechte, um Apps zu registrieren."/>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80" Margin="0,0,0,3">1.  portal.azure.com mit persönlichem Konto öffnen</TextBlock>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80" Margin="0,0,0,3">2.  App-Registrierungen → Neue Registrierung</TextBlock>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80" Margin="0,0,0,3">3.  Name: SchulnetzSync, Typ: Persönliche Microsoft-Konten</TextBlock>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80" Margin="0,0,0,3">4.  Anwendungs-ID (Client-ID) kopieren und oben einfügen</TextBlock>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80" Margin="0,0,0,3">5.  API-Berechtigungen: Calendars.ReadWrite (delegiert)</TextBlock>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.80">6.  Authentifizierung: Öffentlicher Client aktivieren</TextBlock>
+                            <TextBlock FontSize="13" TextWrapping="Wrap" Margin="0,0,0,6">&#x2705;  Pr&#252;fungen und Termine in deinem Kalender, immer aktuell</TextBlock>
+                            <TextBlock FontSize="13" TextWrapping="Wrap" Margin="0,0,0,6">&#x274C;  Keine E-Mails, keine Kontakte, keine Dateien</TextBlock>
+                            <TextBlock FontSize="13" TextWrapping="Wrap">&#x1F512;  Du meldest dich direkt bei Microsoft an. Semestria sieht dein Passwort nie.</TextBlock>
                         </StackPanel>
                     </Border>
-                    <TextBlock Style="{StaticResource NoteText}"
-                               Text="Outlook-Sync ist optional. Der In-App-Kalender funktioniert ohne Microsoft-Konto."
-                               Margin="0,8,0,16"/>
+
+                    <!--
+                        Normalfall: Die App bringt ihre Registrierung mit, hier ist
+                        nichts einzutragen. Der Abschnitt ist nur f&#252;r Fortgeschrittene
+                        und f&#252;r Builds ohne mitgelieferte App-ID.
+                    -->
+                    <Expander x:Name="AdvancedIdSection"
+                              Header="Erweitert: eigene App-ID verwenden"
+                              Margin="0,0,0,16">
+                        <StackPanel Margin="0,12,0,0">
+                            <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,12"
+                                       Text="Normalerweise brauchst du hier nichts einzutragen &#8212; Semestria bringt seine eigene Registrierung mit. Trage nur dann eine App-ID ein, wenn du eine eigene Registrierung bei Microsoft verwenden willst."/>
+
+                            <TextBox x:Name="TxtClientId" Height="36" FontSize="13"
+                                     ui:ControlHelper.PlaceholderText="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"/>
+                            <TextBlock Style="{StaticResource NoteText}" Margin="0,6,0,14"
+                                       Text="Leer lassen, um die mitgelieferte Registrierung zu verwenden."/>
+
+                            <Border Style="{StaticResource WarningBox}" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <TextBlock Text="Wichtig: privates Microsoft-Konto"
+                                               FontWeight="SemiBold" FontSize="13"
+                                               Margin="0,0,0,6"/>
+                                    <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.90"
+                                               Text="{x:Static local:OutlookSetupText.AccountWarning}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Text="So kommst du zu einer eigenen App-ID:"
+                                       FontWeight="SemiBold" FontSize="13"
+                                       Margin="0,0,0,8"/>
+                            <Border CornerRadius="8" Padding="14,12" Margin="0,0,0,12"
+                                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                                <ItemsControl ItemsSource="{x:Static local:OutlookSetupText.Steps}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}"
+                                                       FontSize="12" TextWrapping="Wrap"
+                                                       Opacity="0.88" Margin="0,0,0,6"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+
+                            <Button x:Name="BtnOpenAzure"
+                                    Content="Microsoft-Portal &#246;ffnen"
+                                    Style="{StaticResource SecondaryButton}"
+                                    HorizontalAlignment="Left"
+                                    Padding="16,8" FontSize="13"
+                                    Click="BtnOpenAzure_Click"/>
+                        </StackPanel>
+                    </Expander>
 
                     <!-- Anmelde-Buttons -->
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="BtnSignIn"
-                                Content="🔑  Anmelden"
+                                Content="Mit Microsoft anmelden"
                                 Style="{StaticResource PrimaryButton}"
                                 Margin="0,0,12,0"
                                 Click="BtnSignIn_Click"/>
@@ -167,6 +199,38 @@
                               Content="Feed beim App-Start automatisch aktualisieren"/>
                     <TextBlock Style="{StaticResource NoteText}" Margin="24,0,0,0"
                                Text="Aktualisiert den Kalender im Hintergrund. Wenn offline, wird der gespeicherte Feed genutzt."/>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══ AUFRÄUMEN ═══ -->
+            <TextBlock Text="AUFRÄUMEN" Style="{StaticResource SectionLabel}"/>
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Alle Semestria-Einträge aus Outlook entfernen"
+                               Style="{StaticResource HeadlineText}"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,6"
+                               Text="Löscht jeden Kalendereintrag, den Semestria angelegt hat — Prüfungen und Termine, auch bereits als «Abgesagt» markierte."/>
+                    <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,6"
+                               Text="Deine eigenen Termine bleiben unberührt. Erkannt werden nur Einträge, die Semestria selbst erstellt und markiert hat."/>
+                    <TextBlock Style="{StaticResource NoteText}" Margin="0,0,0,14"
+                               Text="Lässt sich nicht rückgängig machen. Ein erneuter Sync legt die Einträge aber wieder an."/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnPurgeAll"
+                                Content="Alle Einträge löschen"
+                                Style="{StaticResource SecondaryButton}"
+                                Foreground="{StaticResource DangerBrush}"
+                                Click="BtnPurgeAll_Click"/>
+                        <ui:ProgressRing x:Name="PurgeRing"
+                                         IsActive="False" Width="20" Height="20"
+                                         VerticalAlignment="Center"
+                                         Margin="14,0,0,0"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="TxtPurgeStatus"
+                               Style="{StaticResource BodyText}"
+                               Margin="0,12,0,0"/>
                 </StackPanel>
             </Border>
 

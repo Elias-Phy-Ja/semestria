@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         xmlns:legal="clr-namespace:SchulnetzSync.UI.Legal"
+        xmlns:local="clr-namespace:SchulnetzSync.UI"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Semestria einrichten"
         Width="660" Height="640"
@@ -50,15 +51,16 @@
                                TextAlignment="Center" Margin="0,0,0,10"/>
                     <TextBlock TextAlignment="Center" TextWrapping="Wrap"
                                FontSize="14" Opacity="0.65" Margin="0,0,0,28"
-                               Text="Schulprüfungen und Termine automatisch in deinen Outlook-Kalender. In 4 Schritten eingerichtet."/>
+                               Text="Deine Schulprüfungen und Termine immer im Blick — in der App und auf Wunsch auch in Outlook. In wenigen Schritten eingerichtet."/>
                     <Border Style="{StaticResource InfoBox}">
                         <StackPanel>
                             <TextBlock Text="Was Semestria macht:"
                                        FontWeight="SemiBold" FontSize="14"
                                        Margin="0,0,0,12"/>
                             <TextBlock FontSize="13" Margin="0,0,0,6">✅  Liest deinen Schulnetz-Kalender automatisch</TextBlock>
-                            <TextBlock FontSize="13" Margin="0,0,0,6">✅  Schreibt Prüfungen &amp; Termine in Outlook</TextBlock>
+                            <TextBlock FontSize="13" Margin="0,0,0,6">✅  Zeigt Prüfungen &amp; Termine im Kalender der App</TextBlock>
                             <TextBlock FontSize="13" Margin="0,0,0,6">✅  Erkennt Änderungen und aktualisiert Einträge</TextBlock>
+                            <TextBlock FontSize="13" Margin="0,0,0,6">➕  Optional: trägt alles in deinen Outlook-Kalender ein</TextBlock>
                             <TextBlock FontSize="13">🔒  Alles lokal — keine Daten auf fremden Servern</TextBlock>
                         </StackPanel>
                     </Border>
@@ -203,133 +205,174 @@
                                Text="🔒  Die URL wird verschlüsselt gespeichert. Das Token verlässt dein Gerät nie."/>
                 </StackPanel>
 
-                <!-- ══════════════════════════════════
-                     SCHRITT 4 — Microsoft-Anmeldung
-                     ══════════════════════════════════ -->
-                <StackPanel x:Name="Step4" Visibility="Collapsed"
-                            HorizontalAlignment="Center" MaxWidth="520">
-                    <TextBlock Text="🔑" FontSize="48"
-                               HorizontalAlignment="Center" Margin="0,0,0,16"/>
-                    <TextBlock Text="Mit Microsoft anmelden"
-                               FontSize="24" FontWeight="Bold"
-                               HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                    <TextBlock TextAlignment="Center" TextWrapping="Wrap"
-                               FontSize="13" Opacity="0.65" Margin="0,0,0,20"
-                               Text="Dieser Schritt ist optional. Du kannst ihn überspringen und den In-App-Kalender nutzen — oder später in den Einstellungen einrichten."/>
+                <!-- ==================================
+                     SCHRITT 4 - Outlook (zweigeteilt: Frage -> Einrichtung)
+                     ================================== -->
+                <Grid x:Name="Step4" Visibility="Collapsed">
 
-                    <Border Style="{StaticResource InfoBox}" Margin="0,0,0,16">
-                        <StackPanel>
-                            <TextBlock Text="Wozu ist die Outlook-Anmeldung gut?"
-                                       FontWeight="SemiBold" Margin="0,0,0,8"/>
-                            <TextBlock FontSize="13" Margin="0,0,0,4">✅  Prüfungen erscheinen direkt in Outlook und Teams</TextBlock>
-                            <TextBlock FontSize="13" Margin="0,0,0,4">✅  Benachrichtigungen auf allen deinen Geräten</TextBlock>
-                            <TextBlock FontSize="13" Margin="0,0,0,4">❌  Keine E-Mails, Kontakte oder anderen Daten</TextBlock>
-                            <TextBlock FontSize="13" Opacity="0.7" Margin="0,8,0,0">
-                                Ohne Anmeldung: In-App-Kalender funktioniert trotzdem vollständig.
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
+                    <!-- 4a - Die Frage -->
+                    <StackPanel x:Name="Step4Ask"
+                                HorizontalAlignment="Center" MaxWidth="520">
+                        <TextBlock Text="&#x1F517;" FontSize="48"
+                                   HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                        <TextBlock Text="Outlook jetzt verkn&#252;pfen?"
+                                   FontSize="24" FontWeight="Bold"
+                                   HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                        <TextBlock TextAlignment="Center" TextWrapping="Wrap"
+                                   FontSize="13" Opacity="0.75" Margin="0,0,0,20"
+                                   Text="{x:Static local:OutlookSetupText.Benefit}"/>
 
-                    <!-- Client-ID Warnung (nur wenn Platzhalter) -->
-                    <Border x:Name="ClientIdHint"
-                            Style="{StaticResource WarningBox}"
-                            Visibility="Collapsed" Margin="0,0,0,16">
-                        <StackPanel>
-                            <TextBlock Text="App-ID noch nicht konfiguriert"
-                                       FontWeight="SemiBold" Margin="0,0,0,6"/>
-                            <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.85"
-                                       Text="Für die Anmeldung wird eine Microsoft App-ID benötigt. Trage sie unten ein oder überspringe diesen Schritt."/>
-                        </StackPanel>
-                    </Border>
+                        <Border Style="{StaticResource InfoBox}" Margin="0,0,0,24">
+                            <StackPanel>
+                                <TextBlock Text="Gut zu wissen"
+                                           FontWeight="SemiBold" FontSize="13"
+                                           Margin="0,0,0,8"/>
+                                <TextBlock FontSize="13" TextWrapping="Wrap"
+                                           Margin="0,0,0,8"
+                                           Text="{x:Static local:OutlookSetupText.HowItWorks}"/>
+                                <TextBlock FontSize="13" TextWrapping="Wrap"
+                                           Opacity="0.85"
+                                           Text="{x:Static local:OutlookSetupText.SkipConsequence}"/>
+                            </StackPanel>
+                        </Border>
 
-                    <!-- App-ID Eingabe mit Hilfe-Link -->
-                    <StackPanel Margin="0,0,0,4">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="App-ID (Client-ID):"
-                                       FontWeight="SemiBold" FontSize="13"
+                        <!-- Nur im Entwickler-Build ohne eigene Registrierung -->
+                        <Border x:Name="NoRegistrationHint"
+                                Style="{StaticResource WarningBox}"
+                                Visibility="Collapsed" Margin="0,0,0,24">
+                            <TextBlock FontSize="12" TextWrapping="Wrap"
+                                       Text="Diese Version bringt keine App-Registrierung mit. F&#252;r den Outlook-Sync brauchst du eine eigene App-ID &#8212; die Anleitung dazu erscheint im n&#228;chsten Schritt."/>
+                        </Border>
+
+                        <Button x:Name="BtnLinkNow"
+                                Content="Ja, Outlook jetzt verkn&#252;pfen"
+                                Style="{StaticResource PrimaryButton}"
+                                HorizontalAlignment="Stretch"
+                                Padding="24,13" FontSize="14"
+                                Margin="0,0,0,10"
+                                Click="BtnLinkNow_Click"/>
+                        <Button x:Name="BtnLinkLater"
+                                Content="Sp&#228;ter &#8212; erst mal ohne Outlook"
+                                Style="{StaticResource SecondaryButton}"
+                                HorizontalAlignment="Stretch"
+                                Padding="24,13" FontSize="14"
+                                Click="BtnLinkLater_Click"/>
+                        <TextBlock TextAlignment="Center" TextWrapping="Wrap"
+                                   FontSize="12" Opacity="0.55" Margin="0,12,0,0"
+                                   Text="Du kannst das jederzeit in den Einstellungen nachholen."/>
+                    </StackPanel>
+
+                    <!-- 4b - Die Anmeldung -->
+                    <StackPanel x:Name="Step4Setup" Visibility="Collapsed"
+                                HorizontalAlignment="Center" MaxWidth="520">
+                        <TextBlock Text="&#x1F511;" FontSize="44"
+                                   HorizontalAlignment="Center" Margin="0,0,0,14"/>
+                        <TextBlock Text="Mit Microsoft anmelden"
+                                   FontSize="24" FontWeight="Bold"
+                                   HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        <TextBlock TextAlignment="Center" TextWrapping="Wrap"
+                                   FontSize="13" Opacity="0.75" Margin="0,0,0,20"
+                                   Text="Ein Klick, ein Microsoft-Fenster, fertig. Mehr brauchst du nicht einzurichten."/>
+
+                        <Border Style="{StaticResource InfoBox}" Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="Was Semestria darf"
+                                           FontWeight="SemiBold" FontSize="13"
+                                           Margin="0,0,0,10"/>
+                                <TextBlock FontSize="13" TextWrapping="Wrap" Margin="0,0,0,6">&#x2705;  Pr&#252;fungen und Termine in deinen Kalender eintragen und aktuell halten</TextBlock>
+                                <TextBlock FontSize="13" TextWrapping="Wrap" Margin="0,0,0,6">&#x274C;  Keine E-Mails, keine Kontakte, keine Dateien</TextBlock>
+                                <TextBlock FontSize="13" TextWrapping="Wrap">&#x1F512;  Du meldest dich direkt bei Microsoft an. Semestria sieht dein Passwort nie.</TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Button x:Name="BtnSignIn"
+                                Content="Mit Microsoft anmelden"
+                                Style="{StaticResource PrimaryButton}"
+                                HorizontalAlignment="Stretch"
+                                Padding="24,13" FontSize="14"
+                                Click="BtnSignIn_Click"
+                                Margin="0,0,0,12"/>
+
+                        <StackPanel x:Name="SignInSuccess" Visibility="Collapsed"
+                                    Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="&#x2705;" FontSize="18" VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <TextBlock x:Name="TxtSignedIn"
+                                       Text="Erfolgreich angemeldet!"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource SuccessBrush}"
                                        VerticalAlignment="Center"/>
-                            <Button x:Name="BtnOpenAzure"
-                                    Content="Auf portal.azure.com öffnen"
-                                    FontSize="11"
-                                    Margin="12,0,0,0"
-                                    Padding="8,3"
-                                    VerticalAlignment="Center"
-                                    Style="{StaticResource SecondaryButton}"
-                                    Click="BtnOpenAzure_Click"/>
                         </StackPanel>
-                        <TextBox x:Name="TxtClientId" Height="38" FontSize="13"
-                                 ui:ControlHelper.PlaceholderText="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                                 TextChanged="TxtClientId_TextChanged"/>
+
+                        <TextBlock x:Name="TxtSignInError"
+                                   Visibility="Collapsed"
+                                   TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{StaticResource DangerBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,0"/>
+
+                        <!--
+                            Nur sichtbar, wenn diese Version keine eigene
+                            App-Registrierung mitbringt (Entwickler-Build).
+                            Endnutzer sehen das nie.
+                        -->
+                        <Expander x:Name="AdvancedIdSection"
+                                  Header="Eigene App-ID verwenden"
+                                  Visibility="Collapsed"
+                                  Margin="0,20,0,0">
+                            <StackPanel Margin="0,12,0,0">
+                                <Border Style="{StaticResource WarningBox}" Margin="0,0,0,14">
+                                    <StackPanel>
+                                        <TextBlock Text="Diese Version bringt keine App-Registrierung mit"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   Margin="0,0,0,6"/>
+                                        <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.90"
+                                                   Text="{x:Static local:OutlookSetupText.AccountWarning}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBox x:Name="TxtClientId" Height="36" FontSize="13"
+                                         ui:ControlHelper.PlaceholderText="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                         TextChanged="TxtClientId_TextChanged"/>
+                                <TextBlock x:Name="ClientIdHint"
+                                           FontSize="12" Opacity="0.60" Margin="0,6,0,14"
+                                           TextWrapping="Wrap"
+                                           Text="Noch leer &#8212; folge der Anleitung unten."/>
+
+                                <Border CornerRadius="8" Padding="14,12" Margin="0,0,0,12"
+                                        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                                    <ItemsControl ItemsSource="{x:Static local:OutlookSetupText.Steps}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}"
+                                                           FontSize="12" TextWrapping="Wrap"
+                                                           Opacity="0.88" Margin="0,0,0,6"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+
+                                <Button x:Name="BtnOpenAzure"
+                                        Content="Microsoft-Portal &#246;ffnen"
+                                        Style="{StaticResource SecondaryButton}"
+                                        HorizontalAlignment="Left"
+                                        Padding="16,8" FontSize="13"
+                                        Click="BtnOpenAzure_Click"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <Button x:Name="BtnSkipSignIn"
+                                Content="Doch sp&#228;ter einrichten"
+                                HorizontalAlignment="Center"
+                                Margin="0,20,0,0"
+                                FontSize="12"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{StaticResource AccentBrush}"
+                                Cursor="Hand"
+                                Click="BtnSkipSignIn_Click"/>
                     </StackPanel>
-
-                    <!-- Azure-Anleitung -->
-                    <Border CornerRadius="6" Padding="14,12"
-                            Margin="0,8,0,12"
-                            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-                        <StackPanel>
-                            <TextBlock Text="Wichtig: persönliches Microsoft-Konto nötig"
-                                       FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource WarningBrush}"
-                                       Margin="0,0,0,8"/>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8">
-                                Schulkonten (@altekanti.ch usw.) haben meist keine Rechte um Apps zu registrieren. Du brauchst ein persönliches Microsoft-Konto (@outlook.com, @hotmail.com oder @live.com).
-                            </TextBlock>
-                            <TextBlock Text="Schritte:" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3">1.  «Auf portal.azure.com öffnen» klicken und mit persönlichem Konto anmelden</TextBlock>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3">2.  «App-Registrierungen» → «Neue Registrierung»</TextBlock>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3">3.  Name: SchulnetzSync, Typ: Persönliche Microsoft-Konten</TextBlock>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3">4.  «Anwendungs-ID (Client-ID)» kopieren und oben einfügen</TextBlock>
-                            <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3">5.  API-Berechtigungen: Calendars.ReadWrite (delegiert)</TextBlock>
-                            <TextBlock FontSize="12" TextWrapping="Wrap">6.  Authentifizierung: Öffentlicher Client/native Anwendung aktivieren</TextBlock>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Anmelde-Button -->
-                    <Button x:Name="BtnSignIn"
-                            Content="Jetzt mit Microsoft anmelden"
-                            Style="{StaticResource PrimaryButton}"
-                            HorizontalAlignment="Center"
-                            Padding="28,12" FontSize="14"
-                            IsEnabled="False"
-                            Click="BtnSignIn_Click"
-                            Margin="0,0,0,12"/>
-
-                    <!-- Erfolg -->
-                    <StackPanel x:Name="SignInSuccess" Visibility="Collapsed"
-                                Orientation="Horizontal" HorizontalAlignment="Center">
-                        <TextBlock Text="✅" FontSize="18" VerticalAlignment="Center"
-                                   Margin="0,0,8,0"/>
-                        <TextBlock x:Name="TxtSignedIn"
-                                   Text="Erfolgreich angemeldet!"
-                                   FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{StaticResource SuccessBrush}"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <!-- Fehler -->
-                    <TextBlock x:Name="TxtSignInError"
-                               Visibility="Collapsed"
-                               TextWrapping="Wrap" FontSize="12"
-                               Foreground="{StaticResource DangerBrush}"
-                               HorizontalAlignment="Center"
-                               Margin="0,8,0,0"/>
-
-                    <!-- Überspringen -->
-                    <TextBlock Margin="0,16,0,4" HorizontalAlignment="Center"
-                               FontSize="12" Opacity="0.55" TextWrapping="Wrap"
-                               TextAlignment="Center"
-                               Text="Keine App-ID? Du kannst diesen Schritt überspringen und später in den Einstellungen konfigurieren."/>
-                    <Button x:Name="BtnSkipSignIn"
-                            Content="Überspringen"
-                            HorizontalAlignment="Center"
-                            Margin="0,0,0,0"
-                            FontSize="12"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Foreground="{StaticResource AccentBrush}"
-                            Cursor="Hand"
-                            Click="BtnSkipSignIn_Click"/>
-                </StackPanel>
+                </Grid>
 
                 <!-- ══════════════════════════════════
                      SCHRITT 5 — Fertig

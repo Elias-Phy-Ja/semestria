@@ -9,7 +9,12 @@ namespace SchulnetzSync.Core.Calendar;
 /// </summary>
 public sealed class MsalAuthProvider
 {
-    private const string Authority = "https://login.microsoftonline.com/common";
+    // Muss zur "signInAudience" der App-Registrierung passen:
+    //   PersonalMicrosoftAccount        -> /consumers
+    //   AzureADandPersonalMicrosoftAccount -> /common
+    // Die ausgelieferte Registrierung ist PersonalMicrosoftAccount, daher
+    // /consumers. Mit /common lehnt Microsoft die Anfrage ab (userAudience).
+    private const string Authority = "https://login.microsoftonline.com/consumers";
     private static readonly string[] Scopes = ["Calendars.ReadWrite"];
 
     private readonly IPublicClientApplication _app;

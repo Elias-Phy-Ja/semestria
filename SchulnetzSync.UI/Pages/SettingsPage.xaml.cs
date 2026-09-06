@@ -8,6 +8,7 @@ using WpfRadioButton = System.Windows.Controls.RadioButton;
 using SchulnetzSync.Core.Calendar;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Model;
+using SchulnetzSync.UI.Services;
 
 namespace SchulnetzSync.UI.Pages;
 
@@ -41,8 +42,12 @@ public partial class SettingsPage : Page
             var raw = ConfigManager.GetFeedUrl(config);
             TxtFeedUrl.Text = raw ?? "";
 
-            TxtClientId.Text = config.ClientId ?? AppConstants.ClientId;
-            if (TxtClientId.Text == "YOUR-CLIENT-ID-HERE") TxtClientId.Text = "";
+            // Im Feld steht nur eine selbst eingetragene ID — die mitgelieferte
+            // Registrierung bleibt unsichtbar, damit niemand daran herumschraubt.
+            TxtClientId.Text = MicrosoftAccount.UsesCustomId(config)
+                ? config.ClientId!.Trim()
+                : "";
+            AdvancedIdSection.IsExpanded = !MicrosoftAccount.HasBuiltInId;
 
             ChkPruefungen.IsChecked = config.EnabledTypes.Contains(SchulnetzEventType.Pruefung);
             ChkTermine.IsChecked    = config.EnabledTypes.Contains(SchulnetzEventType.Termin);
@@ -67,11 +72,12 @@ public partial class SettingsPage : Page
 
     private async Task CheckSignInAsync()
     {
-        var clientId = TxtClientId.Text.Trim();
-        if (!IsValidClientId(clientId))
+        var clientId = EffectiveClientId();
+        if (clientId is null)
         {
-            SetAccountState(false, "Nicht angemeldet",
-                "Client-ID eintragen um dich anzumelden.");
+            SetAccountState(false, "Outlook nicht verfügbar",
+                "Diese Version bringt keine App-Registrierung mit. Trage unter «Erweitert» eine eigene App-ID ein.");
+            BtnSignIn.IsEnabled = false;
             return;
         }
         try
@@ -79,16 +85,17 @@ public partial class SettingsPage : Page
             var auth = new MsalAuthProvider(clientId);
             bool ok  = await auth.IsSignedInAsync();
             SetAccountState(ok,
-                ok ? "Angemeldet" : "Nicht angemeldet",
-                ok ? "SchulnetzSync darf deinen Outlook-Kalender lesen und schreiben."
-                   : "Klicke «Anmelden» um den Zugriff zu erlauben.");
+                ok ? "Outlook ist verknüpft" : "Outlook nicht verknüpft",
+                ok ? "Semestria darf deinen Outlook-Kalender lesen und schreiben — sonst nichts."
+                   : "Ein Klick genügt: «Mit Microsoft anmelden». Mehr musst du nicht einrichten.");
             BtnSignOut.IsEnabled = ok;
             BtnSignIn.IsEnabled  = !ok;
             if (ok) await LoadCalendarsAsync(clientId);
         }
         catch
         {
-            SetAccountState(false, "Status unbekannt", "Anmeldestatus konnte nicht geprüft werden.");
+            SetAccountState(false, "Status unbekannt",
+                "Konnte nicht geprüft werden — vermutlich keine Internetverbindung.");
         }
     }
 
@@ -126,17 +133,17 @@ public partial class SettingsPage : Page
 
     private async void BtnSignIn_Click(object sender, RoutedEventArgs e)
     {
-        var clientId = TxtClientId.Text.Trim();
-        if (!IsValidClientId(clientId))
+        var clientId = EffectiveClientId();
+        if (clientId is null)
         {
-            TxtAuthError.Text       = "Bitte zuerst eine gültige Client-ID eingeben.";
+            TxtAuthError.Text       = "Keine App-ID verfügbar. Trage unter «Erweitert» eine eigene ein.";
             TxtAuthError.Visibility = Visibility.Visible;
             return;
         }
 
         BtnSignIn.IsEnabled       = false;
         TxtAuthError.Visibility   = Visibility.Collapsed;
-        SetAccountState(false, "Anmeldung läuft…", "Browser öffnet sich…");
+        SetAccountState(false, "Anmeldung läuft…", "Es öffnet sich ein Microsoft-Fenster.");
 
         try
         {
@@ -144,9 +151,9 @@ public partial class SettingsPage : Page
             var auth = new MsalAuthProvider(clientId);
             await auth.AcquireTokenInteractiveAsync();
 
-            AppState.Config.ClientId = clientId;
-            SetAccountState(true, "Angemeldet",
-                "SchulnetzSync darf deinen Outlook-Kalender lesen und schreiben.");
+            PersistCustomClientId();
+            SetAccountState(true, "Outlook ist verknüpft",
+                "Semestria darf deinen Outlook-Kalender lesen und schreiben — sonst nichts.");
             BtnSignOut.IsEnabled = true;
             await LoadCalendarsAsync(clientId);
         }
@@ -155,7 +162,8 @@ public partial class SettingsPage : Page
             var safeMsg = SanitizeError(ex.Message, clientId);
             TxtAuthError.Text       = safeMsg;
             TxtAuthError.Visibility = Visibility.Visible;
-            SetAccountState(false, "Anmeldung fehlgeschlagen", "Klicke erneut um es zu versuchen.");
+            SetAccountState(false, "Anmeldung fehlgeschlagen",
+                "Prüfe die App-ID und versuche es nochmals.");
             // Button zurücksetzen → Retry möglich
             BtnSignIn.IsEnabled = true;
         }
@@ -163,8 +171,8 @@ public partial class SettingsPage : Page
 
     private async void BtnSignOut_Click(object sender, RoutedEventArgs e)
     {
-        var clientId = AppState.Config.ClientId ?? TxtClientId.Text.Trim();
-        if (!IsValidClientId(clientId)) return;
+        var clientId = EffectiveClientId();
+        if (clientId is null) return;
 
         try
         {
@@ -173,7 +181,8 @@ public partial class SettingsPage : Page
         }
         catch { /* Abmeldung best-effort */ }
 
-        SetAccountState(false, "Abgemeldet", "Du kannst dich jederzeit neu anmelden.");
+        SetAccountState(false, "Outlook nicht verknüpft",
+                "Abgemeldet. Du kannst dich jederzeit neu anmelden.");
         BtnSignOut.IsEnabled = false;
         BtnSignIn.IsEnabled  = true;
         CmbCalendar.Items.Clear();
@@ -249,9 +258,8 @@ public partial class SettingsPage : Page
         if (!string.IsNullOrEmpty(feedUrl))
             ConfigManager.SetFeedUrl(config, feedUrl);
 
-        // Client-ID speichern (nur wenn gültig)
-        if (IsValidClientId(clientId))
-            config.ClientId = clientId;
+        // Eigene Client-ID speichern; leeres Feld → mitgelieferte Registrierung
+        config.ClientId = MicrosoftAccount.IsUsable(clientId) ? clientId : null;
 
         // Typen
         config.EnabledTypes.Clear();
@@ -285,12 +293,86 @@ public partial class SettingsPage : Page
     // Security-Helpers
     // -----------------------------------------------------------------------
 
-    private static bool IsValidClientId(string? id)
+    // -----------------------------------------------------------------------
+    // Aufraeumen: alle von Semestria erstellten Outlook-Eintraege loeschen
+    // -----------------------------------------------------------------------
+
+    private async void BtnPurgeAll_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(id)) return false;
-        if (id.Contains("YOUR", StringComparison.OrdinalIgnoreCase)) return false;
-        return id.Length >= 32 && id.Contains('-');
+        var clientId = EffectiveClientId();
+        if (clientId is null)
+        {
+            TxtPurgeStatus.Text = "Outlook ist nicht verknüpft.";
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            "Alle Kalendereinträge löschen, die Semestria in Outlook erstellt hat?\n\n" +
+            "Deine eigenen Termine bleiben unberührt.\n" +
+            "Rückgängig machen lässt sich das nicht — ein erneuter Sync legt die " +
+            "Einträge aber wieder an.",
+            "Wirklich alle Einträge löschen?",
+            MessageBoxButton.YesNo, MessageBoxImage.Warning,
+            MessageBoxResult.No);   // Standard ist "Nein"
+
+        if (confirm != MessageBoxResult.Yes) return;
+
+        SetPurgeBusy(true);
+        TxtPurgeStatus.Text = "Verbinde mit Outlook…";
+
+        try
+        {
+            var auth = new MsalAuthProvider(clientId);
+            string token;
+            try   { token = await auth.AcquireTokenSilentAsync(); }
+            catch (InteractiveLoginRequiredException)
+            { token = await auth.AcquireTokenInteractiveAsync(); }
+
+            var target = new GraphCalendarTarget(token);
+            var count  = await target.PurgeAllAsync(
+                AppState.Config.CalendarId,
+                new Progress<string>(msg => Dispatcher.Invoke(
+                    () => TxtPurgeStatus.Text = msg)));
+
+            TxtPurgeStatus.Text = count == 0
+                ? "Keine Einträge von Semestria gefunden."
+                : $"{count} Einträge gelöscht.";
+        }
+        catch (Exception ex)
+        {
+            TxtPurgeStatus.Text = "Fehler: " + SanitizeError(ex.Message, clientId);
+        }
+        finally
+        {
+            SetPurgeBusy(false);
+        }
     }
+
+    private void SetPurgeBusy(bool busy)
+    {
+        PurgeRing.IsActive   = busy;
+        BtnPurgeAll.IsEnabled = !busy;
+    }
+
+    /// <summary>
+    /// Die zu verwendende App-ID: eine im Feld eingetragene sticht die
+    /// mitgelieferte. Null wenn beides fehlt.
+    /// </summary>
+    private string? EffectiveClientId()
+    {
+        var custom = TxtClientId.Text.Trim();
+        if (MicrosoftAccount.IsUsable(custom)) return custom;
+        return MicrosoftAccount.HasBuiltInId ? AppConstants.ClientId : null;
+    }
+
+    /// <summary>Speichert nur eine selbst eingetragene ID in der Konfiguration.</summary>
+    private void PersistCustomClientId()
+    {
+        var custom = TxtClientId.Text.Trim();
+        if (MicrosoftAccount.IsUsable(custom))
+            AppState.Config.ClientId = custom;
+    }
+
 
     private static string SanitizeError(string message, string? clientId)
     {

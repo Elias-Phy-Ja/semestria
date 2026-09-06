@@ -23,4 +23,5 @@ public sealed record SyncPlan(
     public int DeleteCount    => Actions.Count(a => a.Kind is SyncActionKind.Delete or SyncActionKind.MarkCancelled);
     public int FlagCount      => Actions.Count(a => a.Kind == SyncActionKind.FlagMissing);
     public int ClearCount     => Actions.Count(a => a.Kind == SyncActionKind.ClearMissing);
+    public int DuplicateCount => Actions.Count(a => a.Kind == SyncActionKind.DeleteDuplicate);
 }

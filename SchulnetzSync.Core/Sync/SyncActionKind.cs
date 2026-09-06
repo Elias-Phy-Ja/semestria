@@ -26,4 +26,12 @@ public enum SyncActionKind
 
     /// <summary>Event reappeared in the feed — clear the schulnetzMissingSince stamp.</summary>
     ClearMissing,
+
+    /// <summary>
+    /// A second calendar entry carries a key that already exists — remove the
+    /// surplus copy. Kept apart from <see cref="Delete"/> because it cleans up
+    /// the app's own mistake rather than reacting to the feed, and must not
+    /// trip the mass-deletion safeguard.
+    /// </summary>
+    DeleteDuplicate,
 }

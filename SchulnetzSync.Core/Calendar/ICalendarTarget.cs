@@ -15,10 +15,16 @@ public interface ICalendarTarget
     /// including their extended properties.
     /// One Graph request per window (calendarView + $expand).
     /// </summary>
+    /// <param name="progress">
+    /// Receives a diagnostic line stating how many events were read and how many
+    /// of them carry this app's marker. Useful to tell "calendar is empty" apart
+    /// from "markers were not recognised".
+    /// </param>
     Task<IReadOnlyList<TrackedEvent>> GetTrackedEventsAsync(
         DateTimeOffset from,
         DateTimeOffset to,
         string? calendarId,
+        IProgress<string>? progress = null,
         CancellationToken ct = default);
 
     /// <summary>
@@ -35,8 +41,20 @@ public interface ICalendarTarget
     /// Deletes every calendar event that carries schulnetzType == <paramref name="type"/>.
     /// Used by the "Remove all" action in the UI.
     /// </summary>
-    Task PurgeAsync(
+    /// <returns>The number of events deleted.</returns>
+    Task<int> PurgeAsync(
         SchulnetzEventType type,
+        string? calendarId,
+        IProgress<string>? progress = null,
+        CancellationToken  ct       = default);
+
+    /// <summary>
+    /// Deletes every event this app ever created, regardless of type — including
+    /// entries already marked as cancelled. Events the user created themselves
+    /// are untouched: only events carrying the schulnetzKey property are removed.
+    /// </summary>
+    /// <returns>The number of events deleted.</returns>
+    Task<int> PurgeAllAsync(
         string? calendarId,
         IProgress<string>? progress = null,
         CancellationToken  ct       = default);

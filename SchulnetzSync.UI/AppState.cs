@@ -39,6 +39,23 @@ public static class AppState
     /// <summary>Ob gerade ein Sync läuft.</summary>
     public static bool IsSyncing { get; set; }
 
+    /// <summary>
+    /// Ob gerade der Feed im Hintergrund geladen wird (Auto-Refresh beim Start).
+    /// Getrennt von <see cref="IsSyncing"/>, damit das Dashboard beides anzeigen kann.
+    /// </summary>
+    public static bool IsRefreshingFeed { get; set; }
+
+    /// <summary>
+    /// Hält fest, dass der Feed soeben erfolgreich geladen wurde, und persistiert
+    /// den Zeitstempel. Löst <see cref="Changed"/> aus.
+    /// </summary>
+    public static void MarkFeedRefreshed(DateTimeOffset when)
+    {
+        _config.LastFeedRefreshAt = when;
+        try { ConfigManager.Save(_config); } catch { /* Zeitstempel ist nicht kritisch */ }
+        Notify();
+    }
+
     // ── Persistierter Feed-Cache ─────────────────────────────────────────────
     private static readonly string _cachePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -201,6 +218,22 @@ public static class AppState
 
     private static List<ManualEventData> _manualEvents = LoadManual();
     public static IReadOnlyList<ManualEventData> ManualEvents => _manualEvents;
+
+    /// <summary>
+    /// Die manuellen Einträge als <see cref="SchulnetzEvent"/> — für Kalender,
+    /// Dashboard und Sync, damit alle drei dieselbe Umwandlung verwenden.
+    /// </summary>
+    public static IEnumerable<SchulnetzEvent> ManualAsEvents()
+        => _manualEvents.Select(m => new SchulnetzEvent(
+            Key:      EventKeys.ForManual(m.Id),
+            RawUid:   EventKeys.ForManual(m.Id),
+            Type:     m.TypeKey == "Pruefung" ? SchulnetzEventType.Pruefung
+                                              : SchulnetzEventType.Termin,
+            Start:    m.Start,
+            End:      m.End,
+            IsAllDay: m.IsAllDay,
+            Summary:  m.Title,
+            Location: m.Location));
 
     public static void AddManualEvent(ManualEventData ev)
     {

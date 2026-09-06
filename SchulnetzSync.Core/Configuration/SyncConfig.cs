@@ -38,6 +38,12 @@ public sealed class SyncConfig
     /// <summary>Human-readable result of the last run (e.g. "3 neu, 1 aktualisiert").</summary>
     public string? LastRunResult { get; set; }
 
+    /// <summary>
+    /// UTC timestamp of the last successful feed download (auto-refresh, "Feed laden" or full sync).
+    /// Independent of <see cref="LastRunAt"/>, which only tracks calendar writes.
+    /// </summary>
+    public DateTimeOffset? LastFeedRefreshAt { get; set; }
+
     /// <summary>True after the user has completed the onboarding wizard.</summary>
     public bool IsOnboardingComplete { get; set; }
 

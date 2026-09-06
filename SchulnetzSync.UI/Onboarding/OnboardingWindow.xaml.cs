@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using SchulnetzSync.Core.Calendar;
 using SchulnetzSync.Core.Configuration;
+using SchulnetzSync.UI.Services;
 
 namespace SchulnetzSync.UI.Onboarding;
 
@@ -12,6 +13,13 @@ public partial class OnboardingWindow : Window
     private bool _signedIn   = false;
     private bool _skipSignIn = false;
 
+    /// <summary>
+    /// Schritt 4 ist zweigeteilt: erst die Frage, dann - nur bei Ja - die
+    /// eigentliche Einrichtung. Die Einrichtung ist der mit Abstand
+    /// komplizierteste Teil und soll niemanden aufhalten, der sie nicht braucht.
+    /// </summary>
+    private bool _showOutlookSetup;
+
     // Schritte: 1=Willkommen, 2=Rechtliches, 3=Feed-URL, 4=Anmelden, 5=Fertig
     private const int TotalSteps = 5;
 
@@ -19,10 +27,15 @@ public partial class OnboardingWindow : Window
     {
         InitializeComponent();
 
-        // Client-ID vorab befüllen (falls schon gesetzt und nicht Platzhalter)
+        // Eigene Client-ID vorab befüllen (nur relevant ohne mitgelieferte Registrierung)
         var existingId = AppState.Config.ClientId;
-        if (!string.IsNullOrWhiteSpace(existingId) && IsRealClientId(existingId))
+        if (MicrosoftAccount.IsUsable(existingId))
             TxtClientId.Text = existingId;
+
+        NoRegistrationHint.Visibility = MicrosoftAccount.HasBuiltInId
+            ? Visibility.Collapsed : Visibility.Visible;
+        AdvancedIdSection.Visibility  = MicrosoftAccount.HasBuiltInId
+            ? Visibility.Collapsed : Visibility.Visible;
 
         UpdateNextButton();
     }
@@ -41,14 +54,47 @@ public partial class OnboardingWindow : Window
 
     private void BtnBack_Click(object sender, RoutedEventArgs e)
     {
+        // Aus der Outlook-Einrichtung geht es zurueck zur Frage, nicht zur Feed-URL
+        if (_step == 4 && _showOutlookSetup)
+        {
+            _showOutlookSetup = false;
+            ShowStep(4);
+            return;
+        }
+
         if (_step <= 1) return;
         _step--;
         ShowStep(_step);
     }
 
+    /// <summary>Der Benutzer will Outlook jetzt verknuepfen - Anleitung zeigen.</summary>
+    private void BtnLinkNow_Click(object sender, RoutedEventArgs e)
+    {
+        _skipSignIn       = false;
+        _showOutlookSetup = true;
+        ShowStep(4);
+    }
+
+    /// <summary>Der Benutzer will Outlook spaeter verknuepfen - Schritt ueberspringen.</summary>
+    private void BtnLinkLater_Click(object sender, RoutedEventArgs e)
+    {
+        _skipSignIn       = true;
+        _showOutlookSetup = false;
+        _step++;
+        ShowStep(_step);
+    }
+
+    /// <summary>Blendet Frage oder Einrichtung ein.</summary>
+    private void ShowStep4Sub(bool showSetup)
+    {
+        Step4Ask.Visibility   = showSetup ? Visibility.Collapsed : Visibility.Visible;
+        Step4Setup.Visibility = showSetup ? Visibility.Visible   : Visibility.Collapsed;
+    }
+
     private void BtnSkipSignIn_Click(object sender, RoutedEventArgs e)
     {
-        _skipSignIn = true;
+        _skipSignIn       = true;
+        _showOutlookSetup = false;
         _step++;
         ShowStep(_step);
     }
@@ -72,6 +118,7 @@ public partial class OnboardingWindow : Window
         Step2.Visibility = step == 2 ? Visibility.Visible : Visibility.Collapsed;
         Step3.Visibility = step == 3 ? Visibility.Visible : Visibility.Collapsed;
         Step4.Visibility = step == 4 ? Visibility.Visible : Visibility.Collapsed;
+        ShowStep4Sub(_showOutlookSetup);
         Step5.Visibility = step == 5 ? Visibility.Visible : Visibility.Collapsed;
 
         SetDot(Dot1, active: step == 1, done: step > 1);
@@ -82,6 +129,12 @@ public partial class OnboardingWindow : Window
 
         BtnBack.IsEnabled = step > 1;
         BtnNext.Content   = step == TotalSteps ? "Los geht's!" : "Weiter";
+
+        // Auf der Frage-Seite fuehren die beiden Auswahl-Buttons weiter,
+        // nicht der Weiter-Button unten.
+        BtnNext.Visibility = step == 4 && !_showOutlookSetup
+            ? Visibility.Collapsed
+            : Visibility.Visible;
 
         if (step == 4) OnEnterStep4();
         if (step == 5) BuildFinishSummary();
@@ -167,26 +220,42 @@ public partial class OnboardingWindow : Window
 
     private void OnEnterStep4()
     {
-        bool hasRealId = IsRealClientId(TxtClientId.Text);
-        ClientIdHint.Visibility  = hasRealId ? Visibility.Collapsed : Visibility.Visible;
-        BtnSignIn.IsEnabled      = hasRealId && !_signedIn;
+        RefreshClientIdState();
         SignInSuccess.Visibility  = _signedIn ? Visibility.Visible : Visibility.Collapsed;
         TxtSignInError.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Die zu verwendende App-ID: eine selbst eingetragene sticht die
+    /// mitgelieferte. Null wenn beides fehlt.
+    /// </summary>
+    private string? EffectiveClientId()
+    {
+        var custom = TxtClientId.Text.Trim();
+        if (MicrosoftAccount.IsUsable(custom)) return custom;
+        return MicrosoftAccount.HasBuiltInId ? AppConstants.ClientId : null;
     }
 
     private void TxtClientId_TextChanged(object sender,
         System.Windows.Controls.TextChangedEventArgs e)
     {
-        bool hasRealId = IsRealClientId(TxtClientId.Text);
-        ClientIdHint.Visibility = hasRealId ? Visibility.Collapsed : Visibility.Visible;
-        BtnSignIn.IsEnabled     = hasRealId && !_signedIn;
+        RefreshClientIdState();
         UpdateNextButton();
+    }
+
+    /// <summary>Hinweistext und Anmelde-Button an den aktuellen Zustand anpassen.</summary>
+    private void RefreshClientIdState()
+    {
+        ClientIdHint.Text = MicrosoftAccount.IsUsable(TxtClientId.Text.Trim())
+            ? "Sieht gut aus. Klicke oben auf «Mit Microsoft anmelden»."
+            : "Noch leer — folge der Anleitung unten, um die App-ID zu erstellen.";
+        BtnSignIn.IsEnabled = EffectiveClientId() is not null && !_signedIn;
     }
 
     private async void BtnSignIn_Click(object sender, RoutedEventArgs e)
     {
-        var clientId = TxtClientId.Text.Trim();
-        if (!IsRealClientId(clientId)) return;
+        var clientId = EffectiveClientId();
+        if (clientId is null) return;
 
         BtnSignIn.IsEnabled       = false;
         TxtSignInError.Visibility = Visibility.Collapsed;
@@ -200,7 +269,11 @@ public partial class OnboardingWindow : Window
             _signedIn = true;
             SignInSuccess.Visibility = Visibility.Visible;
             BtnSignIn.Visibility     = Visibility.Collapsed;
-            AppState.Config.ClientId = clientId;
+            // Nur eine selbst eingetragene ID persistieren — die mitgelieferte
+            // soll bei einem App-Update automatisch mitwandern.
+            var custom = TxtClientId.Text.Trim();
+            if (MicrosoftAccount.IsUsable(custom))
+                AppState.Config.ClientId = custom;
 
             UpdateNextButton();
         }
@@ -227,8 +300,9 @@ public partial class OnboardingWindow : Window
         TxtSetupSummary.Text =
             $"✅  Feed-URL: {safeUrl}\n" +
             (_signedIn
-                ? "✅  Microsoft-Konto: angemeldet\n"
-                : "Hinweis: Microsoft-Konto noch nicht eingerichtet (in den Einstellungen nachholen)\n") +
+                ? "✅  Outlook ist verknüpft\n"
+                : "ℹ️  Outlook nicht verknüpft — der Kalender in der App funktioniert trotzdem. "
+                  + "Nachholen kannst du es jederzeit unter Einstellungen.\n") +
             "✅  Nutzungsbedingungen akzeptiert\n" +
             "✅  Datenschutzerklärung akzeptiert\n\n" +
             "Klicke «Los geht's!» um das Hauptfenster zu öffnen.";
@@ -247,9 +321,9 @@ public partial class OnboardingWindow : Window
         if (!string.IsNullOrEmpty(url))
             ConfigManager.SetFeedUrl(config, url);
 
-        // Client-ID speichern (falls eingegeben)
+        // Nur eine eigene Client-ID speichern; die mitgelieferte steht im Code
         var clientId = TxtClientId.Text.Trim();
-        if (IsRealClientId(clientId))
+        if (MicrosoftAccount.IsUsable(clientId))
             config.ClientId = clientId;
 
         config.AutoRefreshFeed      = ChkAutoRefresh.IsChecked != false;
@@ -272,7 +346,7 @@ public partial class OnboardingWindow : Window
         {
             2 => ChkAgb.IsChecked == true && ChkDatenschutz.IsChecked == true,
             3 => !string.IsNullOrWhiteSpace(TxtFeedUrl.Text),
-            4 => _signedIn || _skipSignIn,  // Überspringen ist erlaubt
+            4 => _signedIn || _skipSignIn,  // Ueberspringen ist jederzeit erlaubt
             _ => true
         };
     }
@@ -280,18 +354,6 @@ public partial class OnboardingWindow : Window
     // -----------------------------------------------------------------------
     // Security-Helpers
     // -----------------------------------------------------------------------
-
-    /// <summary>
-    /// Gibt true zurück wenn die Client-ID wie eine echte GUID aussieht.
-    /// Schützt davor, dass der Platzhalter «YOUR-CLIENT-ID-HERE» verwendet wird.
-    /// </summary>
-    private static bool IsRealClientId(string? id)
-    {
-        if (string.IsNullOrWhiteSpace(id)) return false;
-        if (id.Contains("YOUR",         StringComparison.OrdinalIgnoreCase)) return false;
-        if (id.Contains("PLACEHOLDER",  StringComparison.OrdinalIgnoreCase)) return false;
-        return id.Length >= 32 && id.Contains('-');
-    }
 
     /// <summary>
     /// Zeigt von einer Feed-URL nur Protokoll+Host+Pfad — KEIN Token/Query-String.
