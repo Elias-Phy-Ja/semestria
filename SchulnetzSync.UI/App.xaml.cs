@@ -11,6 +11,7 @@ namespace SchulnetzSync.UI;
 public partial class App : Application
 {
     private TrayService? _tray;
+    private System.Windows.Threading.DispatcherTimer? _reminderTimer;
 
     public App()
     {
@@ -22,6 +23,13 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Unbehandelte Fehler sichtbar machen statt die App stumm beenden zu lassen
+        DispatcherUnhandledException += OnUnhandledException;
+
+        // Rad/Touchpad proportional scrollen lassen (siehe SmoothScroll)
+        SmoothScroll.Install();
+
         // Theme aus Config laden (null = Systemstandard)
         ThemeManager.Current.ApplicationTheme = AppState.Config.ThemePreference switch
         {
@@ -82,7 +90,71 @@ public partial class App : Application
             startupRefreshDone = true;
             if (AppState.Config.AutoRefreshFeed)
                 _ = TryAutoRefreshFeedAsync();
+            StartReminderTimer();
         };
+    }
+
+    /// <summary>
+    /// Zeigt unbehandelte Fehler an, statt die App wortlos beenden zu lassen.
+    /// Die Meldung wird zusätzlich nach %LOCALAPPDATA%\Semestria\crash.log
+    /// geschrieben. Die App läuft weiter — ein Fehler beim Aufbau einer Seite
+    /// soll nicht die ganze Sitzung kosten.
+    /// </summary>
+    private void OnUnhandledException(object sender,
+        System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        var ex = e.Exception;
+
+        // TargetInvocationException & Co. verbergen die eigentliche Ursache —
+        // darum die ganze Kette protokollieren, nicht nur die äusserste Hülle.
+        var sb = new System.Text.StringBuilder();
+        sb.Append(DateTimeOffset.Now.ToString("u")).Append('\n');
+        for (Exception? current = ex; current is not null; current = current.InnerException)
+        {
+            sb.Append(current == ex ? "" : "--- InnerException ---\n")
+              .Append(current.GetType().FullName).Append(": ").Append(current.Message).Append('\n')
+              .Append(current.StackTrace).Append('\n');
+        }
+        sb.Append('\n');
+        var text = sb.ToString();
+
+        // Für den Dialog die innerste Meldung — sie beschreibt das echte Problem.
+        var root = ex;
+        while (root.InnerException is not null) root = root.InnerException;
+
+        try
+        {
+            var dir = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Semestria");
+            System.IO.Directory.CreateDirectory(dir);
+            System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "crash.log"), text);
+        }
+        catch { /* Protokollieren darf den Fehlerdialog nicht verhindern */ }
+
+        MessageBox.Show(
+            root.Message + "\n\nDetails stehen in %LOCALAPPDATA%\\Semestria\\crash.log.",
+            "Es ist ein Fehler aufgetreten",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Prüft einmal pro Minute, ob eine Aufgaben-Erinnerung fällig ist.
+    /// Einmal sofort, damit Erinnerungen aus der Zeit ohne laufende App
+    /// beim Start nachgeholt werden.
+    /// </summary>
+    private void StartReminderTimer()
+    {
+        _tray?.ShowDueTaskReminders();
+
+        _reminderTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMinutes(1)
+        };
+        _reminderTimer.Tick += (_, _) => _tray?.ShowDueTaskReminders();
+        _reminderTimer.Start();
     }
 
     /// <summary>
@@ -138,6 +210,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _reminderTimer?.Stop();
         _tray?.Dispose();
         base.OnExit(e);
     }

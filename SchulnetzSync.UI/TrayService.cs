@@ -70,6 +70,44 @@ public sealed class TrayService : IDisposable
         });
     }
 
+    /// <summary>
+    /// Zeigt faellige Aufgaben-Erinnerungen als Sprechblase und merkt sie als
+    /// gezeigt. Wird von einem Timer im Hauptfenster aufgerufen.
+    /// </summary>
+    public void ShowDueTaskReminders()
+    {
+        var now = DateTimeOffset.Now;
+        var due = AppState.Tasks.Where(t => t.ReminderPending(now)).ToList();
+        if (due.Count == 0) return;
+
+        var text = due.Count == 1
+            ? BuildReminderLine(due[0])
+            : string.Join("\n", due.Take(3).Select(BuildReminderLine))
+              + (due.Count > 3 ? $"\n… und {due.Count - 3} weitere" : "");
+
+        ShowBalloon(due.Count == 1 ? "Erinnerung" : $"{due.Count} Erinnerungen",
+            text, ToolTipIcon.Info);
+
+        foreach (var task in due)
+            AppState.UpdateTask(task with { ReminderShown = true });
+    }
+
+    private static string BuildReminderLine(SchulnetzSync.UI.Model.TaskItem task)
+    {
+        var list = string.IsNullOrWhiteSpace(task.ListName) ? "" : task.ListName + ": ";
+        if (task.DueAt is not { } due) return list + task.Title;
+
+        int days = (due.Date - DateTime.Today).Days;
+        var when = days switch
+        {
+            < 0 => "überfällig",
+            0   => "heute fällig",
+            1   => "morgen fällig",
+            _   => $"in {days} Tagen fällig",
+        };
+        return $"{list}{task.Title} — {when}";
+    }
+
     public void Dispose() => _trayIcon.Dispose();
 
     // -----------------------------------------------------------------------

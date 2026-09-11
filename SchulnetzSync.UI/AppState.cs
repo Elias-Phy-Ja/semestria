@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Model;
+using SchulnetzSync.UI.Model;
 
 namespace SchulnetzSync.UI;
 
@@ -274,6 +275,168 @@ public static class AppState
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_manualPath)!);
             File.WriteAllText(_manualPath, JsonSerializer.Serialize(_manualEvents));
+        }
+        catch { }
+    }
+
+    // ── Aufgaben ─────────────────────────────────────────────────────────────
+    private static readonly string _tasksPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Semestria", "tasks.json");
+
+    private static List<TaskItem> _tasks = LoadTasks();
+
+    /// <summary>Alle Aufgaben, offene wie erledigte, in Eingabereihenfolge.</summary>
+    public static IReadOnlyList<TaskItem> Tasks => _tasks;
+
+    public static void AddTask(TaskItem task)
+    {
+        _tasks.Add(task);
+        SaveTasks();
+        Notify();
+    }
+
+    /// <summary>Ersetzt eine Aufgabe anhand ihrer Id. Unbekannte Ids werden ignoriert.</summary>
+    public static void UpdateTask(TaskItem task)
+    {
+        var i = _tasks.FindIndex(t => t.Id == task.Id);
+        if (i < 0) return;
+        _tasks[i] = task;
+        SaveTasks();
+        Notify();
+    }
+
+    public static void RemoveTask(Guid id)
+    {
+        _tasks.RemoveAll(t => t.Id == id);
+        SaveTasks();
+        Notify();
+    }
+
+    /// <summary>Entfernt alle erledigten Aufgaben.</summary>
+    public static int ClearCompletedTasks()
+    {
+        int removed = _tasks.RemoveAll(t => t.IsDone);
+        if (removed > 0) { SaveTasks(); Notify(); }
+        return removed;
+    }
+
+    // ── Aufgabenlisten ───────────────────────────────────────────────────────
+    private static readonly string _taskListsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Semestria", "task-lists.json");
+
+    private static List<string> _taskLists = LoadTaskLists();
+
+    /// <summary>
+    /// Alle Listennamen: ausdrücklich angelegte plus solche, die noch an einer
+    /// Aufgabe hängen. So verschwindet eine Liste nicht, nur weil sie nie
+    /// separat angelegt wurde.
+    /// </summary>
+    public static IReadOnlyList<string> TaskLists()
+        => _taskLists
+            .Concat(_tasks.Select(t => t.ListName))
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n, StringComparer.CurrentCulture)
+            .ToList();
+
+    /// <summary>Legt eine Liste an. Doppelte Namen werden ignoriert.</summary>
+    public static void AddTaskList(string name)
+    {
+        name = name.Trim();
+        if (name.Length == 0) return;
+        if (TaskLists().Contains(name, StringComparer.OrdinalIgnoreCase)) return;
+
+        _taskLists.Add(name);
+        SaveTaskLists();
+        Notify();
+    }
+
+    /// <summary>
+    /// Entfernt eine Liste. Die Aufgaben darin bleiben erhalten und rutschen
+    /// nach «Ohne Liste» — Löschen der Liste soll keine Arbeit vernichten.
+    /// </summary>
+    public static void RemoveTaskList(string name)
+    {
+        _taskLists.RemoveAll(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+
+        for (int i = 0; i < _tasks.Count; i++)
+            if (string.Equals(_tasks[i].ListName, name, StringComparison.OrdinalIgnoreCase))
+                _tasks[i] = _tasks[i] with { ListName = "" };
+
+        SaveTaskLists();
+        SaveTasks();
+        Notify();
+    }
+
+    /// <summary>
+    /// Vorschläge für neue Listen: die Fachkürzel aus den Lektionen des Feeds,
+    /// soweit es dafür noch keine Liste gibt.
+    /// </summary>
+    public static IReadOnlyList<string> SuggestedListNames()
+    {
+        var existing = TaskLists();
+
+        return _cachedFeedEvents
+            .Where(e => e.Type == SchulnetzEventType.Lektion)
+            .Select(e => SubjectCodeOf(e.Summary))
+            .Where(c => c.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(c => !existing.Contains(c, StringComparer.OrdinalIgnoreCase))
+            .OrderBy(c => c, StringComparer.CurrentCulture)
+            .ToList();
+    }
+
+    private static List<string> LoadTaskLists()
+    {
+        try
+        {
+            if (File.Exists(_taskListsPath))
+                return JsonSerializer.Deserialize<List<string>>(
+                    File.ReadAllText(_taskListsPath)) ?? [];
+        }
+        catch { }
+        return [];
+    }
+
+    private static void SaveTaskLists()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_taskListsPath)!);
+            File.WriteAllText(_taskListsPath, JsonSerializer.Serialize(_taskLists));
+        }
+        catch { }
+    }
+
+    /// <summary>Extrahiert das Fachkürzel aus einer Lektions-Summary, z.B. "TEU" aus "9:30 TEU_I26A".</summary>
+    private static string SubjectCodeOf(string summary)
+    {
+        var s   = System.Text.RegularExpressions.Regex.Replace(summary, @"^\d{1,2}:\d{2}\s+", "");
+        var idx = s.IndexOf('_');
+        var code = idx > 0 ? s[..idx] : s[..Math.Min(s.Length, 6)];
+        return code.Trim().ToUpperInvariant();
+    }
+
+    private static List<TaskItem> LoadTasks()
+    {
+        try
+        {
+            if (File.Exists(_tasksPath))
+                return JsonSerializer.Deserialize<List<TaskItem>>(
+                    File.ReadAllText(_tasksPath)) ?? [];
+        }
+        catch { /* bei korrupten Daten leer starten */ }
+        return [];
+    }
+
+    private static void SaveTasks()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_tasksPath)!);
+            File.WriteAllText(_tasksPath, JsonSerializer.Serialize(_tasks));
         }
         catch { }
     }

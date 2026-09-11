@@ -55,6 +55,14 @@
                 </ui:NavigationViewItem.Icon>
             </ui:NavigationViewItem>
 
+            <ui:NavigationViewItem x:Name="NavTasks"
+                                   Tag="Tasks"
+                                   Content="Aufgaben">
+                <ui:NavigationViewItem.Icon>
+                    <ui:SymbolIcon Symbol="List"/>
+                </ui:NavigationViewItem.Icon>
+            </ui:NavigationViewItem>
+
             <ui:NavigationViewItem x:Name="NavSettings"
                                    Tag="Settings"
                                    Content="Einstellungen">
