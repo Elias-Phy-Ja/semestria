@@ -5,12 +5,19 @@ using ModernWpf;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Feed;
 using SchulnetzSync.UI.Onboarding;
+using SchulnetzSync.UI.Update;
 
 namespace SchulnetzSync.UI;
 
 public partial class App : Application
 {
     private TrayService? _tray;
+
+    /// <summary>True when Windows restarted the app after installing an update.</summary>
+    private bool _restarted;
+
+    /// <summary>Where update information comes from; an attrappe with --fake-update.</summary>
+    private IUpdateSourceFactory _updateSources = new StoreUpdateSourceFactory();
     private System.Windows.Threading.DispatcherTimer? _reminderTimer;
 
     public App()
@@ -29,6 +36,16 @@ public partial class App : Application
 
         // Rad/Touchpad proportional scrollen lassen (siehe SmoothScroll)
         SmoothScroll.Install();
+
+        _restarted = e.Args.Contains(ApplicationRestart.RestartedArgument,
+                                     StringComparer.OrdinalIgnoreCase);
+
+        // Ohne Store-Installation liefert die echte Prüfung immer «kein Update».
+        // Die Attrappe macht die vier Zustände der Ladeansicht trotzdem prüfbar.
+        if (e.Args.Contains("--fake-update-mandatory", StringComparer.OrdinalIgnoreCase))
+            _updateSources = new FakeUpdateSourceFactory("2.1.0.0", mandatory: true);
+        else if (e.Args.Contains("--fake-update", StringComparer.OrdinalIgnoreCase))
+            _updateSources = new FakeUpdateSourceFactory("2.1.0.0", mandatory: false);
 
         // Theme aus Config laden (null = Systemstandard)
         ThemeManager.Current.ApplicationTheme = AppState.Config.ThemePreference switch
@@ -80,17 +97,25 @@ public partial class App : Application
         main.WindowState = WindowState.Maximized; // Vollbild beim Start
         main.Show();
 
-        // Nach dem ersten Render: Theme fixieren + Feed im Hintergrund laden.
-        // ContentRendered kann mehrfach feuern — der Auto-Refresh läuft nur einmal pro Start.
-        bool startupRefreshDone = false;
-        main.ContentRendered += (_, _) =>
+        // Sync und Erinnerungen starten erst, wenn die Ladeansicht weg ist:
+        // Während der Ladephase kann ein Update anstehen, und ein halb
+        // geschriebener Kalender wäre das schlechteste Ergebnis davon.
+        main.StartupFinished += () =>
         {
-            ForceThemeRefresh();
-            if (startupRefreshDone) return;
-            startupRefreshDone = true;
             if (AppState.Config.AutoRefreshFeed)
                 _ = TryAutoRefreshFeedAsync();
             StartReminderTimer();
+        };
+
+        // ContentRendered kann mehrfach feuern — die Ladephase läuft einmal.
+        bool startupDone = false;
+        main.ContentRendered += async (_, _) =>
+        {
+            ForceThemeRefresh();
+            if (startupDone) return;
+            startupDone = true;
+
+            await main.RunStartupAsync(_restarted, _updateSources);
         };
     }
 
@@ -122,6 +147,27 @@ public partial class App : Application
         var root = ex;
         while (root.InnerException is not null) root = root.InnerException;
 
+        AppendToLog(text);
+
+        MessageBox.Show(
+            root.Message + "\n\nDetails stehen in %LOCALAPPDATA%\\Semestria\\crash.log.",
+            "Es ist ein Fehler aufgetreten",
+            MessageBoxButton.OK, MessageBoxImage.Error);
+
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Writes one line to %LOCALAPPDATA%\Semestria\crash.log.
+    ///
+    /// Für Dinge, die der Nutzer nicht sehen soll, aber nachvollziehbar bleiben
+    /// müssen — etwa eine Update-Prüfung, die offline ins Leere lief.
+    /// </summary>
+    public static void LogLine(string message)
+        => AppendToLog($"{DateTimeOffset.Now:u}  {message}\n");
+
+    private static void AppendToLog(string text)
+    {
         try
         {
             var dir = System.IO.Path.Combine(
@@ -130,14 +176,7 @@ public partial class App : Application
             System.IO.Directory.CreateDirectory(dir);
             System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "crash.log"), text);
         }
-        catch { /* Protokollieren darf den Fehlerdialog nicht verhindern */ }
-
-        MessageBox.Show(
-            root.Message + "\n\nDetails stehen in %LOCALAPPDATA%\\Semestria\\crash.log.",
-            "Es ist ein Fehler aufgetreten",
-            MessageBoxButton.OK, MessageBoxImage.Error);
-
-        e.Handled = true;
+        catch { /* Protokollieren darf nie den Ablauf stören */ }
     }
 
     /// <summary>

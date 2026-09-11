@@ -10,7 +10,9 @@
         Width="960" Height="640"
         WindowStartupLocation="CenterScreen">
 
-    <ui:NavigationView x:Name="NavView"
+    <Grid>
+
+        <ui:NavigationView x:Name="NavView"
                        PaneDisplayMode="Left"
                        IsSettingsVisible="False"
                        IsPaneToggleButtonVisible="True"
@@ -86,5 +88,119 @@
         <Frame x:Name="ContentFrame"
                NavigationUIVisibility="Hidden"/>
 
-    </ui:NavigationView>
+        </ui:NavigationView>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             LADEANSICHT
+
+             Kein eigenes Fenster, nur eine Schicht ueber der Oberflaeche.
+             Sie deckt die Navigation ab, solange der Start laeuft, und
+             verschwindet danach.
+             ══════════════════════════════════════════════════════════════ -->
+        <Border x:Name="LoadingOverlay"
+                Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
+            <StackPanel VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        MaxWidth="420">
+
+                <Image Source="pack://application:,,,/Resources/Semestra_Logo.png"
+                       Width="72" Height="72"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,18"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+
+                <TextBlock Text="Semestria"
+                           FontSize="24" FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           Foreground="{StaticResource AccentBrush}"/>
+
+                <TextBlock x:Name="TxtLoadingVersion"
+                           FontSize="12" Opacity="0.55"
+                           HorizontalAlignment="Center"
+                           Margin="0,2,0,26"/>
+
+                <!-- Zustand 1 und 3: Fortschritt -->
+                <StackPanel x:Name="LoadingProgressArea">
+                    <ProgressBar x:Name="LoadingBar"
+                                 Width="320" Height="4"
+                                 Minimum="0" Maximum="1"
+                                 HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="TxtLoadingStatus"
+                               Text="Wird gestartet…"
+                               FontSize="13" Opacity="0.75"
+                               HorizontalAlignment="Center"
+                               Margin="0,12,0,0"/>
+                </StackPanel>
+
+                <!-- Zustand 2: Update gefunden -->
+                <StackPanel x:Name="UpdatePromptArea" Visibility="Collapsed">
+                    <TextBlock x:Name="TxtUpdateHeadline"
+                               FontSize="16" FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               Margin="0,0,0,6"/>
+                    <TextBlock x:Name="TxtUpdateBody"
+                               FontSize="13" Opacity="0.75"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,22"/>
+
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center">
+                        <Button x:Name="BtnUpdateNow"
+                                Content="Jetzt aktualisieren"
+                                Style="{StaticResource PrimaryButton}"
+                                Padding="22,10"
+                                Margin="0,0,10,0"
+                                Click="BtnUpdateNow_Click"/>
+                        <Button x:Name="BtnUpdateLater"
+                                Content="Später erinnern"
+                                Style="{StaticResource SecondaryButton}"
+                                Padding="22,10"
+                                Click="BtnUpdateLater_Click"/>
+                    </StackPanel>
+
+                    <!-- Ausweg, wenn ein zwingendes Update nicht durchläuft -->
+                    <StackPanel x:Name="UpdateFailureArea"
+                                Visibility="Collapsed"
+                                Margin="0,16,0,0">
+                        <TextBlock x:Name="TxtUpdateError"
+                                   FontSize="12"
+                                   Foreground="{StaticResource DangerBrush}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12"/>
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Center">
+                            <Button x:Name="BtnUpdateRetry"
+                                    Content="Erneut versuchen"
+                                    Style="{StaticResource PrimaryButton}"
+                                    Padding="18,8"
+                                    Margin="0,0,10,0"
+                                    Click="BtnUpdateRetry_Click"/>
+                            <Button x:Name="BtnQuit"
+                                    Content="Semestria beenden"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Padding="18,8"
+                                    Click="BtnQuit_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Zustand 4: nach dem Neustart -->
+                <StackPanel x:Name="UpdateDoneArea" Visibility="Collapsed">
+                    <TextBlock Text="✓" FontSize="34"
+                               HorizontalAlignment="Center"
+                               Foreground="{StaticResource SuccessBrush}"
+                               Margin="0,0,0,8"/>
+                    <TextBlock x:Name="TxtUpdateDone"
+                               FontSize="14"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
 </Window>
