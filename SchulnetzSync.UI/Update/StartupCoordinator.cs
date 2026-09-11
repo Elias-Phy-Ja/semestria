@@ -25,7 +25,8 @@ public enum StartupOutcome
 public sealed class StartupCoordinator(
     IUpdateSource     source,
     IProgress<double> progress,
-    IProgress<string> status)
+    IProgress<string> status,
+    bool              bypassSnooze = false)
 {
     /// <summary>Hard cap for the network check.</summary>
     private static readonly TimeSpan CheckTimeout = TimeSpan.FromMilliseconds(2500);
@@ -33,9 +34,10 @@ public sealed class StartupCoordinator(
     /// <summary>So the loading view does not flash by on a fast machine.</summary>
     private static readonly TimeSpan MinimumVisible = TimeSpan.FromMilliseconds(800);
 
-    private readonly IUpdateSource     _source   = source;
-    private readonly IProgress<double> _progress = progress;
-    private readonly IProgress<string> _status   = status;
+    private readonly IUpdateSource     _source       = source;
+    private readonly IProgress<double> _progress     = progress;
+    private readonly IProgress<string> _status       = status;
+    private readonly bool              _bypassSnooze = bypassSnooze;
 
     /// <summary>Version offered by the store, set once the check found one.</summary>
     public string? OfferedVersion { get; private set; }
@@ -61,8 +63,12 @@ public sealed class StartupCoordinator(
         _status.Report(skipCheck ? "Wird gestartet…" : "Suche nach Updates…");
         _progress.Report(0.45);
 
-        var gate     = new UpdateGate(_source, CheckTimeout);
-        var prefs    = UpdatePreferencesStore.Load();
+        var gate = new UpdateGate(_source, CheckTimeout);
+
+        // Mit der Attrappe zählt die gespeicherte Frist nicht, sonst liesse
+        // sich die Ansicht nach einem «Später erinnern» tagelang nicht mehr
+        // aufrufen.
+        var prefs = _bypassSnooze ? new UpdatePreferences() : UpdatePreferencesStore.Load();
         var decision = await gate
             .EvaluateAsync(prefs, DateTimeOffset.UtcNow, skipCheck, ct)
             .ConfigureAwait(false);
@@ -109,8 +115,10 @@ public sealed class StartupCoordinator(
     }
 
     /// <summary>Records that the user postponed this version.</summary>
-    public static void Postpone(string version)
+    public void Postpone(string version)
     {
+        if (_bypassSnooze) return;   // Attrappe hinterlässt keine Spuren
+
         var prefs = UpdatePreferencesStore.Load();
         UpdatePreferencesStore.Save(UpdatePolicy.Postpone(prefs, version, DateTimeOffset.UtcNow));
     }

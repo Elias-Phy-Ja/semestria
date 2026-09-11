@@ -12,6 +12,15 @@ namespace SchulnetzSync.UI.Update;
 public interface IUpdateSourceFactory
 {
     IUpdateSource Create(IntPtr windowHandle);
+
+    /// <summary>
+    /// True when the snooze should be ignored.
+    ///
+    /// Für die Attrappe zwingend: Sie bietet immer dieselbe Version an, ein
+    /// einziges «Später erinnern» würde den Schalter sonst für Tage
+    /// unbrauchbar machen.
+    /// </summary>
+    bool BypassSnooze => false;
 }
 
 /// <summary>Uses the Microsoft Store.</summary>
@@ -24,4 +33,6 @@ public sealed class StoreUpdateSourceFactory : IUpdateSourceFactory
 public sealed class FakeUpdateSourceFactory(string version, bool mandatory) : IUpdateSourceFactory
 {
     public IUpdateSource Create(IntPtr windowHandle) => new FakeUpdateSource(version, mandatory);
+
+    public bool BypassSnooze => true;
 }

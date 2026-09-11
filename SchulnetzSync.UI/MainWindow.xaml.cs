@@ -50,7 +50,8 @@ public partial class MainWindow : Window
         _startup = new StartupCoordinator(
             source,
             new Progress<double>(p => LoadingBar.Value = p),
-            new Progress<string>(t => TxtLoadingStatus.Text = t));
+            new Progress<string>(t => TxtLoadingStatus.Text = t),
+            sourceFactory.BypassSnooze);
 
         StartupOutcome outcome;
         try
@@ -139,7 +140,7 @@ public partial class MainWindow : Window
     private void BtnUpdateLater_Click(object sender, RoutedEventArgs e)
     {
         if (_offeredVersion is { } version)
-            StartupCoordinator.Postpone(version);
+            _startup?.Postpone(version);
 
         FinishStartup();
     }
