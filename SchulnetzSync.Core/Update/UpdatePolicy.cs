@@ -7,11 +7,15 @@ namespace SchulnetzSync.Core.Update;
 /// </summary>
 public static class UpdatePolicy
 {
-    /// <summary>Days to wait after the first postponement.</summary>
-    private const int FirstSnoozeDays = 3;
-
-    /// <summary>Days to wait after the second one.</summary>
-    private const int SecondSnoozeDays = 7;
+    /// <summary>
+    /// Days to wait after "Später erinnern".
+    ///
+    /// Bewusst kurz und immer gleich: Ein Update soll nicht in Vergessenheit
+    /// geraten. Ein dringendes Update wartet ohnehin nicht auf diese Frist —
+    /// siehe die Mandatory-Prüfung in <see cref="Decide"/>, die vor der Frist
+    /// greift.
+    /// </summary>
+    private const int SnoozeDays = 1;
 
     /// <summary>
     /// Decides what the loading view should show.
@@ -49,11 +53,12 @@ public static class UpdatePolicy
     }
 
     /// <summary>
-    /// The state after the user picked "Später erinnern": 3 days, then 7, then
-    /// on every start.
+    /// The state after the user picked "Später erinnern": ask again tomorrow.
     ///
-    /// Eine neue Versionsnummer setzt den Zähler zurück — sonst würde eine
-    /// frische Version sofort im seltensten Intervall landen.
+    /// Der Zähler wird mitgeführt, steuert die Frist aber nicht — jedes
+    /// Verschieben kostet gleich viel. Eine neue Versionsnummer setzt ihn
+    /// zurück, damit er beschreibt, wie oft genau diese Version verschoben
+    /// wurde.
     /// </summary>
     public static UpdatePreferences Postpone(
         UpdatePreferences prefs,
@@ -63,13 +68,6 @@ public static class UpdatePolicy
         bool sameVersion = string.Equals(prefs.SkippedVersion, version, StringComparison.Ordinal);
         int  next        = (sameVersion ? prefs.PostponeCount : 0) + 1;
 
-        DateTimeOffset? remindAfter = next switch
-        {
-            1 => nowUtc.AddDays(FirstSnoozeDays),
-            2 => nowUtc.AddDays(SecondSnoozeDays),
-            _ => null,   // ab dem dritten Mal bei jedem Start fragen
-        };
-
-        return new UpdatePreferences(version, remindAfter, next);
+        return new UpdatePreferences(version, nowUtc.AddDays(SnoozeDays), next);
     }
 }

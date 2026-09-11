@@ -161,43 +161,78 @@ public class UpdateDecisionTests
 
         Assert.Equal(1, next.PostponeCount);
         Assert.Equal("2.2.0.0", next.SkippedVersion);
-        Assert.Equal(Now.AddDays(3), next.RemindAfterUtc);
+        Assert.Equal(Now.AddDays(1), next.RemindAfterUtc);
     }
 
-    // ── Verschiebe-Intervalle ────────────────────────────────────────────────
+    // ── Verschiebe-Frist ─────────────────────────────────────────────────────
 
     [Fact]
-    public void Erstes_Verschieben_wartet_drei_Tage()
+    public void Verschieben_erinnert_am_naechsten_Tag()
     {
         var next = UpdatePolicy.Postpone(new UpdatePreferences(), "2.1.0.0", Now);
 
         Assert.Equal(1, next.PostponeCount);
-        Assert.Equal(Now.AddDays(3), next.RemindAfterUtc);
+        Assert.Equal(Now.AddDays(1), next.RemindAfterUtc);
     }
 
     [Fact]
-    public void Zweites_Verschieben_wartet_sieben_Tage()
+    public void Jedes_weitere_Verschieben_kostet_ebenfalls_einen_Tag()
     {
-        var prefs = new UpdatePreferences("2.1.0.0", Now.AddDays(-1), 1);
+        // Die Frist waechst nicht mit der Zahl der Verschiebungen.
+        var prefs = new UpdatePreferences("2.1.0.0", Now.AddDays(-1), 4);
 
         var next = UpdatePolicy.Postpone(prefs, "2.1.0.0", Now);
 
-        Assert.Equal(2, next.PostponeCount);
-        Assert.Equal(Now.AddDays(7), next.RemindAfterUtc);
+        Assert.Equal(5, next.PostponeCount);
+        Assert.Equal(Now.AddDays(1), next.RemindAfterUtc);
     }
 
     [Fact]
-    public void Ab_dem_dritten_Verschieben_wird_bei_jedem_Start_gefragt()
+    public void Nach_einem_Tag_erscheint_die_Auswahl_wieder()
     {
-        var prefs = new UpdatePreferences("2.1.0.0", Now.AddDays(-1), 2);
+        var postponed = UpdatePolicy.Postpone(new UpdatePreferences(), "2.1.0.0", Now);
 
-        var next = UpdatePolicy.Postpone(prefs, "2.1.0.0", Now);
+        // Kurz davor: noch Ruhe.
+        Assert.Equal(UpdatePrompt.None,
+            UpdatePolicy.Decide([Update()], postponed, Now.AddHours(23)).Prompt);
 
-        Assert.Equal(3, next.PostponeCount);
-        Assert.Null(next.RemindAfterUtc);
-
-        // Ohne Frist erscheint die Auswahl wieder bei jedem Start.
+        // Kurz danach: wieder fragen.
         Assert.Equal(UpdatePrompt.Optional,
-            UpdatePolicy.Decide([Update()], next, Now).Prompt);
+            UpdatePolicy.Decide([Update()], postponed, Now.AddHours(25)).Prompt);
+    }
+
+    // ── Dringendes kommt immer durch ─────────────────────────────────────────
+
+    [Fact]
+    public async Task Waehrend_der_Snooze_wird_trotzdem_beim_Store_geprueft()
+    {
+        // Die Frist darf nur die Rueckfrage unterdruecken, nicht die Abfrage:
+        // sonst bliebe ein dringendes Update unbemerkt liegen.
+        bool asked = false;
+        var gate = new UpdateGate(
+            new StubSource(_ =>
+            {
+                asked = true;
+                return Task.FromResult<IReadOnlyList<UpdateInfo>>([Update()]);
+            }),
+            TimeSpan.FromMilliseconds(2500));
+
+        var snoozed = new UpdatePreferences("2.1.0.0", Now.AddDays(1), 1);
+
+        var decision = await gate.EvaluateAsync(snoozed, Now, skipCheck: false);
+
+        Assert.True(asked, "Auch waehrend der Frist muss der Store befragt werden.");
+        Assert.Equal(UpdatePrompt.None, decision.Prompt);
+    }
+
+    [Fact]
+    public async Task Dringendes_Update_erscheint_auch_waehrend_der_Snooze()
+    {
+        var gate = GateReturning(Update(mandatory: true));
+        var snoozed = new UpdatePreferences("2.1.0.0", Now.AddDays(1), 1);
+
+        var decision = await gate.EvaluateAsync(snoozed, Now, skipCheck: false);
+
+        Assert.Equal(UpdatePrompt.Mandatory, decision.Prompt);
     }
 }
