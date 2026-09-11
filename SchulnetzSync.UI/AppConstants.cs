@@ -1,4 +1,4 @@
-namespace SchulnetzSync.UI;
+﻿namespace SchulnetzSync.UI;
 
 /// <summary>
 /// App-weite Konstanten.
@@ -43,10 +43,10 @@ public static class AppConstants
     /// Angezeigte Version. Muss zur Version in Packaging\Package.appxmanifest
     /// passen (dort vierstellig: 2.0.0.0).
     /// </summary>
-    public const string Version    = "2.0.0";
+    public const string Version    = "2.1.0";
 
     /// <summary>Kurzform für die Seitenleiste, z.B. "v2.0".</summary>
-    public const string VersionShort = "v2.0";
+    public const string VersionShort = "v2.1";
     public const string Publisher  = "Elias Wyss";
 
     /// <summary>Versionsnummer des akzeptierten Rechtsdokuments.</summary>
