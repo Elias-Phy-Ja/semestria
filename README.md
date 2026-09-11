@@ -40,12 +40,22 @@ Alternativ: `.msix`-Datei unter [Releases](../../releases) (Sideloading erforder
 ## Changelog
 
 ### 04.09.2026
-- [ ] Outlook-Kalender-Integration (Microsoft Graph)
-- [ ] Titel kürzen (max. Zeichenlimit)
-- [ ] Filter verbessern
+- [x] Outlook-Kalender-Integration (Microsoft Graph)
+- [x] Titel kürzen (max. Zeichenlimit)
+- [x] Filter verbessern
 
 ### 28.08.2026
 - [x] Projekt geplant und Architektur definiert
 - [x] iCal-Parser und Event-Klassifikation (Prüfung / Termin)
 - [x] Feed-URL-Verschlüsselung mit DPAPI
 - [x] App im Microsoft Store veröffentlicht
+
+### 11.09.2026
+- [x] Scroll bug beheben
+- [x] Loading screen
+- [x] Versions abruf um Updatebeachrichtigung zu ermöglichen (Updater)
+
+### Next Session:
+- [ ] Aufgaben Eintrag überprüfen
+- [ ] Updater überprüfen
+- [ ] Deeplink für meine Web-Applikation [Synapkey](https://synapkey.ch)
