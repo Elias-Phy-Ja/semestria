@@ -55,6 +55,8 @@ Alternativ: `.msix`-Datei unter [Releases](../../releases) (Sideloading erforder
 - [x] Loading screen
 - [x] Versions abruf um Updatebeachrichtigung zu ermöglichen (Updater)
 
+*Summary: Beim Starten der Applikation lädt ein loading screen der Microsoft Stora anfragt ob ein Update verfügbar ist um dies anzuzeigen.*
+
 ### Next Session:
 - [ ] Aufgaben Eintrag überprüfen
 - [ ] Updater überprüfen
