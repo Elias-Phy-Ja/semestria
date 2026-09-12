@@ -59,5 +59,6 @@ Alternativ: `.msix`-Datei unter [Releases](../../releases) (Sideloading erforder
 
 ### Next Session:
 - [ ] Aufgaben Eintrag überprüfen
+- [ ] Listenfarbe ändern unabhängig von Stundenplan
 - [ ] Updater überprüfen
 - [ ] Deeplink für meine Web-Applikation [Synapkey](https://synapkey.ch)
