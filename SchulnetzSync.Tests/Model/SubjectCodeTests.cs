@@ -33,4 +33,34 @@ public class SubjectCodeTests
     [InlineData("   ")]
     public void EmptySummary_GivesEmptyCode(string? summary)
         => Assert.Equal("", SubjectCode.FromSummary(summary));
+
+    [Theory]
+    [InlineData("DEU_I26A_SmiJa",                            "DEU", "")]
+    [InlineData("9:30 TEU_I26A",                             "TEU", "")]
+    [InlineData("INF_I26A M431",                             "INF", "M431")]
+    [InlineData("FRA_I26A_DuaLi Examen de grammaire Lecons", "FRA", "Examen de grammaire Lecons")]
+    [InlineData("WIR_I26A_KliLi Pruefung Swir 1.3",          "WIR", "Pruefung Swir 1.3")]
+    public void Split_SeparatesCodeFromRest(string summary, string code, string rest)
+    {
+        var (actualCode, actualRest) = SubjectCode.Split(summary);
+
+        Assert.Equal(code, actualCode);
+        Assert.Equal(rest, actualRest);
+    }
+
+    [Theory]
+    [InlineData("Begruessung und Einfuehrung 1. Klasse")]
+    [InlineData("spm 1.1 IMS Speerwurf")]
+    [InlineData("TecDay")]
+    public void Split_WithoutCode_KeepsWholeTitle(string summary)
+    {
+        var (code, rest) = SubjectCode.Split(summary);
+
+        Assert.Equal("", code);
+        Assert.Equal(summary, rest);
+    }
+
+    [Fact]
+    public void Split_EmptySummary_GivesTwoEmptyParts()
+        => Assert.Equal(("", ""), SubjectCode.Split(null));
 }

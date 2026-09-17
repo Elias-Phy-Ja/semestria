@@ -96,8 +96,19 @@ public partial class EventsPage : WpfPage
     {
         if (EventKeys.IsManual(ev.Key)) return null;
         if (ev.Type is not (SchulnetzEventType.Lektion or SchulnetzEventType.Pruefung)) return null;
-        var code = SubjectCode.FromSummary(ev.Summary);
+        var code = SubjectCode.Split(ev.Summary).Code;
         return code.Length == 0 ? null : code;
+    }
+
+    /// <summary>
+    /// Kurzform für die Kalenderkacheln: «TEU» statt «TEU_I26A_SmiJa». Klasse und
+    /// Lehrkraft stehen in jedem Eintrag gleich und kosten nur Platz; den vollen
+    /// Titel zeigt das Detailpanel.
+    /// </summary>
+    private static (string Title, string Detail) ShortTitle(SchulnetzEvent ev)
+    {
+        var (code, rest) = SubjectCode.Split(ev.Summary);
+        return code.Length == 0 ? (ev.Summary, "") : (code, rest);
     }
 
     /// <summary>Effektive Farbe eines Events: Einzelfarbe → Fach/Kategorie → Standard.</summary>
@@ -318,11 +329,13 @@ public partial class EventsPage : WpfPage
             Tag          = ev
         };
 
-        var timePrefix = ev.IsAllDay ? "" : ev.Start.LocalDateTime.ToString("H:mm ", _deCH);
-        bool isPruefung = ev.Type == SchulnetzEventType.Pruefung;
+        var timePrefix    = ev.IsAllDay ? "" : ev.Start.LocalDateTime.ToString("H:mm ", _deCH);
+        bool isPruefung   = ev.Type == SchulnetzEventType.Pruefung;
+        var (title, rest) = ShortTitle(ev);
+        pill.ToolTip      = ev.Summary;
         pill.Child = new WpfTextBlock
         {
-            Text         = timePrefix + ev.Summary,
+            Text         = timePrefix + title + (rest.Length > 0 ? " · " + rest : ""),
             FontSize     = 10,
             FontWeight   = isPruefung ? FontWeights.SemiBold : FontWeights.Normal,
             Foreground   = WpfBrushes.White,
@@ -729,14 +742,25 @@ public partial class EventsPage : WpfPage
             Foreground = new SolidColorBrush(Color.FromArgb(210, 255, 255, 255)),
             Margin     = new Thickness(0, 0, 0, 1)
         });
+        var (title, rest) = ShortTitle(ev);
+        card.ToolTip      = ev.Summary;
         inner.Children.Add(new WpfTextBlock
         {
-            Text         = ev.Summary,
+            Text         = title,
             FontSize     = 10,
             FontWeight   = FontWeights.SemiBold,
             Foreground   = WpfBrushes.White,
             TextWrapping = TextWrapping.Wrap
         });
+        if (rest.Length > 0)
+            inner.Children.Add(new WpfTextBlock
+            {
+                Text         = rest,
+                FontSize     = 8.5,
+                Foreground   = new SolidColorBrush(Color.FromArgb(215, 255, 255, 255)),
+                TextWrapping = TextWrapping.Wrap,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            });
         if (!string.IsNullOrWhiteSpace(ev.Location))
         {
             inner.Children.Add(new WpfTextBlock

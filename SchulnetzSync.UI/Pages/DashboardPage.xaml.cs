@@ -385,7 +385,8 @@ public partial class DashboardPage : Page
         var what = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) };
         what.Children.Add(new TextBlock
         {
-            Text         = ev.Summary,
+            Text         = ShortTitle(ev),
+            ToolTip      = ev.Summary,
             FontSize     = 13.5,
             FontWeight   = FontWeights.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -489,7 +490,8 @@ public partial class DashboardPage : Page
         var body = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         body.Children.Add(new TextBlock
         {
-            Text         = lesson.Summary,
+            Text         = ShortTitle(lesson),
+            ToolTip      = lesson.Summary,
             FontSize     = 13,
             FontWeight   = FontWeights.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -611,6 +613,14 @@ public partial class DashboardPage : Page
     // -----------------------------------------------------------------------
     // Daten
     // -----------------------------------------------------------------------
+
+    /// <summary>Kurzform wie im Kalender: «TEU» oder «FRA · Examen de grammaire».</summary>
+    private static string ShortTitle(SchulnetzEvent ev)
+    {
+        var (code, rest) = SubjectCode.Split(ev.Summary);
+        if (code.Length == 0) return ev.Summary;
+        return rest.Length == 0 ? code : $"{code} · {rest}";
+    }
 
     /// <summary>Feed- und manuelle Einträge ohne die ausgeblendeten.</summary>
     private static IEnumerable<SchulnetzEvent> VisibleEvents()

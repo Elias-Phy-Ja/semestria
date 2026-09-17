@@ -29,6 +29,29 @@ public static partial class SubjectCode
         return code.Trim().ToUpperInvariant();
     }
 
+    /// <summary>
+    /// Splits a summary into subject code and the rest, e.g.
+    /// "FRA_I26A_DuaLi Examen de grammaire" into ("FRA", "Examen de grammaire").
+    ///
+    /// Anders als <see cref="FromSummary"/> rät die Methode nicht: Nur wenn der
+    /// erste Teil dem Schulnetz-Muster FACH_KLASSE_LEHRER folgt, gibt es einen
+    /// Code. Titel wie "Begrüssung und Einführung 1. Klasse" bleiben ganz stehen.
+    /// </summary>
+    public static (string Code, string Detail) Split(string? summary)
+    {
+        if (string.IsNullOrWhiteSpace(summary)) return ("", "");
+
+        var s     = LeadingTime().Replace(summary.Trim(), "");
+        var space = s.IndexOf(' ');
+        var first = space < 0 ? s : s[..space];
+
+        var underscore = first.IndexOf('_');
+        if (underscore <= 0) return ("", s);
+
+        var rest = space < 0 ? "" : s[(space + 1)..].Trim();
+        return (first[..underscore].ToUpperInvariant(), rest);
+    }
+
     [GeneratedRegex(@"^\d{1,2}:\d{2}\s+")]
     private static partial Regex LeadingTime();
 }
