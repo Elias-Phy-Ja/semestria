@@ -35,7 +35,7 @@ public partial class TasksPage : Page
     private static readonly TimeSpan DefaultDueTime = new(23, 59, 0);
 
     /// <summary>
-    /// Erinnerung ohne Uhrzeit: früher Abend. Mitternacht wäre wertlos — dann
+    /// Erinnerung ohne Uhrzeit: früher Abend. Mitternacht wäre wertlos, dann
     /// schläft man oder hat den Tag schon abgeschlossen.
     /// </summary>
     private static readonly TimeSpan DefaultReminderTime = new(18, 0, 0);
@@ -54,7 +54,7 @@ public partial class TasksPage : Page
     private string _selectedList = ViewAll;
 
     /// <summary>
-    /// Ereignisse aus dem XAML feuern bereits während InitializeComponent() —
+    /// Ereignisse aus dem XAML feuern bereits während InitializeComponent(),
     /// bis dahin existieren die weiter unten deklarierten Elemente nicht.
     /// </summary>
     private bool _initialized;
@@ -553,14 +553,14 @@ public partial class TasksPage : Page
 
         TxtEditorError.Text = "";
 
-        // Tag vom Abgabetermin zurückrechnen, Uhrzeit aber auf den frühen Abend —
+        // Tag vom Abgabetermin zurückrechnen, Uhrzeit aber auf den frühen Abend,
         // «am Vortag» einer Abgabe um 23:59 hiesse sonst: kurz vor Mitternacht.
         var day   = due.Value.Date.AddDays(-daysBefore) + DefaultReminderTime;
         var local = new DateTimeOffset(day, TimeZoneInfo.Local.GetUtcOffset(day));
         SetDateTime(DateRemind, CmbRemindTime, local);
     }
 
-    /// <summary>Ohne Uhrzeit ist die Abgabe das Tagesende — sonst wäre sie um 00:00 sofort überfällig.</summary>
+    /// <summary>Ohne Uhrzeit ist die Abgabe das Tagesende, sonst wäre sie um 00:00 sofort überfällig.</summary>
     private void DateDue_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (!_initialized) return;
@@ -585,7 +585,7 @@ public partial class TasksPage : Page
     /// </summary>
     /// <param name="fallbackTime">Used when the time field is empty.</param>
     /// <param name="field">Name for the error message, e.g. "Abgabe".</param>
-    /// <param name="value">Null when no date is set — that is allowed.</param>
+    /// <param name="value">Null when no date is set; that is allowed.</param>
     /// <returns>
     /// False only for unreadable input. Früher wurde eine unlesbare Uhrzeit still
     /// durch 23:59 ersetzt; jetzt erfährt man, dass etwas nicht stimmt.
@@ -634,7 +634,7 @@ public partial class TasksPage : Page
         Refresh();
     }
 
-    /// <summary>Entfernt erledigte Aufgaben — nur im gerade gezeigten Bereich.</summary>
+    /// <summary>Entfernt erledigte Aufgaben, nur im gerade gezeigten Bereich.</summary>
     private void BtnClearDone_Click(object sender, RoutedEventArgs e)
     {
         var inScope = InScope();
@@ -730,7 +730,7 @@ public partial class TasksPage : Page
         {
             ViewAll         => ("Alle Aufgaben", "☰"),
             ViewImportant   => ("Wichtig", "★"),
-            TaskItem.NoList => (TaskItem.NoList, "–"),
+            TaskItem.NoList => (TaskItem.NoList, "○"),
             _               => (_selectedList, _selectedList[..1].ToUpper(DeCh)),
         };
 
@@ -811,7 +811,7 @@ public partial class TasksPage : Page
             BorderBrush     = overdue ? Tint(OverdueColor, 0x70) : Brushes.Transparent,
         };
 
-        // Theme-Brushes von ModernWpf lassen sich nicht statisch auflösen —
+        // Theme-Brushes von ModernWpf lassen sich nicht statisch auflösen,
         // FindResource wirft dort. Die Referenz folgt zudem einem Themewechsel.
         card.SetResourceReference(Border.BackgroundProperty,
             "SystemControlBackgroundChromeMediumLowBrush");

@@ -254,7 +254,7 @@
                 <TextBox x:Name="TxtQuickAdd" Grid.Column="0"
                          Height="44" FontSize="14"
                          VerticalContentAlignment="Center"
-                         ui:ControlHelper.PlaceholderText="+   Aufgabe hinzufügen — Enter speichert"
+                         ui:ControlHelper.PlaceholderText="+   Aufgabe hinzufügen, Enter speichert"
                          KeyDown="TxtQuickAdd_KeyDown"/>
                 <Button x:Name="BtnQuickDetails" Grid.Column="1"
                         Content="Mit Details…"

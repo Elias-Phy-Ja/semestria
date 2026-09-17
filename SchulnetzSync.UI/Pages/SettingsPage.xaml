@@ -34,7 +34,7 @@
                                      Checked="Theme_Changed" Tag="Dark"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource NoteText}"
-                               Text="Wechselt sofort — kein Neustart nötig."/>
+                               Text="Wechselt sofort, kein Neustart nötig."/>
                 </StackPanel>
             </Border>
 
@@ -210,7 +210,7 @@
                                Style="{StaticResource HeadlineText}"
                                Margin="0,0,0,8"/>
                     <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,6"
-                               Text="Löscht jeden Kalendereintrag, den Semestria angelegt hat — Prüfungen und Termine, auch bereits als «Abgesagt» markierte."/>
+                               Text="Löscht jeden Kalendereintrag, den Semestria angelegt hat: Prüfungen und Termine, auch bereits als «Abgesagt» markierte."/>
                     <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,6"
                                Text="Deine eigenen Termine bleiben unberührt. Erkannt werden nur Einträge, die Semestria selbst erstellt und markiert hat."/>
                     <TextBlock Style="{StaticResource NoteText}" Margin="0,0,0,14"

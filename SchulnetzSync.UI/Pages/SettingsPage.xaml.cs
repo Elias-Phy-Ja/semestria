@@ -15,12 +15,12 @@ namespace SchulnetzSync.UI.Pages;
 public partial class SettingsPage : Page
 {
     private readonly Dictionary<string, string> _calendarMap = new();
-    // Startet als true — verhindert Theme_Changed während XAML-Init (IsChecked="True" feuert Checked)
+    // Startet als true, verhindert Theme_Changed während XAML-Init (IsChecked="True" feuert Checked)
     private bool _loadingUi = true;
 
     public SettingsPage()
     {
-        InitializeComponent(); // Hier feuert RbSystem.Checked — _loadingUi=true blockt es
+        InitializeComponent(); // Hier feuert RbSystem.Checked, _loadingUi=true blockt es
         Loaded += async (_, _) =>
         {
             LoadUi();
@@ -38,11 +38,11 @@ public partial class SettingsPage : Page
         try
         {
             var config = AppState.Config;
-            // Feed-URL: NIEMALS Token anzeigen — nur Pfad
+            // Feed-URL: NIEMALS Token anzeigen, nur Pfad
             var raw = ConfigManager.GetFeedUrl(config);
             TxtFeedUrl.Text = raw ?? "";
 
-            // Im Feld steht nur eine selbst eingetragene ID — die mitgelieferte
+            // Im Feld steht nur eine selbst eingetragene ID; die mitgelieferte
             // Registrierung bleibt unsichtbar, damit niemand daran herumschraubt.
             TxtClientId.Text = MicrosoftAccount.UsesCustomId(config)
                 ? config.ClientId!.Trim()
@@ -86,7 +86,7 @@ public partial class SettingsPage : Page
             bool ok  = await auth.IsSignedInAsync();
             SetAccountState(ok,
                 ok ? "Outlook ist verknüpft" : "Outlook nicht verknüpft",
-                ok ? "Semestria darf deinen Outlook-Kalender lesen und schreiben — sonst nichts."
+                ok ? "Semestria darf deinen Outlook-Kalender lesen und schreiben, sonst nichts."
                    : "Ein Klick genügt: «Mit Microsoft anmelden». Mehr musst du nicht einrichten.");
             BtnSignOut.IsEnabled = ok;
             BtnSignIn.IsEnabled  = !ok;
@@ -95,7 +95,7 @@ public partial class SettingsPage : Page
         catch
         {
             SetAccountState(false, "Status unbekannt",
-                "Konnte nicht geprüft werden — vermutlich keine Internetverbindung.");
+                "Konnte nicht geprüft werden, vermutlich keine Internetverbindung.");
         }
     }
 
@@ -147,13 +147,13 @@ public partial class SettingsPage : Page
 
         try
         {
-            // Frische Instanz — kein Retry-Block durch alten Zustand
+            // Frische Instanz, kein Retry-Block durch alten Zustand
             var auth = new MsalAuthProvider(clientId);
             await auth.AcquireTokenInteractiveAsync();
 
             PersistCustomClientId();
             SetAccountState(true, "Outlook ist verknüpft",
-                "Semestria darf deinen Outlook-Kalender lesen und schreiben — sonst nichts.");
+                "Semestria darf deinen Outlook-Kalender lesen und schreiben, sonst nichts.");
             BtnSignOut.IsEnabled = true;
             await LoadCalendarsAsync(clientId);
         }
@@ -238,7 +238,7 @@ public partial class SettingsPage : Page
         }
         catch
         {
-            // Nicht-kritisch — Kalender kann leer gelassen werden
+            // Nicht-kritisch, Kalender kann leer gelassen werden
         }
     }
 
@@ -281,7 +281,7 @@ public partial class SettingsPage : Page
         ConfigManager.Save(config);
         AppState.Notify();
 
-        // Grünes Feedback — automatisch nach 3 s ausblenden
+        // Grünes Feedback, automatisch nach 3 s ausblenden
         TxtSaveStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E));
         TxtSaveStatus.Text       = "✅  Einstellungen gespeichert";
         _ = Task.Delay(3000).ContinueWith(
@@ -309,7 +309,7 @@ public partial class SettingsPage : Page
         var confirm = MessageBox.Show(
             "Alle Kalendereinträge löschen, die Semestria in Outlook erstellt hat?\n\n" +
             "Deine eigenen Termine bleiben unberührt.\n" +
-            "Rückgängig machen lässt sich das nicht — ein erneuter Sync legt die " +
+            "Rückgängig machen lässt sich das nicht. Ein erneuter Sync legt die " +
             "Einträge aber wieder an.",
             "Wirklich alle Einträge löschen?",
             MessageBoxButton.YesNo, MessageBoxImage.Warning,
