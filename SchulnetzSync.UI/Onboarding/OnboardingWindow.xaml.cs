@@ -1,9 +1,15 @@
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using SchulnetzSync.Core.Calendar;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.UI.Services;
+using Brushes             = System.Windows.Media.Brushes;
+using Clipboard           = System.Windows.Clipboard;
+using FontFamily          = System.Windows.Media.FontFamily;
+using HorizontalAlignment = System.Windows.HorizontalAlignment;
+using Orientation         = System.Windows.Controls.Orientation;
 
 namespace SchulnetzSync.UI.Onboarding;
 
@@ -23,6 +29,11 @@ public partial class OnboardingWindow : Window
     // Schritte: 1=Willkommen, 2=Rechtliches, 3=Feed-URL, 4=Anmelden, 5=Fertig
     private const int TotalSteps = 5;
 
+    private static readonly string[] StepNames =
+        ["Willkommen", "Bedingungen", "Schulnetz verbinden", "Outlook", "Fertig"];
+
+    private const string IconFont = "Segoe Fluent Icons, Segoe MDL2 Assets";
+
     public OnboardingWindow()
     {
         InitializeComponent();
@@ -37,7 +48,7 @@ public partial class OnboardingWindow : Window
         AdvancedIdSection.Visibility  = MicrosoftAccount.HasBuiltInId
             ? Visibility.Collapsed : Visibility.Visible;
 
-        UpdateNextButton();
+        ShowStep(1);
     }
 
     // -----------------------------------------------------------------------
@@ -109,7 +120,7 @@ public partial class OnboardingWindow : Window
                 UseShellExecute = true
             });
         }
-        catch { /* Browser nicht verfügbar — kein Problem */ }
+        catch { /* Browser nicht verfügbar, kein Problem */ }
     }
 
     private void ShowStep(int step)
@@ -121,14 +132,17 @@ public partial class OnboardingWindow : Window
         ShowStep4Sub(_showOutlookSetup);
         Step5.Visibility = step == 5 ? Visibility.Visible : Visibility.Collapsed;
 
-        SetDot(Dot1, active: step == 1, done: step > 1);
-        SetDot(Dot2, active: step == 2, done: step > 2);
-        SetDot(Dot3, active: step == 3, done: step > 3);
-        SetDot(Dot4, active: step == 4, done: step > 4);
-        SetDot(Dot5, active: step == 5, done: false);
+        BuildStepRail(step);
+        ContentScroll.ScrollToTop();
 
-        BtnBack.IsEnabled = step > 1;
-        BtnNext.Content   = step == TotalSteps ? "Los geht's!" : "Weiter";
+        BtnBack.IsEnabled   = step > 1;
+        TxtStepCounter.Text = $"{step} / {TotalSteps}";
+        TxtNextLabel.Text   = step switch
+        {
+            1          => "Los geht's",
+            TotalSteps => "Semestria öffnen",
+            _          => "Weiter",
+        };
 
         // Auf der Frage-Seite fuehren die beiden Auswahl-Buttons weiter,
         // nicht der Weiter-Button unten.
@@ -142,13 +156,66 @@ public partial class OnboardingWindow : Window
         UpdateNextButton();
     }
 
-    private void SetDot(System.Windows.Shapes.Ellipse dot, bool active, bool done)
+    /// <summary>Schrittleiste links: erledigt mit Haken, aktueller Schritt hervorgehoben.</summary>
+    private void BuildStepRail(int current)
     {
-        dot.Width  = active ? 10 : 8;
-        dot.Height = active ? 10 : 8;
-        dot.Fill   = (active || done)
-            ? (Brush)new SolidColorBrush(Color.FromRgb(0x5C, 0x6E, 0xF7))
-            : (Brush)Application.Current.FindResource("SystemControlForegroundBaseLowBrush");
+        StepRail.Children.Clear();
+        var accent = Color.FromRgb(0x5C, 0x6E, 0xF7);
+
+        for (int i = 1; i <= TotalSteps; i++)
+        {
+            bool done   = i < current;
+            bool active = i == current;
+
+            var badge = new Border
+            {
+                Width           = 28,
+                Height          = 28,
+                CornerRadius    = new CornerRadius(14),
+                Background      = new SolidColorBrush(active ? Colors.White
+                                : done ? Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF)
+                                : Colors.Transparent),
+                BorderBrush     = new SolidColorBrush(Color.FromArgb(active || done ? (byte)0x00 : (byte)0x66, 0xFF, 0xFF, 0xFF)),
+                BorderThickness = new Thickness(1.5),
+                Child = new TextBlock
+                {
+                    Text                = done ? "\uE73E" : i.ToString(),
+                    FontFamily          = done ? new FontFamily(IconFont) : new FontFamily("Segoe UI"),
+                    FontSize            = done ? 12 : 12.5,
+                    FontWeight          = FontWeights.Bold,
+                    Foreground          = new SolidColorBrush(active ? accent : Colors.White),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment   = VerticalAlignment.Center,
+                },
+            };
+
+            var label = new TextBlock
+            {
+                Text              = StepNames[i - 1],
+                Foreground        = Brushes.White,
+                FontSize          = 14,
+                FontWeight        = active ? FontWeights.SemiBold : FontWeights.Normal,
+                Opacity           = active ? 1.0 : done ? 0.85 : 0.6,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin            = new Thickness(14, 0, 0, 0),
+            };
+
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            row.Children.Add(badge);
+            row.Children.Add(label);
+            StepRail.Children.Add(row);
+
+            // Verbindungslinie zum nächsten Schritt
+            if (i < TotalSteps)
+                StepRail.Children.Add(new Border
+                {
+                    Width               = 1.5,
+                    Height              = 18,
+                    Margin              = new Thickness(13.25, 4, 0, 4),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Background          = new SolidColorBrush(Color.FromArgb(done ? (byte)0x80 : (byte)0x40, 0xFF, 0xFF, 0xFF)),
+                });
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -167,16 +234,14 @@ public partial class OnboardingWindow : Window
         var url = TxtFeedUrl.Text.Trim();
         if (string.IsNullOrEmpty(url))
         {
-            TxtFeedStatus.Text    = "Bitte eine Feed-URL eingeben.";
-            TxtFeedStatus.Opacity = 1;
+            ShowFeedProblem("Bitte den Kalender-Link einfügen.");
             return false;
         }
         if (!url.StartsWith("webcal://", StringComparison.OrdinalIgnoreCase)
          && !url.StartsWith("https://",  StringComparison.OrdinalIgnoreCase)
          && !url.StartsWith("http://",   StringComparison.OrdinalIgnoreCase))
         {
-            TxtFeedStatus.Text    = "URL muss mit webcal://, https:// oder http:// beginnen.";
-            TxtFeedStatus.Opacity = 1;
+            ShowFeedProblem("Der Link muss mit webcal://, https:// oder http:// beginnen.");
             return false;
         }
         return true;
@@ -196,26 +261,49 @@ public partial class OnboardingWindow : Window
     }
 
     // -----------------------------------------------------------------------
-    // Schritt 2 — Rechtliches
+    // Schritt 2: Rechtliches
     // -----------------------------------------------------------------------
 
     private void Legal_CheckChanged(object sender, RoutedEventArgs e)
         => UpdateNextButton();
 
     // -----------------------------------------------------------------------
-    // Schritt 3 — Feed-URL
+    // Schritt 3: Feed-URL
     // -----------------------------------------------------------------------
 
     private void TxtFeedUrl_TextChanged(object sender,
         System.Windows.Controls.TextChangedEventArgs e)
     {
-        TxtFeedStatus.Text    = "🔒  Die URL wird verschlüsselt gespeichert. Das Token verlässt dein Gerät nie.";
-        TxtFeedStatus.Opacity = 0.55;
+        TxtFeedStatus.Text = "Der Link wird verschlüsselt gespeichert und verlässt dein Gerät nie.";
+        TxtFeedStatus.ClearValue(TextBlock.ForegroundProperty);
+        TxtFeedStatus.Opacity   = 0.55;
+        FeedStatusGlyph.Text    = "\uE72E";
+        FeedStatusGlyph.ClearValue(TextBlock.ForegroundProperty);
+        FeedStatusGlyph.Opacity = 0.55;
         UpdateNextButton();
     }
 
+    private void ShowFeedProblem(string message)
+    {
+        var red = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44));
+        TxtFeedStatus.Text         = message;
+        TxtFeedStatus.Foreground   = red;
+        TxtFeedStatus.Opacity      = 1;
+        FeedStatusGlyph.Text       = "\uE7BA";
+        FeedStatusGlyph.Foreground = red;
+        FeedStatusGlyph.Opacity    = 1;
+    }
+
+    private void BtnPasteFeed_Click(object sender, RoutedEventArgs e)
+    {
+        if (!Clipboard.ContainsText()) return;
+        TxtFeedUrl.Text = Clipboard.GetText().Trim();
+        TxtFeedUrl.Focus();
+        TxtFeedUrl.CaretIndex = TxtFeedUrl.Text.Length;
+    }
+
     // -----------------------------------------------------------------------
-    // Schritt 4 — Microsoft-Anmeldung
+    // Schritt 4: Microsoft-Anmeldung
     // -----------------------------------------------------------------------
 
     private void OnEnterStep4()
@@ -248,7 +336,7 @@ public partial class OnboardingWindow : Window
     {
         ClientIdHint.Text = MicrosoftAccount.IsUsable(TxtClientId.Text.Trim())
             ? "Sieht gut aus. Klicke oben auf «Mit Microsoft anmelden»."
-            : "Noch leer — folge der Anleitung unten, um die App-ID zu erstellen.";
+            : "Noch leer. Folge der Anleitung unten, um die App-ID zu erstellen.";
         BtnSignIn.IsEnabled = EffectiveClientId() is not null && !_signedIn;
     }
 
@@ -262,14 +350,14 @@ public partial class OnboardingWindow : Window
 
         try
         {
-            // Frische Instanz bei jedem Versuch — kein eingefrierter Zustand
+            // Frische Instanz bei jedem Versuch, kein eingefrorener Zustand
             var auth = new MsalAuthProvider(clientId);
             await auth.AcquireTokenInteractiveAsync();
 
             _signedIn = true;
             SignInSuccess.Visibility = Visibility.Visible;
             BtnSignIn.Visibility     = Visibility.Collapsed;
-            // Nur eine selbst eingetragene ID persistieren — die mitgelieferte
+            // Nur eine selbst eingetragene ID persistieren; die mitgelieferte
             // soll bei einem App-Update automatisch mitwandern.
             var custom = TxtClientId.Text.Trim();
             if (MicrosoftAccount.IsUsable(custom))
@@ -289,23 +377,61 @@ public partial class OnboardingWindow : Window
     }
 
     // -----------------------------------------------------------------------
-    // Schritt 5 — Fertig
+    // Schritt 5: Fertig
     // -----------------------------------------------------------------------
 
     private void BuildFinishSummary()
     {
-        var url     = TxtFeedUrl.Text.Trim();
-        var safeUrl = SafeDisplayUrl(url);
+        SummaryList.Children.Clear();
+        AddSummaryRow("\uE71B", "Schulnetz verbunden", SafeDisplayUrl(TxtFeedUrl.Text.Trim()), ok: true);
+        AddSummaryRow("\uE8A7",
+            _signedIn ? "Outlook verknüpft" : "Outlook nicht verknüpft",
+            _signedIn ? "Einträge erscheinen auch in deinem Outlook-Kalender."
+                      : "Kein Problem, der Kalender in der App funktioniert. Nachholen geht jederzeit in den Einstellungen.",
+            ok: _signedIn);
+        AddSummaryRow("\uE8F4", "Bedingungen akzeptiert", "Nutzungsbedingungen und Datenschutzerklärung", ok: true, last: true);
+    }
 
-        TxtSetupSummary.Text =
-            $"✅  Feed-URL: {safeUrl}\n" +
-            (_signedIn
-                ? "✅  Outlook ist verknüpft\n"
-                : "ℹ️  Outlook nicht verknüpft — der Kalender in der App funktioniert trotzdem. "
-                  + "Nachholen kannst du es jederzeit unter Einstellungen.\n") +
-            "✅  Nutzungsbedingungen akzeptiert\n" +
-            "✅  Datenschutzerklärung akzeptiert\n\n" +
-            "Klicke «Los geht's!» um das Hauptfenster zu öffnen.";
+    private void AddSummaryRow(string glyph, string title, string detail, bool ok, bool last = false)
+    {
+        var tint = ok ? Color.FromRgb(0x22, 0xC5, 0x5E) : Color.FromRgb(0x8A, 0x8F, 0x98);
+
+        var grid = new Grid { Margin = new Thickness(0, 0, 0, last ? 0 : 14) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        grid.Children.Add(new Border
+        {
+            Width             = 34,
+            Height            = 34,
+            CornerRadius      = new CornerRadius(9),
+            VerticalAlignment = VerticalAlignment.Top,
+            Background        = new SolidColorBrush(Color.FromArgb(0x26, tint.R, tint.G, tint.B)),
+            Child = new TextBlock
+            {
+                Text                = ok ? "\uE73E" : glyph,
+                FontFamily          = new FontFamily(IconFont),
+                FontSize            = 14,
+                Foreground          = new SolidColorBrush(tint),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment   = VerticalAlignment.Center,
+            },
+        });
+
+        var text = new StackPanel { Margin = new Thickness(14, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(new TextBlock { Text = title, FontSize = 14, FontWeight = FontWeights.SemiBold });
+        text.Children.Add(new TextBlock
+        {
+            Text         = detail,
+            FontSize     = 12.5,
+            Opacity      = 0.65,
+            TextWrapping = TextWrapping.Wrap,
+            Margin       = new Thickness(0, 2, 0, 0),
+        });
+        Grid.SetColumn(text, 1);
+        grid.Children.Add(text);
+
+        SummaryList.Children.Add(grid);
     }
 
     // -----------------------------------------------------------------------
@@ -356,14 +482,14 @@ public partial class OnboardingWindow : Window
     // -----------------------------------------------------------------------
 
     /// <summary>
-    /// Zeigt von einer Feed-URL nur Protokoll+Host+Pfad — KEIN Token/Query-String.
+    /// Zeigt von einer Feed-URL nur den Host, KEIN Token und keinen Query-String.
     /// Schützt vor unabsichtlichem Anzeigen des persönlichen Tokens.
     /// </summary>
     private static string SafeDisplayUrl(string url)
     {
         if (string.IsNullOrEmpty(url)) return "(nicht gesetzt)";
         if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            return uri.GetLeftPart(UriPartial.Path) + "  [Token ausgeblendet]";
+            return uri.Host + "  (Token ausgeblendet)";
         return url.Length > 40 ? url[..40] + "..." : url;
     }
 

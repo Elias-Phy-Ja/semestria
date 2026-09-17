@@ -6,457 +6,743 @@
         xmlns:local="clr-namespace:SchulnetzSync.UI"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Semestria einrichten"
-        Width="660" Height="640"
-        MinWidth="560" MinHeight="540"
+        Width="940" Height="700"
+        MinWidth="860" MinHeight="600"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
-        <!-- Weisses Kontrollkästchen: gut sichtbar in Hell- und Dunkel-Modus -->
-        <Style x:Key="VisibleCheckBox" TargetType="CheckBox">
-            <Setter Property="Foreground"
-                    Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Margin" Value="0,0,0,10"/>
+
+        <!-- Halbtransparentes Grau wirkt im hellen wie im dunklen Theme -->
+        <SolidColorBrush x:Key="HoverOverlay"   Color="#1A808080"/>
+        <SolidColorBrush x:Key="PressedOverlay" Color="#2A808080"/>
+        <SolidColorBrush x:Key="SubtleFill"     Color="#12808080"/>
+        <SolidColorBrush x:Key="SubtleBorder"   Color="#26808080"/>
+        <SolidColorBrush x:Key="AccentTint"     Color="#265C6EF7"/>
+
+        <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+        <Style x:Key="Eyebrow" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
         </Style>
+        <Style x:Key="StepTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style x:Key="StepLead" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Opacity" Value="0.7"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="21"/>
+            <Setter Property="Margin" Value="0,8,0,24"/>
+        </Style>
+
+        <Style x:Key="Panel" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SubtleBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="18,16"/>
+        </Style>
+
+        <!-- Rundes Icon-Kästchen mit Akzent-Tönung -->
+        <Style x:Key="IconTile" TargetType="Border">
+            <Setter Property="Width" Value="38"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Background" Value="{StaticResource AccentTint}"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+        </Style>
+        <Style x:Key="IconGlyph" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource IconFont}"/>
+            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Nummer in der Anleitung -->
+        <Style x:Key="NumberBadge" TargetType="Border">
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="CornerRadius" Value="13"/>
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="Margin" Value="0,0,14,0"/>
+        </Style>
+
+        <Style x:Key="AccentAction" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="22,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="Root">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="10"/>
+                            <Border x:Name="Overlay" Background="Transparent" CornerRadius="10"/>
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Overlay" Property="Background" Value="#1FFFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Overlay" Property="Background" Value="#26000000"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="OutlineAction" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="20,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{StaticResource SubtleBorder}" BorderThickness="1"
+                                CornerRadius="10" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverOverlay}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource PressedOverlay}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="LinkAction" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverOverlay}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Grosse Auswahlkarte (Outlook ja / später) -->
+        <Style x:Key="ChoiceCard" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SubtleBorder}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="12"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1.5"/>
+                            <Border x:Name="Overlay" Background="Transparent" CornerRadius="12"/>
+                            <ContentPresenter Margin="18,16"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Overlay" Property="Background" Value="{StaticResource SubtleFill}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Overlay" Property="Background" Value="{StaticResource HoverOverlay}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="VisibleCheckBox" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            <Setter Property="FontSize" Value="13.5"/>
+        </Style>
+
+        <!-- Nachbau der Schulnetz-Oberfläche: bewusst neutral, ohne Schul-Branding -->
+        <SolidColorBrush x:Key="PortalBlue"  Color="#3B77B8"/>
+        <SolidColorBrush x:Key="PortalText"  Color="#333333"/>
+        <SolidColorBrush x:Key="PortalLink"  Color="#2F6DB0"/>
+        <SolidColorBrush x:Key="Highlight"   Color="#F59E0B"/>
+
     </Window.Resources>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="6"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="270"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <!-- Akzentstreifen oben -->
-        <Border Grid.Row="0" Background="{StaticResource AccentBrush}"/>
+        <!-- ══════════════════════════════════════════════════════════
+             LINKS: Marke und Schrittleiste
+             ══════════════════════════════════════════════════════════ -->
+        <Border Grid.Column="0">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0.6,1">
+                    <GradientStop Color="#5C6EF7" Offset="0"/>
+                    <GradientStop Color="#3441B8" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid Margin="28,30,24,26">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-        <!-- Schritt-Inhalte -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
-                      Padding="52,36,52,16">
-            <Grid>
-
-                <!-- ══════════════════════════════════
-                     SCHRITT 1 — Willkommen
-                     ══════════════════════════════════ -->
-                <StackPanel x:Name="Step1" HorizontalAlignment="Center" MaxWidth="520">
-                    <Image Source="pack://application:,,,/Resources/Semestra_Logo.png"
-                           Width="80" Height="80"
-                           HorizontalAlignment="Center" Margin="0,0,0,18"
-                           RenderOptions.BitmapScalingMode="HighQuality"/>
-                    <TextBlock Text="Willkommen bei Semestria"
-                               FontSize="26" FontWeight="Bold"
-                               HorizontalAlignment="Center"
-                               TextAlignment="Center" Margin="0,0,0,10"/>
-                    <TextBlock TextAlignment="Center" TextWrapping="Wrap"
-                               FontSize="14" Opacity="0.65" Margin="0,0,0,28"
-                               Text="Deine Schulprüfungen und Termine immer im Blick — in der App und auf Wunsch auch in Outlook. In wenigen Schritten eingerichtet."/>
-                    <Border Style="{StaticResource InfoBox}">
-                        <StackPanel>
-                            <TextBlock Text="Was Semestria macht:"
-                                       FontWeight="SemiBold" FontSize="14"
-                                       Margin="0,0,0,12"/>
-                            <TextBlock FontSize="13" Margin="0,0,0,6">✅  Liest deinen Schulnetz-Kalender automatisch</TextBlock>
-                            <TextBlock FontSize="13" Margin="0,0,0,6">✅  Zeigt Prüfungen &amp; Termine im Kalender der App</TextBlock>
-                            <TextBlock FontSize="13" Margin="0,0,0,6">✅  Erkennt Änderungen und aktualisiert Einträge</TextBlock>
-                            <TextBlock FontSize="13" Margin="0,0,0,6">➕  Optional: trägt alles in deinen Outlook-Kalender ein</TextBlock>
-                            <TextBlock FontSize="13">🔒  Alles lokal — keine Daten auf fremden Servern</TextBlock>
-                        </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="42" Height="42" CornerRadius="11" Background="#26FFFFFF">
+                        <Image Source="pack://application:,,,/Resources/Semestra_Logo.png"
+                               Width="30" Height="30"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
-                </StackPanel>
-
-                <!-- ══════════════════════════════════
-                     SCHRITT 2 — Nutzungsbedingungen
-                     ══════════════════════════════════ -->
-                <StackPanel x:Name="Step2" Visibility="Collapsed"
-                            HorizontalAlignment="Center" MaxWidth="540">
-                    <TextBlock Text="📋" FontSize="48"
-                               HorizontalAlignment="Center" Margin="0,0,0,16"/>
-                    <TextBlock Text="Nutzungsbedingungen und Datenschutz"
-                               FontSize="22" FontWeight="Bold"
-                               HorizontalAlignment="Center"
-                               TextAlignment="Center" Margin="0,0,0,8"/>
-                    <TextBlock TextAlignment="Center" TextWrapping="Wrap"
-                               FontSize="13" Opacity="0.65" Margin="0,0,0,16"
-                               Text="Bitte lies und akzeptiere die folgenden Dokumente, bevor du fortfährst."/>
-
-                    <TabControl Margin="0,0,0,16" BorderThickness="1">
-                        <TabItem Header="Nutzungsbedingungen">
-                            <ScrollViewer Height="180" Padding="4"
-                                          VerticalScrollBarVisibility="Auto">
-                                <TextBlock FontFamily="Consolas" FontSize="11"
-                                           TextWrapping="Wrap" Opacity="0.8"
-                                           LineHeight="17"
-                                           Text="{x:Static legal:LegalTexts.Agb}"/>
-                            </ScrollViewer>
-                        </TabItem>
-                        <TabItem Header="Datenschutzerklärung">
-                            <ScrollViewer Height="180" Padding="4"
-                                          VerticalScrollBarVisibility="Auto">
-                                <TextBlock FontFamily="Consolas" FontSize="11"
-                                           TextWrapping="Wrap" Opacity="0.8"
-                                           LineHeight="17"
-                                           Text="{x:Static legal:LegalTexts.Datenschutz}"/>
-                            </ScrollViewer>
-                        </TabItem>
-                    </TabControl>
-
-                    <CheckBox x:Name="ChkAgb"
-                              Style="{StaticResource VisibleCheckBox}"
-                              Checked="Legal_CheckChanged"
-                              Unchecked="Legal_CheckChanged"
-                              Content="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."/>
-                    <CheckBox x:Name="ChkDatenschutz"
-                              Style="{StaticResource VisibleCheckBox}"
-                              Checked="Legal_CheckChanged"
-                              Unchecked="Legal_CheckChanged"
-                              Content="Ich habe die Datenschutzerklärung gelesen und akzeptiere sie."/>
-                </StackPanel>
-
-                <!-- ══════════════════════════════════
-                     SCHRITT 3 — Feed-URL
-                     ══════════════════════════════════ -->
-                <StackPanel x:Name="Step3" Visibility="Collapsed"
-                            HorizontalAlignment="Center" MaxWidth="520">
-                    <TextBlock Text="📡" FontSize="48"
-                               HorizontalAlignment="Center" Margin="0,0,0,16"/>
-                    <TextBlock Text="Schulnetz Feed-URL"
-                               FontSize="24" FontWeight="Bold"
-                               HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                    <TextBlock TextAlignment="Center" TextWrapping="Wrap"
-                               FontSize="13" Opacity="0.65" Margin="0,0,0,20"
-                               Text="Dein persönlicher Kalender-Link aus dem Schulnetz-Portal."/>
-
-                    <!-- Anleitung als Schritte -->
-                    <TextBlock Text="So findest du die URL:"
-                               FontWeight="SemiBold" FontSize="13"
-                               Margin="0,0,0,10"/>
-                    <Border Style="{StaticResource InfoBox}" Margin="0,0,0,4">
-                        <StackPanel>
-                            <TextBlock FontSize="13" Margin="0,0,0,6">1.  Melde dich im Schulnetz-Portal an</TextBlock>
-                            <TextBlock FontSize="13" Margin="0,0,0,6">2.  Gehe zu «Stundenplan» oder «Kalender»</TextBlock>
-                            <TextBlock FontSize="13" Margin="0,0,0,6">3.  Klicke auf das Download-Symbol (Pfeil nach unten)</TextBlock>
-                            <TextBlock FontSize="13" Margin="0,0,0,6">4.  Wähle «Diesen Plan im iCal Format abonnieren»</TextBlock>
-                            <TextBlock FontSize="13">5.  Kopiere den Link (beginnt mit webcal:// oder https://)</TextBlock>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Schulnetz-Mockup: zeigt wo geklickt wird -->
-                    <Border CornerRadius="8" Margin="0,12,0,16"
-                            BorderThickness="1"
-                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-                        <StackPanel>
-                            <!-- Portal-Header -->
-                            <Border Background="#0066CC" CornerRadius="7,7,0,0"
-                                    Padding="14,10">
-                                <TextBlock Text="Schülerinnen- und Schülerplan"
-                                           Foreground="White" FontWeight="SemiBold"
-                                           FontSize="13"/>
-                            </Border>
-                            <!-- Symbolleiste -->
-                            <Border Background="White" Padding="10,6">
-                                <StackPanel Orientation="Horizontal"
-                                            HorizontalAlignment="Right">
-                                    <Border Background="#0066CC" CornerRadius="4"
-                                            Padding="8,4" Margin="4,0,0,0">
-                                        <TextBlock Text="⬇  Exportieren"
-                                                   Foreground="White" FontSize="12"/>
-                                    </Border>
-                                </StackPanel>
-                            </Border>
-                            <!-- Dropdown-Menü -->
-                            <Border Background="White" Padding="6"
-                                    BorderBrush="#DDDDDD" BorderThickness="0,1,0,0">
-                                <StackPanel>
-                                    <TextBlock Padding="10,6" FontSize="12"
-                                               Foreground="#444">📄  Als PDF exportieren</TextBlock>
-                                    <TextBlock Padding="10,6" FontSize="12"
-                                               Foreground="#444">📋  Als Liste exportieren</TextBlock>
-                                    <!-- Markierte Option -->
-                                    <Border Background="#E8F0FE" CornerRadius="4"
-                                            Margin="4,2">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Padding="10,8" FontSize="12"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#0066CC">📅  Diesen Plan im iCal Format abonnieren</TextBlock>
-                                            <TextBlock FontSize="11" FontWeight="Bold"
-                                                       Foreground="#E53935"
-                                                       VerticalAlignment="Center"
-                                                       Margin="0,0,10,0">← Hier</TextBlock>
-                                        </StackPanel>
-                                    </Border>
-                                    <TextBlock Padding="10,6" FontSize="12"
-                                               Foreground="#444">📥  Im iCal-Format herunterladen</TextBlock>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- URL-Eingabe -->
-                    <TextBlock Text="Feed-URL einfügen:"
-                               FontWeight="SemiBold" FontSize="13"
-                               Margin="0,0,0,6"/>
-                    <TextBox x:Name="TxtFeedUrl" Height="38" FontSize="13"
-                             ui:ControlHelper.PlaceholderText="webcal://schulnetz.example.ch/ical?token=..."
-                             TextChanged="TxtFeedUrl_TextChanged"/>
-                    <TextBlock x:Name="TxtFeedStatus" FontSize="12"
-                               Opacity="0.55" Margin="0,6,0,0"
-                               Text="🔒  Die URL wird verschlüsselt gespeichert. Das Token verlässt dein Gerät nie."/>
-                </StackPanel>
-
-                <!-- ==================================
-                     SCHRITT 4 - Outlook (zweigeteilt: Frage -> Einrichtung)
-                     ================================== -->
-                <Grid x:Name="Step4" Visibility="Collapsed">
-
-                    <!-- 4a - Die Frage -->
-                    <StackPanel x:Name="Step4Ask"
-                                HorizontalAlignment="Center" MaxWidth="520">
-                        <TextBlock Text="&#x1F517;" FontSize="48"
-                                   HorizontalAlignment="Center" Margin="0,0,0,16"/>
-                        <TextBlock Text="Outlook jetzt verkn&#252;pfen?"
-                                   FontSize="24" FontWeight="Bold"
-                                   HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                        <TextBlock TextAlignment="Center" TextWrapping="Wrap"
-                                   FontSize="13" Opacity="0.75" Margin="0,0,0,20"
-                                   Text="{x:Static local:OutlookSetupText.Benefit}"/>
-
-                        <Border Style="{StaticResource InfoBox}" Margin="0,0,0,24">
-                            <StackPanel>
-                                <TextBlock Text="Gut zu wissen"
-                                           FontWeight="SemiBold" FontSize="13"
-                                           Margin="0,0,0,8"/>
-                                <TextBlock FontSize="13" TextWrapping="Wrap"
-                                           Margin="0,0,0,8"
-                                           Text="{x:Static local:OutlookSetupText.HowItWorks}"/>
-                                <TextBlock FontSize="13" TextWrapping="Wrap"
-                                           Opacity="0.85"
-                                           Text="{x:Static local:OutlookSetupText.SkipConsequence}"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Nur im Entwickler-Build ohne eigene Registrierung -->
-                        <Border x:Name="NoRegistrationHint"
-                                Style="{StaticResource WarningBox}"
-                                Visibility="Collapsed" Margin="0,0,0,24">
-                            <TextBlock FontSize="12" TextWrapping="Wrap"
-                                       Text="Diese Version bringt keine App-Registrierung mit. F&#252;r den Outlook-Sync brauchst du eine eigene App-ID &#8212; die Anleitung dazu erscheint im n&#228;chsten Schritt."/>
-                        </Border>
-
-                        <Button x:Name="BtnLinkNow"
-                                Content="Ja, Outlook jetzt verkn&#252;pfen"
-                                Style="{StaticResource PrimaryButton}"
-                                HorizontalAlignment="Stretch"
-                                Padding="24,13" FontSize="14"
-                                Margin="0,0,0,10"
-                                Click="BtnLinkNow_Click"/>
-                        <Button x:Name="BtnLinkLater"
-                                Content="Sp&#228;ter &#8212; erst mal ohne Outlook"
-                                Style="{StaticResource SecondaryButton}"
-                                HorizontalAlignment="Stretch"
-                                Padding="24,13" FontSize="14"
-                                Click="BtnLinkLater_Click"/>
-                        <TextBlock TextAlignment="Center" TextWrapping="Wrap"
-                                   FontSize="12" Opacity="0.55" Margin="0,12,0,0"
-                                   Text="Du kannst das jederzeit in den Einstellungen nachholen."/>
+                    <StackPanel VerticalAlignment="Center" Margin="12,0,0,0">
+                        <TextBlock Text="Semestria" Foreground="White" FontSize="19" FontWeight="Bold"/>
+                        <TextBlock Text="Einrichtung" Foreground="White" Opacity="0.7" FontSize="12"/>
                     </StackPanel>
-
-                    <!-- 4b - Die Anmeldung -->
-                    <StackPanel x:Name="Step4Setup" Visibility="Collapsed"
-                                HorizontalAlignment="Center" MaxWidth="520">
-                        <TextBlock Text="&#x1F511;" FontSize="44"
-                                   HorizontalAlignment="Center" Margin="0,0,0,14"/>
-                        <TextBlock Text="Mit Microsoft anmelden"
-                                   FontSize="24" FontWeight="Bold"
-                                   HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                        <TextBlock TextAlignment="Center" TextWrapping="Wrap"
-                                   FontSize="13" Opacity="0.75" Margin="0,0,0,20"
-                                   Text="Ein Klick, ein Microsoft-Fenster, fertig. Mehr brauchst du nicht einzurichten."/>
-
-                        <Border Style="{StaticResource InfoBox}" Margin="0,0,0,20">
-                            <StackPanel>
-                                <TextBlock Text="Was Semestria darf"
-                                           FontWeight="SemiBold" FontSize="13"
-                                           Margin="0,0,0,10"/>
-                                <TextBlock FontSize="13" TextWrapping="Wrap" Margin="0,0,0,6">&#x2705;  Pr&#252;fungen und Termine in deinen Kalender eintragen und aktuell halten</TextBlock>
-                                <TextBlock FontSize="13" TextWrapping="Wrap" Margin="0,0,0,6">&#x274C;  Keine E-Mails, keine Kontakte, keine Dateien</TextBlock>
-                                <TextBlock FontSize="13" TextWrapping="Wrap">&#x1F512;  Du meldest dich direkt bei Microsoft an. Semestria sieht dein Passwort nie.</TextBlock>
-                            </StackPanel>
-                        </Border>
-
-                        <Button x:Name="BtnSignIn"
-                                Content="Mit Microsoft anmelden"
-                                Style="{StaticResource PrimaryButton}"
-                                HorizontalAlignment="Stretch"
-                                Padding="24,13" FontSize="14"
-                                Click="BtnSignIn_Click"
-                                Margin="0,0,0,12"/>
-
-                        <StackPanel x:Name="SignInSuccess" Visibility="Collapsed"
-                                    Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock Text="&#x2705;" FontSize="18" VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                            <TextBlock x:Name="TxtSignedIn"
-                                       Text="Erfolgreich angemeldet!"
-                                       FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{StaticResource SuccessBrush}"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-
-                        <TextBlock x:Name="TxtSignInError"
-                                   Visibility="Collapsed"
-                                   TextWrapping="Wrap" FontSize="12"
-                                   Foreground="{StaticResource DangerBrush}"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,8,0,0"/>
-
-                        <!--
-                            Nur sichtbar, wenn diese Version keine eigene
-                            App-Registrierung mitbringt (Entwickler-Build).
-                            Endnutzer sehen das nie.
-                        -->
-                        <Expander x:Name="AdvancedIdSection"
-                                  Header="Eigene App-ID verwenden"
-                                  Visibility="Collapsed"
-                                  Margin="0,20,0,0">
-                            <StackPanel Margin="0,12,0,0">
-                                <Border Style="{StaticResource WarningBox}" Margin="0,0,0,14">
-                                    <StackPanel>
-                                        <TextBlock Text="Diese Version bringt keine App-Registrierung mit"
-                                                   FontWeight="SemiBold" FontSize="12"
-                                                   Margin="0,0,0,6"/>
-                                        <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.90"
-                                                   Text="{x:Static local:OutlookSetupText.AccountWarning}"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <TextBox x:Name="TxtClientId" Height="36" FontSize="13"
-                                         ui:ControlHelper.PlaceholderText="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                                         TextChanged="TxtClientId_TextChanged"/>
-                                <TextBlock x:Name="ClientIdHint"
-                                           FontSize="12" Opacity="0.60" Margin="0,6,0,14"
-                                           TextWrapping="Wrap"
-                                           Text="Noch leer &#8212; folge der Anleitung unten."/>
-
-                                <Border CornerRadius="8" Padding="14,12" Margin="0,0,0,12"
-                                        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-                                    <ItemsControl ItemsSource="{x:Static local:OutlookSetupText.Steps}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding}"
-                                                           FontSize="12" TextWrapping="Wrap"
-                                                           Opacity="0.88" Margin="0,0,0,6"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Border>
-
-                                <Button x:Name="BtnOpenAzure"
-                                        Content="Microsoft-Portal &#246;ffnen"
-                                        Style="{StaticResource SecondaryButton}"
-                                        HorizontalAlignment="Left"
-                                        Padding="16,8" FontSize="13"
-                                        Click="BtnOpenAzure_Click"/>
-                            </StackPanel>
-                        </Expander>
-
-                        <Button x:Name="BtnSkipSignIn"
-                                Content="Doch sp&#228;ter einrichten"
-                                HorizontalAlignment="Center"
-                                Margin="0,20,0,0"
-                                FontSize="12"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Foreground="{StaticResource AccentBrush}"
-                                Cursor="Hand"
-                                Click="BtnSkipSignIn_Click"/>
-                    </StackPanel>
-                </Grid>
-
-                <!-- ══════════════════════════════════
-                     SCHRITT 5 — Fertig
-                     ══════════════════════════════════ -->
-                <StackPanel x:Name="Step5" Visibility="Collapsed"
-                            HorizontalAlignment="Center" MaxWidth="460">
-                    <TextBlock Text="🎉" FontSize="72"
-                               HorizontalAlignment="Center" Margin="0,0,0,20"/>
-                    <TextBlock Text="Alles bereit!"
-                               FontSize="28" FontWeight="Bold"
-                               HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                    <TextBlock TextAlignment="Center" TextWrapping="Wrap"
-                               FontSize="14" Opacity="0.65" Margin="0,0,0,20"
-                               Text="SchulnetzSync ist eingerichtet. Du kannst jetzt deine Prüfungen synchronisieren."/>
-                    <Border Style="{StaticResource SuccessBox}" Margin="0,0,0,16">
-                        <TextBlock x:Name="TxtSetupSummary"
-                                   TextWrapping="Wrap" FontSize="13"
-                                   LineHeight="22"/>
-                    </Border>
-
-                    <!-- Optionen -->
-                    <Border CornerRadius="8" Padding="16,14"
-                            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
-                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                            BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="OPTIONEN" FontSize="10" FontWeight="Bold"
-                                       Opacity="0.50" Margin="0,0,0,10"/>
-                            <CheckBox x:Name="ChkAutoRefresh"
-                                      IsChecked="True"
-                                      Style="{StaticResource VisibleCheckBox}"
-                                      Margin="0,0,0,4"
-                                      Content="Feed beim App-Start automatisch aktualisieren"/>
-                            <TextBlock FontSize="11" Opacity="0.55"
-                                       TextWrapping="Wrap"
-                                       Margin="24,0,0,0"
-                                       Text="Hält deinen Kalender immer auf dem neuesten Stand. Wenn keine Verbindung besteht, wird der gespeicherte Feed genutzt."/>
-                        </StackPanel>
-                    </Border>
                 </StackPanel>
 
-            </Grid>
-        </ScrollViewer>
+                <!-- Schritte, vom Code aufgebaut -->
+                <StackPanel x:Name="StepRail" Grid.Row="1" Margin="0,44,0,0"/>
 
-        <!-- Fortschritts-Punkte -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal"
-                    HorizontalAlignment="Center" Margin="0,8,0,12">
-            <Ellipse x:Name="Dot1" Width="10" Height="10" Margin="5,0"
-                     Fill="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
-            <Ellipse x:Name="Dot2" Width="8"  Height="8"  Margin="5,0"
-                     Fill="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                     VerticalAlignment="Center"/>
-            <Ellipse x:Name="Dot3" Width="8"  Height="8"  Margin="5,0"
-                     Fill="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                     VerticalAlignment="Center"/>
-            <Ellipse x:Name="Dot4" Width="8"  Height="8"  Margin="5,0"
-                     Fill="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                     VerticalAlignment="Center"/>
-            <Ellipse x:Name="Dot5" Width="8"  Height="8"  Margin="5,0"
-                     Fill="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                     VerticalAlignment="Center"/>
-        </StackPanel>
-
-        <!-- Navigation -->
-        <Border Grid.Row="3"
-                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                BorderThickness="0,1,0,0" Padding="32,14">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Button x:Name="BtnBack" Grid.Column="0"
-                        Content="Zurück"
-                        Style="{StaticResource SecondaryButton}"
-                        IsEnabled="False"
-                        Click="BtnBack_Click"/>
-                <Button x:Name="BtnNext" Grid.Column="2"
-                        Content="Weiter"
-                        Style="{StaticResource PrimaryButton}"
-                        Padding="24,10"
-                        Click="BtnNext_Click"/>
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Opacity="0.75">
+                    <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="13"
+                               Foreground="White" VerticalAlignment="Top" Margin="0,2,10,0"/>
+                    <TextBlock Foreground="White" FontSize="12" TextWrapping="Wrap" MaxWidth="190"
+                               LineHeight="18"
+                               Text="Deine Daten bleiben auf diesem Gerät. Kein Konto bei uns, kein Server."/>
+                </StackPanel>
             </Grid>
         </Border>
+
+        <!-- ══════════════════════════════════════════════════════════
+             RECHTS: Inhalt und Fusszeile
+             ══════════════════════════════════════════════════════════ -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <ScrollViewer x:Name="ContentScroll" VerticalScrollBarVisibility="Auto">
+                <Grid Margin="48,40,48,24" MaxWidth="600" HorizontalAlignment="Left">
+
+                    <!-- ══════════ SCHRITT 1: Willkommen ══════════ -->
+                    <StackPanel x:Name="Step1">
+                        <TextBlock Text="WILLKOMMEN" Style="{StaticResource Eyebrow}"/>
+                        <TextBlock Text="Willkommen bei Semestria" Style="{StaticResource StepTitle}"/>
+                        <TextBlock Style="{StaticResource StepLead}"
+                                   Text="Semestria holt deine Prüfungen, Termine und Stunden aus dem Schulnetz und zeigt sie übersichtlich an. Auf Wunsch auch in Outlook. Die Einrichtung dauert etwa zwei Minuten."/>
+
+                        <UniformGrid Columns="2">
+                            <Border Style="{StaticResource Panel}" Margin="0,0,10,10">
+                                <StackPanel>
+                                    <Border Style="{StaticResource IconTile}" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE787;" Style="{StaticResource IconGlyph}"/>
+                                    </Border>
+                                    <TextBlock Text="Alles in einem Kalender" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,4"/>
+                                    <TextBlock Text="Prüfungen, Termine und dein Stundenplan, farbig nach Fach."
+                                               FontSize="12.5" Opacity="0.7" TextWrapping="Wrap" LineHeight="18"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Panel}" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <Border Style="{StaticResource IconTile}" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE895;" Style="{StaticResource IconGlyph}"/>
+                                    </Border>
+                                    <TextBlock Text="Immer aktuell" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,4"/>
+                                    <TextBlock Text="Verschobene oder abgesagte Einträge werden beim Laden erkannt."
+                                               FontSize="12.5" Opacity="0.7" TextWrapping="Wrap" LineHeight="18"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Panel}" Margin="0,0,10,0">
+                                <StackPanel>
+                                    <Border Style="{StaticResource IconTile}" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE9D5;" Style="{StaticResource IconGlyph}"/>
+                                    </Border>
+                                    <TextBlock Text="Aufgaben dazu" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,4"/>
+                                    <TextBlock Text="Hausaufgaben und Abgaben mit Erinnerung, sortiert nach Fach."
+                                               FontSize="12.5" Opacity="0.7" TextWrapping="Wrap" LineHeight="18"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Panel}">
+                                <StackPanel>
+                                    <Border Style="{StaticResource IconTile}" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE8A7;" Style="{StaticResource IconGlyph}"/>
+                                    </Border>
+                                    <TextBlock Text="Outlook, wenn du willst" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,4"/>
+                                    <TextBlock Text="Einträge landen auf Wunsch auch auf dem Handy und in Teams."
+                                               FontSize="12.5" Opacity="0.7" TextWrapping="Wrap" LineHeight="18"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                    </StackPanel>
+
+                    <!-- ══════════ SCHRITT 2: Rechtliches ══════════ -->
+                    <StackPanel x:Name="Step2" Visibility="Collapsed">
+                        <TextBlock Text="SCHRITT 2 VON 5" Style="{StaticResource Eyebrow}"/>
+                        <TextBlock Text="Kurz das Kleingedruckte" Style="{StaticResource StepTitle}"/>
+                        <TextBlock Style="{StaticResource StepLead}"
+                                   Text="Semestria ist gratis und speichert nichts auf fremden Servern. Hier steht es schwarz auf weiss."/>
+
+                        <Border Style="{StaticResource Panel}" Padding="0" Margin="0,0,0,14">
+                            <TabControl BorderThickness="0" Background="Transparent" Margin="12,8,12,4">
+                                <TabItem Header="Nutzungsbedingungen">
+                                    <ScrollViewer Height="200" Padding="2,8,8,8" VerticalScrollBarVisibility="Auto">
+                                        <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.8" LineHeight="18"
+                                                   Text="{x:Static legal:LegalTexts.Agb}"/>
+                                    </ScrollViewer>
+                                </TabItem>
+                                <TabItem Header="Datenschutzerklärung">
+                                    <ScrollViewer Height="200" Padding="2,8,8,8" VerticalScrollBarVisibility="Auto">
+                                        <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.8" LineHeight="18"
+                                                   Text="{x:Static legal:LegalTexts.Datenschutz}"/>
+                                    </ScrollViewer>
+                                </TabItem>
+                            </TabControl>
+                        </Border>
+
+                        <Border Style="{StaticResource Panel}" Padding="16,12">
+                            <StackPanel>
+                                <CheckBox x:Name="ChkAgb" Style="{StaticResource VisibleCheckBox}"
+                                          Checked="Legal_CheckChanged" Unchecked="Legal_CheckChanged"
+                                          Content="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."/>
+                                <Border Height="1" Background="{StaticResource SubtleBorder}" Margin="0,8"/>
+                                <CheckBox x:Name="ChkDatenschutz" Style="{StaticResource VisibleCheckBox}"
+                                          Checked="Legal_CheckChanged" Unchecked="Legal_CheckChanged"
+                                          Content="Ich habe die Datenschutzerklärung gelesen und akzeptiere sie."/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ══════════ SCHRITT 3: Feed-URL ══════════ -->
+                    <StackPanel x:Name="Step3" Visibility="Collapsed">
+                        <TextBlock Text="SCHRITT 3 VON 5" Style="{StaticResource Eyebrow}"/>
+                        <TextBlock Text="Verbinde dein Schulnetz" Style="{StaticResource StepTitle}"/>
+                        <TextBlock Style="{StaticResource StepLead}"
+                                   Text="Semestria braucht deinen persönlichen Kalender-Link aus dem Schulnetz. So findest du ihn:"/>
+
+                        <!-- 1 -->
+                        <Grid Margin="0,0,0,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource NumberBadge}">
+                                <TextBlock Text="1" Foreground="White" FontWeight="Bold" FontSize="12.5"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Im Schulnetz anmelden" FontSize="14" FontWeight="SemiBold" Margin="0,3,0,2"/>
+                                <TextBlock Text="Im Browser, wie du es sonst auch tust."
+                                           FontSize="13" Opacity="0.7" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- 2 -->
+                        <Grid Margin="0,0,0,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource NumberBadge}">
+                                <TextBlock Text="2" Foreground="White" FontWeight="Bold" FontSize="12.5"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="schulNetz.mobile freigeben" FontSize="14" FontWeight="SemiBold" Margin="0,3,0,2"/>
+                                <TextBlock FontSize="13" Opacity="0.7" TextWrapping="Wrap" LineHeight="19">
+                                    Auf der Seite <Run FontWeight="SemiBold">«Start»</Run> ganz nach unten scrollen bis zum Kasten
+                                    <Run FontWeight="SemiBold">«schulNetz.mobile»</Run> und die Funktion freigeben.
+                                    Ohne diesen Schritt gibt es keinen Kalender-Link.
+                                </TextBlock>
+
+                                <!-- Nachbau des Kastens -->
+                                <Border Background="White" CornerRadius="8" Margin="0,12,0,0" Padding="16,14"
+                                        BorderBrush="#D8DDE3" BorderThickness="1">
+                                    <StackPanel>
+                                        <Grid>
+                                            <TextBlock Text="schulNetz.mobile" Foreground="{StaticResource PortalText}"
+                                                       FontSize="14" FontWeight="SemiBold"/>
+                                            <TextBlock Text="&#xE70E;" FontFamily="{StaticResource IconFont}" FontSize="11"
+                                                       Foreground="{StaticResource PortalText}" HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                        <TextBlock Foreground="{StaticResource PortalText}" FontSize="12" Opacity="0.85"
+                                                   TextWrapping="Wrap" Margin="0,8,0,10" LineHeight="17"
+                                                   Text="Drücken Sie auf den Link, um den Zugriff auf Ihre Daten über schulNetz.mobile freizugeben."/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border BorderBrush="{StaticResource Highlight}" BorderThickness="2"
+                                                    CornerRadius="5" Padding="8,3">
+                                                <TextBlock Text="SCHULNETZ.MOBILE FREIGEBEN" Foreground="{StaticResource PortalLink}"
+                                                           FontSize="11.5" FontWeight="SemiBold"/>
+                                            </Border>
+                                            <TextBlock Text="&#xE72B;  hier klicken" FontFamily="Segoe UI, Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       Foreground="#D97706" FontWeight="SemiBold" FontSize="12"
+                                                       VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock FontSize="12" Opacity="0.55" TextWrapping="Wrap" Margin="0,8,0,0"
+                                           Text="Steht dort schon «schulNetz.mobile sperren», ist die Funktion bereits aktiv."/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- 3 -->
+                        <Grid Margin="0,0,0,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource NumberBadge}">
+                                <TextBlock Text="3" Foreground="White" FontWeight="Bold" FontSize="12.5"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="iCal-Link kopieren" FontSize="14" FontWeight="SemiBold" Margin="0,3,0,2"/>
+                                <TextBlock FontSize="13" Opacity="0.7" TextWrapping="Wrap" LineHeight="19">
+                                    Oben <Run FontWeight="SemiBold">«Agenda»</Run> öffnen, auf das Export-Symbol klicken und
+                                    <Run FontWeight="SemiBold">«Diesen Plan im iCal Format abonnieren»</Run> wählen.
+                                    Den angezeigten Link kopieren. Er beginnt mit webcal:// oder https://.
+                                </TextBlock>
+
+                                <Border Background="White" CornerRadius="8" Margin="0,12,0,0"
+                                        BorderBrush="#D8DDE3" BorderThickness="1">
+                                    <StackPanel>
+                                        <Border Background="{StaticResource PortalBlue}" CornerRadius="7,7,0,0" Padding="14,8">
+                                            <Grid>
+                                                <TextBlock Text="Agenda" Foreground="White" FontWeight="SemiBold" FontSize="12.5"/>
+                                                <TextBlock Text="&#xE896;" FontFamily="{StaticResource IconFont}"
+                                                           Foreground="White" FontSize="13" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                        </Border>
+                                        <StackPanel Margin="6,6,6,8">
+                                            <TextBlock Padding="10,5" FontSize="12" Foreground="{StaticResource PortalText}" Opacity="0.7"
+                                                       Text="Als PDF exportieren"/>
+                                            <Border CornerRadius="5" Background="#FFF4E0" BorderBrush="{StaticResource Highlight}"
+                                                    BorderThickness="2" Margin="2,1">
+                                                <TextBlock Padding="8,5" FontSize="12" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource PortalLink}"
+                                                           Text="Diesen Plan im iCal Format abonnieren"/>
+                                            </Border>
+                                            <TextBlock Padding="10,5" FontSize="12" Foreground="{StaticResource PortalText}" Opacity="0.7"
+                                                       Text="Im iCal Format herunterladen"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- 4: Einfügen -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource NumberBadge}">
+                                <TextBlock Text="4" Foreground="White" FontWeight="Bold" FontSize="12.5"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Hier einfügen" FontSize="14" FontWeight="SemiBold" Margin="0,3,0,10"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="TxtFeedUrl" Height="40" FontSize="13"
+                                             VerticalContentAlignment="Center"
+                                             ui:ControlHelper.PlaceholderText="webcal://…"
+                                             TextChanged="TxtFeedUrl_TextChanged"/>
+                                    <Button Grid.Column="1" Style="{StaticResource OutlineAction}"
+                                            Margin="8,0,0,0" Padding="14,0"
+                                            ToolTip="Link aus der Zwischenablage einfügen"
+                                            Click="BtnPasteFeed_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE77F;" FontFamily="{StaticResource IconFont}" FontSize="14"
+                                                       VerticalAlignment="Center" Margin="0,1,8,0"/>
+                                            <TextBlock Text="Einfügen" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Margin="2,8,0,0">
+                                    <TextBlock x:Name="FeedStatusGlyph" Text="&#xE72E;" FontFamily="{StaticResource IconFont}"
+                                               FontSize="12" Opacity="0.55" VerticalAlignment="Top" Margin="0,2,8,0"/>
+                                    <TextBlock x:Name="TxtFeedStatus" FontSize="12" Opacity="0.55" TextWrapping="Wrap"
+                                               MaxWidth="480"
+                                               Text="Der Link wird verschlüsselt gespeichert und verlässt dein Gerät nie."/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- ══════════ SCHRITT 4: Outlook ══════════ -->
+                    <Grid x:Name="Step4" Visibility="Collapsed">
+
+                        <!-- 4a: Frage -->
+                        <StackPanel x:Name="Step4Ask">
+                            <TextBlock Text="SCHRITT 4 VON 5 · OPTIONAL" Style="{StaticResource Eyebrow}"/>
+                            <TextBlock Text="Auch in Outlook anzeigen?" Style="{StaticResource StepTitle}"/>
+                            <TextBlock Style="{StaticResource StepLead}"
+                                       Text="{x:Static local:OutlookSetupText.Benefit}"/>
+
+                            <Button x:Name="BtnLinkNow" Style="{StaticResource ChoiceCard}"
+                                    Margin="0,0,0,10" Click="BtnLinkNow_Click">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE8A7;" Style="{StaticResource IconGlyph}"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="14,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="Ja, Outlook verknüpfen" FontSize="14.5" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Einmal mit Microsoft anmelden, danach läuft alles von selbst."
+                                                   FontSize="12.5" Opacity="0.65" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="&#xE76C;" FontFamily="{StaticResource IconFont}"
+                                               FontSize="12" Opacity="0.6" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Button>
+
+                            <Button x:Name="BtnLinkLater" Style="{StaticResource ChoiceCard}"
+                                    Margin="0,0,0,18" Click="BtnLinkLater_Click">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource IconTile}" VerticalAlignment="Center"
+                                            Background="{StaticResource SubtleFill}">
+                                        <TextBlock Text="&#xE823;" Style="{StaticResource IconGlyph}"
+                                                   Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                                   Opacity="0.7"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="14,0,10,0" VerticalAlignment="Center">
+                                        <TextBlock Text="Später, erst mal ohne Outlook" FontSize="14.5" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{x:Static local:OutlookSetupText.SkipConsequence}"
+                                                   FontSize="12.5" Opacity="0.65" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="&#xE76C;" FontFamily="{StaticResource IconFont}"
+                                               FontSize="12" Opacity="0.6" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Button>
+
+                            <!-- Nur im Entwickler-Build ohne eigene Registrierung -->
+                            <Border x:Name="NoRegistrationHint" Visibility="Collapsed"
+                                    CornerRadius="10" Padding="14,10"
+                                    Background="#1FF59E0B" BorderBrush="#66F59E0B" BorderThickness="1">
+                                <TextBlock FontSize="12" TextWrapping="Wrap"
+                                           Text="Diese Version bringt keine App-Registrierung mit. Für den Outlook-Sync brauchst du eine eigene App-ID, die Anleitung dazu erscheint im nächsten Schritt."/>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- 4b: Anmeldung -->
+                        <StackPanel x:Name="Step4Setup" Visibility="Collapsed">
+                            <TextBlock Text="SCHRITT 4 VON 5 · OUTLOOK" Style="{StaticResource Eyebrow}"/>
+                            <TextBlock Text="Mit Microsoft anmelden" Style="{StaticResource StepTitle}"/>
+                            <TextBlock Style="{StaticResource StepLead}"
+                                       Text="{x:Static local:OutlookSetupText.HowItWorks}"/>
+
+                            <Border Style="{StaticResource Panel}" Margin="0,0,0,20">
+                                <StackPanel>
+                                    <TextBlock Text="Was Semestria darf" FontWeight="SemiBold" FontSize="13.5" Margin="0,0,0,12"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="&#xE73E;" FontFamily="{StaticResource IconFont}" FontSize="13"
+                                                   Foreground="{StaticResource SuccessBrush}" Margin="0,2,12,0"/>
+                                        <TextBlock FontSize="13" TextWrapping="Wrap" MaxWidth="500"
+                                                   Text="Prüfungen und Termine in deinen Kalender eintragen und aktuell halten"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="&#xE711;" FontFamily="{StaticResource IconFont}" FontSize="13"
+                                                   Foreground="{StaticResource DangerBrush}" Margin="0,2,12,0"/>
+                                        <TextBlock FontSize="13" TextWrapping="Wrap" MaxWidth="500"
+                                                   Text="Keine E-Mails, keine Kontakte, keine Dateien"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE72E;" FontFamily="{StaticResource IconFont}" FontSize="13"
+                                                   Opacity="0.7" Margin="0,2,12,0"/>
+                                        <TextBlock FontSize="13" TextWrapping="Wrap" MaxWidth="500"
+                                                   Text="Du meldest dich direkt bei Microsoft an. Semestria sieht dein Passwort nie."/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Button x:Name="BtnSignIn" Style="{StaticResource AccentAction}"
+                                    HorizontalAlignment="Left" Height="44" Padding="24,0"
+                                    Click="BtnSignIn_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE77B;" FontFamily="{StaticResource IconFont}" FontSize="15"
+                                               VerticalAlignment="Center" Margin="0,1,10,0"/>
+                                    <TextBlock Text="Mit Microsoft anmelden" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Border x:Name="SignInSuccess" Visibility="Collapsed"
+                                    CornerRadius="10" Padding="14,12" HorizontalAlignment="Left"
+                                    Background="#1F22C55E" BorderBrush="#6622C55E" BorderThickness="1">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE73E;" FontFamily="{StaticResource IconFont}" FontSize="15"
+                                               Foreground="{StaticResource SuccessBrush}" VerticalAlignment="Center"
+                                               Margin="0,1,10,0"/>
+                                    <TextBlock x:Name="TxtSignedIn" Text="Erfolgreich angemeldet. Weiter geht's."
+                                               FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock x:Name="TxtSignInError" Visibility="Collapsed"
+                                       TextWrapping="Wrap" FontSize="12.5"
+                                       Foreground="{StaticResource DangerBrush}" Margin="0,10,0,0"/>
+
+                            <!--
+                                Nur sichtbar, wenn diese Version keine eigene
+                                App-Registrierung mitbringt (Entwickler-Build).
+                                Endnutzer sehen das nie.
+                            -->
+                            <Expander x:Name="AdvancedIdSection" Header="Eigene App-ID verwenden"
+                                      Visibility="Collapsed" Margin="0,24,0,0">
+                                <StackPanel Margin="0,12,0,0">
+                                    <Border CornerRadius="10" Padding="14,10" Margin="0,0,0,14"
+                                            Background="#1FF59E0B" BorderBrush="#66F59E0B" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="Diese Version bringt keine App-Registrierung mit"
+                                                       FontWeight="SemiBold" FontSize="12" Margin="0,0,0,6"/>
+                                            <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.9"
+                                                       Text="{x:Static local:OutlookSetupText.AccountWarning}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <TextBox x:Name="TxtClientId" Height="36" FontSize="13"
+                                             ui:ControlHelper.PlaceholderText="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                             TextChanged="TxtClientId_TextChanged"/>
+                                    <TextBlock x:Name="ClientIdHint" FontSize="12" Opacity="0.6" Margin="0,6,0,14"
+                                               TextWrapping="Wrap" Text="Noch leer. Folge der Anleitung unten."/>
+
+                                    <Border Style="{StaticResource Panel}" Margin="0,0,0,12" Padding="14,12">
+                                        <ItemsControl ItemsSource="{x:Static local:OutlookSetupText.Steps}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" FontSize="12" TextWrapping="Wrap"
+                                                               Opacity="0.88" Margin="0,0,0,6"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+
+                                    <Button x:Name="BtnOpenAzure" Content="Microsoft-Portal öffnen"
+                                            Style="{StaticResource OutlineAction}" HorizontalAlignment="Left"
+                                            Click="BtnOpenAzure_Click"/>
+                                </StackPanel>
+                            </Expander>
+
+                            <Button x:Name="BtnSkipSignIn" Content="Doch später einrichten"
+                                    Style="{StaticResource LinkAction}" HorizontalAlignment="Left"
+                                    Margin="-10,18,0,0" Click="BtnSkipSignIn_Click"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- ══════════ SCHRITT 5: Fertig ══════════ -->
+                    <StackPanel x:Name="Step5" Visibility="Collapsed">
+                        <Border Width="64" Height="64" CornerRadius="32" HorizontalAlignment="Left"
+                                Background="#2622C55E" Margin="0,0,0,20">
+                            <TextBlock Text="&#xE73E;" FontFamily="{StaticResource IconFont}" FontSize="30"
+                                       Foreground="{StaticResource SuccessBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Alles bereit!" Style="{StaticResource StepTitle}"/>
+                        <TextBlock Style="{StaticResource StepLead}"
+                                   Text="Semestria ist eingerichtet. Beim Start lädt die App deine Daten und zeigt dir, was ansteht."/>
+
+                        <Border Style="{StaticResource Panel}" Margin="0,0,0,12">
+                            <StackPanel x:Name="SummaryList"/>
+                        </Border>
+
+                        <Border Style="{StaticResource Panel}">
+                            <StackPanel>
+                                <CheckBox x:Name="ChkAutoRefresh" IsChecked="True"
+                                          Style="{StaticResource VisibleCheckBox}"
+                                          Content="Feed beim App-Start automatisch aktualisieren"/>
+                                <TextBlock FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="28,4,0,0"
+                                           LineHeight="17"
+                                           Text="Hält deinen Kalender auf dem neuesten Stand. Ohne Internet nutzt Semestria die zuletzt geladenen Daten."/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                </Grid>
+            </ScrollViewer>
+
+            <!-- ══════════ Fusszeile ══════════ -->
+            <Border Grid.Row="1" BorderBrush="{StaticResource SubtleBorder}" BorderThickness="0,1,0,0"
+                    Padding="48,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="BtnBack" Style="{StaticResource OutlineAction}"
+                            IsEnabled="False" Click="BtnBack_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE76B;" FontFamily="{StaticResource IconFont}" FontSize="11"
+                                       VerticalAlignment="Center" Margin="0,1,8,0"/>
+                            <TextBlock Text="Zurück" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <TextBlock x:Name="TxtStepCounter" Grid.Column="1" Text="1 / 5" FontSize="12.5" Opacity="0.5"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button x:Name="BtnNext" Grid.Column="2" Style="{StaticResource AccentAction}"
+                            Click="BtnNext_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="TxtNextLabel" Text="Los geht's" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE76C;" FontFamily="{StaticResource IconFont}" FontSize="11"
+                                       VerticalAlignment="Center" Margin="10,1,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

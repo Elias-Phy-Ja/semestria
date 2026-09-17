@@ -3,7 +3,7 @@ namespace SchulnetzSync.UI;
 /// <summary>
 /// Plain-language instructions for linking a Microsoft account.
 /// Shared by the onboarding wizard and the settings page so both explain the
-/// same procedure with the same words — the setup is the hardest part of the
+/// same procedure with the same words; the setup is the hardest part of the
 /// app and users should not meet two different descriptions of it.
 /// </summary>
 public static class OutlookSetupText
@@ -13,10 +13,10 @@ public static class OutlookSetupText
         "Semestria trägt deine Prüfungen und Termine zusätzlich in deinen Outlook-Kalender ein. " +
         "So siehst du sie auch auf dem Handy, in Teams und überall, wo du Outlook nutzt.";
 
-    /// <summary>What the user actually has to do — which is very little.</summary>
+    /// <summary>What the user actually has to do, which is very little.</summary>
     public const string HowItWorks =
         "Du meldest dich einmal mit deinem Microsoft-Konto an und bestätigst, dass Semestria " +
-        "deinen Kalender bearbeiten darf. Danach läuft alles automatisch — du musst nichts " +
+        "deinen Kalender bearbeiten darf. Danach läuft alles automatisch, du musst nichts " +
         "einrichten und nichts eintragen.";
 
     /// <summary>What happens if the user says no.</summary>
@@ -30,17 +30,17 @@ public static class OutlookSetupText
     /// </summary>
     public const string AccountWarning =
         "Nimm dafür ein privates Microsoft-Konto (@outlook.com, @hotmail.com oder @live.com). " +
-        "Mit dem Schulkonto klappt es meistens nicht — Schulen sperren das Registrieren von Apps.";
+        "Mit dem Schulkonto klappt es meistens nicht, weil Schulen das Registrieren von Apps meist sperren.";
 
     /// <summary>
     /// The click-by-click walkthrough for the advanced path only. Every entry
     /// names exactly what to click, with the portal labels in quotes so they can
-    /// be found on screen. App registration is free — no Azure subscription and
+    /// be found on screen. App registration is free: no Azure subscription and
     /// no credit card are involved.
     /// </summary>
     public static string[] Steps { get; } =
     [
-        "1.  Unten auf «Microsoft-Portal öffnen» klicken und mit dem privaten Konto anmelden. Das ist gratis — es braucht kein Azure-Abo und keine Kreditkarte.",
+        "1.  Unten auf «Microsoft-Portal öffnen» klicken und mit dem privaten Konto anmelden. Das ist gratis, es braucht kein Azure-Abo und keine Kreditkarte.",
         "2.  Falls die Meldung kommt, dein Konto sei im Mandanten «Microsoft Services» nicht vorhanden: oben «Microsoft Entra ID» suchen → «Mandanten verwalten» → «Erstellen» → «Microsoft Entra ID». Das legt dir ein leeres, kostenloses Verzeichnis an. Privaten Konten fehlt das anfangs.",
         "3.  Oben in der Suchleiste «App-Registrierungen» eingeben und das Ergebnis anklicken.",
         "4.  Auf «Neue Registrierung» klicken.",
@@ -48,6 +48,6 @@ public static class OutlookSetupText
         "6.  Auf der Übersichtsseite die «Anwendungs-ID (Client)» kopieren und hier oben einfügen.",
         "7.  Links auf «API-Berechtigungen» → «Berechtigung hinzufügen» → «Microsoft Graph» → «Delegierte Berechtigungen». Dort «Calendars.ReadWrite» suchen, anhaken und hinzufügen.",
         "8.  Links auf «Authentifizierung» → «Plattform hinzufügen» → «Mobile Geräte und Desktopcomputer». Die erste Option anhaken und auf «Konfigurieren» klicken.",
-        "9.  Zurück in Semestria auf «Mit Microsoft anmelden» klicken — fertig."
+        "9.  Zurück in Semestria auf «Mit Microsoft anmelden» klicken. Fertig."
     ];
 }
