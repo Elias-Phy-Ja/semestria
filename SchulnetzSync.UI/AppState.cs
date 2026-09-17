@@ -516,7 +516,7 @@ public static class AppState
 
         return _cachedFeedEvents
             .Where(e => e.Type == SchulnetzEventType.Lektion)
-            .Select(e => SubjectCodeOf(e.Summary))
+            .Select(e => SubjectCode.FromSummary(e.Summary))
             .Where(c => c.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Where(c => !existing.Contains(c, StringComparer.OrdinalIgnoreCase))
@@ -546,15 +546,6 @@ public static class AppState
         catch { }
     }
 
-    /// <summary>Extrahiert das Fachkürzel aus einer Lektions-Summary, z.B. "TEU" aus "9:30 TEU_I26A".</summary>
-    private static string SubjectCodeOf(string summary)
-    {
-        var s   = System.Text.RegularExpressions.Regex.Replace(summary, @"^\d{1,2}:\d{2}\s+", "");
-        var idx = s.IndexOf('_');
-        var code = idx > 0 ? s[..idx] : s[..Math.Min(s.Length, 6)];
-        return code.Trim().ToUpperInvariant();
-    }
-
     private static List<TaskItem> LoadTasks()
     {
         try
@@ -573,6 +564,82 @@ public static class AppState
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_tasksPath)!);
             File.WriteAllText(_tasksPath, JsonSerializer.Serialize(_tasks));
+        }
+        catch { }
+    }
+
+    // ── Fachkommentare ───────────────────────────────────────────────────────
+    private static readonly string _subjectCommentsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Semestria", "subject-comments.json");
+
+    private static readonly List<SubjectComment> _subjectComments = LoadSubjectComments();
+
+    /// <summary>Kommentare zu einem Fach, neueste zuerst.</summary>
+    public static IReadOnlyList<SubjectComment> CommentsFor(string subject)
+        => _subjectComments
+            .Where(c => string.Equals(c.Subject, subject, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(c => c.CreatedAt)
+            .ToList();
+
+    public static int CommentCount(string subject)
+        => _subjectComments.Count(c => string.Equals(c.Subject, subject, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Legt einen Kommentar an. Leerer Text wird ignoriert.</summary>
+    public static void AddSubjectComment(string subject, string text)
+    {
+        var clean = CleanComment(text);
+        if (clean.Length == 0 || string.IsNullOrWhiteSpace(subject)) return;
+
+        _subjectComments.Add(new SubjectComment(
+            Guid.NewGuid(), subject.Trim().ToUpperInvariant(), clean, DateTimeOffset.Now, null));
+        SaveSubjectComments();
+        Notify();
+    }
+
+    /// <summary>Ändert den Text. Leerer Text löscht den Kommentar nicht, sondern wird ignoriert.</summary>
+    public static void UpdateSubjectComment(Guid id, string text)
+    {
+        var clean = CleanComment(text);
+        var i     = _subjectComments.FindIndex(c => c.Id == id);
+        if (i < 0 || clean.Length == 0 || clean == _subjectComments[i].Text) return;
+
+        _subjectComments[i] = _subjectComments[i] with { Text = clean, EditedAt = DateTimeOffset.Now };
+        SaveSubjectComments();
+        Notify();
+    }
+
+    public static void RemoveSubjectComment(Guid id)
+    {
+        if (_subjectComments.RemoveAll(c => c.Id == id) == 0) return;
+        SaveSubjectComments();
+        Notify();
+    }
+
+    private static string CleanComment(string text)
+    {
+        var clean = text.Trim();
+        return clean.Length > SubjectComment.MaxLength ? clean[..SubjectComment.MaxLength] : clean;
+    }
+
+    private static List<SubjectComment> LoadSubjectComments()
+    {
+        try
+        {
+            if (File.Exists(_subjectCommentsPath))
+                return JsonSerializer.Deserialize<List<SubjectComment>>(
+                    File.ReadAllText(_subjectCommentsPath)) ?? [];
+        }
+        catch { /* bei korrupten Daten leer starten */ }
+        return [];
+    }
+
+    private static void SaveSubjectComments()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_subjectCommentsPath)!);
+            File.WriteAllText(_subjectCommentsPath, JsonSerializer.Serialize(_subjectComments));
         }
         catch { }
     }

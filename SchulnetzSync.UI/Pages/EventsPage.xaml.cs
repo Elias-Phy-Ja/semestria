@@ -7,6 +7,8 @@ using System.Windows.Media;
 using SchulnetzSync.Core.Colors;
 using SchulnetzSync.Core.Model;
 using SchulnetzSync.UI.Controls;
+using SchulnetzSync.UI.Model;
+using ModernWpf.Controls.Primitives;
 using Point          = System.Windows.Point;
 
 // WPF/WinForms-Ambiguität auflösen
@@ -18,6 +20,7 @@ using WpfHA          = System.Windows.HorizontalAlignment;
 using WpfOrientation = System.Windows.Controls.Orientation;
 using WpfPage        = System.Windows.Controls.Page;
 using WpfTextBlock   = System.Windows.Controls.TextBlock;
+using TextBox        = System.Windows.Controls.TextBox;
 using WpfWrapPanel   = System.Windows.Controls.WrapPanel;
 
 namespace SchulnetzSync.UI.Pages;
@@ -81,17 +84,20 @@ public partial class EventsPage : WpfPage
         {
             SchulnetzEventType.Pruefung => "Pruefung",
             SchulnetzEventType.Termin   => "Termin",
-            _                           => ExtractSubjectCode(ev.Summary)
+            _                           => SubjectCode.FromSummary(ev.Summary)
         };
     }
 
-    /// <summary>Extrahiert das Fachkürzel aus einer Lektions-Summary (z.B. "TEU" aus "9:30 TEU_I26A").</summary>
-    internal static string ExtractSubjectCode(string summary)
+    /// <summary>
+    /// Fach, zu dem ein Eintrag Kommentare zeigt: Lektionen und Prüfungen aus dem
+    /// Feed. Termine und selbst erstellte Einträge gehören zu keinem Fach.
+    /// </summary>
+    private static string? CommentSubjectOf(SchulnetzEvent ev)
     {
-        var s   = Regex.Replace(summary, @"^\d{1,2}:\d{2}\s+", ""); // Zeitpräfix entfernen
-        var idx = s.IndexOf('_');
-        var code = idx > 0 ? s[..idx] : s[..Math.Min(s.Length, 6)];
-        return code.ToUpperInvariant();
+        if (EventKeys.IsManual(ev.Key)) return null;
+        if (ev.Type is not (SchulnetzEventType.Lektion or SchulnetzEventType.Pruefung)) return null;
+        var code = SubjectCode.FromSummary(ev.Summary);
+        return code.Length == 0 ? null : code;
     }
 
     /// <summary>Effektive Farbe eines Events: Einzelfarbe → Fach/Kategorie → Standard.</summary>
@@ -742,7 +748,28 @@ public partial class EventsPage : WpfPage
             });
         }
 
-        card.Child = inner;
+        var subject = CommentSubjectOf(ev);
+        if (subject is not null && AppState.CommentCount(subject) > 0)
+        {
+            // Kleines Sprechblasen-Symbol oben rechts: zu diesem Fach gibt es Notizen
+            var layered = new Grid();
+            layered.Children.Add(inner);
+            layered.Children.Add(new WpfTextBlock
+            {
+                Text                = "\uE8BD",
+                FontFamily          = new System.Windows.Media.FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
+                FontSize            = 9,
+                Foreground          = new SolidColorBrush(Color.FromArgb(230, 255, 255, 255)),
+                HorizontalAlignment = WpfHA.Right,
+                VerticalAlignment   = VerticalAlignment.Top,
+                ToolTip             = $"Kommentare zu {subject}",
+            });
+            card.Child = layered;
+        }
+        else
+        {
+            card.Child = inner;
+        }
         card.MouseLeftButtonUp += EventPill_MouseUp;
         return card;
     }
@@ -841,6 +868,10 @@ public partial class EventsPage : WpfPage
             Margin       = new Thickness(0, 10, 0, 20)
         });
 
+        // ── Kommentare zum Fach ──
+        if (CommentSubjectOf(ev) is { } subject)
+            DetailContent.Children.Add(BuildCommentSection(ev, subject));
+
         // ── Farbe ──
         // Beim Wechsel auf einen anderen Eintrag: Ebene danach wählen, ob er
         // schon eine eigene Farbe hat, und den Mischer schliessen.
@@ -875,6 +906,265 @@ public partial class EventsPage : WpfPage
         }
 
         OpenPanel("Detail");
+    }
+
+    // ── Fachkommentare im Detail-Panel ───────────────────────────────────────
+
+    /// <summary>Entwurf im Eingabefeld; überlebt das Neuaufbauen des Panels.</summary>
+    private string _commentDraft = "";
+
+    /// <summary>Fach, zu dem <see cref="_commentDraft"/> gehört.</summary>
+    private string? _commentDraftSubject;
+
+    /// <summary>Kommentar, der gerade bearbeitet wird, und sein Zwischenstand.</summary>
+    private Guid?  _editingCommentId;
+    private string _editingText = "";
+
+    private UIElement BuildCommentSection(SchulnetzEvent ev, string subject)
+    {
+        if (_commentDraftSubject != subject)
+        {
+            _commentDraftSubject = subject;
+            _commentDraft        = "";
+            _editingCommentId    = null;
+        }
+
+        var comments = AppState.CommentsFor(subject);
+        var section  = new StackPanel { Margin = new Thickness(0, 0, 0, 22) };
+
+        // Kopf: Titel und Anzahl
+        var head = new StackPanel { Orientation = WpfOrientation.Horizontal, Margin = new Thickness(0, 0, 0, 4) };
+        head.Children.Add(new WpfTextBlock
+        {
+            Text       = $"KOMMENTARE ZU {subject}",
+            FontSize   = 11,
+            FontWeight = FontWeights.Bold,
+            Opacity    = 0.55,
+        });
+        if (comments.Count > 0)
+            head.Children.Add(new WpfBorder
+            {
+                CornerRadius      = new CornerRadius(8),
+                Padding           = new Thickness(6, 0, 6, 1),
+                Margin            = new Thickness(8, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Background        = new SolidColorBrush(Color.FromArgb(0x33, _accentColor.R, _accentColor.G, _accentColor.B)),
+                Child = new WpfTextBlock { Text = comments.Count.ToString(), FontSize = 10.5, FontWeight = FontWeights.SemiBold },
+            });
+        section.Children.Add(head);
+
+        section.Children.Add(new WpfTextBlock
+        {
+            Text         = $"Gilt für alle {subject}-Stunden und -Prüfungen.",
+            FontSize     = 11.5,
+            Opacity      = 0.5,
+            TextWrapping = TextWrapping.Wrap,
+            Margin       = new Thickness(0, 0, 0, 10),
+        });
+
+        // Eingabe
+        var input = new TextBox
+        {
+            Text                          = _commentDraft,
+            AcceptsReturn                 = true,
+            TextWrapping                  = TextWrapping.Wrap,
+            MinHeight                     = 64,
+            MaxHeight                     = 160,
+            MaxLength                     = SubjectComment.MaxLength,
+            FontSize                      = 13,
+            VerticalScrollBarVisibility   = ScrollBarVisibility.Auto,
+        };
+        ControlHelper.SetPlaceholderText(input, $"Notiz zu {subject}, z. B. Material, Tipps, Abmachungen");
+
+        var add = new WpfButton
+        {
+            Content             = "Hinzufügen",
+            Style               = (Style)FindResource("PrimaryButton"),
+            Padding             = new Thickness(14, 6, 14, 6),
+            FontSize            = 12.5,
+            HorizontalAlignment = WpfHA.Left,
+            IsEnabled           = _commentDraft.Trim().Length > 0,
+        };
+
+        void Submit()
+        {
+            if (input.Text.Trim().Length == 0) return;
+            AppState.AddSubjectComment(subject, input.Text);
+            _commentDraft = "";
+            ShowDetailPanel(ev);
+        }
+
+        input.TextChanged += (_, _) =>
+        {
+            _commentDraft  = input.Text;
+            add.IsEnabled  = input.Text.Trim().Length > 0;
+        };
+        input.PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+            {
+                Submit();
+                e.Handled = true;
+            }
+        };
+        add.Click += (_, _) => Submit();
+
+        section.Children.Add(input);
+
+        var actions = new Grid { Margin = new Thickness(0, 8, 0, 0) };
+        actions.Children.Add(add);
+        actions.Children.Add(new WpfTextBlock
+        {
+            Text                = "Strg+Enter",
+            FontSize            = 11,
+            Opacity             = 0.4,
+            HorizontalAlignment = WpfHA.Right,
+            VerticalAlignment   = VerticalAlignment.Center,
+        });
+        section.Children.Add(actions);
+
+        // Liste
+        foreach (var comment in comments)
+            section.Children.Add(CommentCard(ev, comment));
+
+        return section;
+    }
+
+    private UIElement CommentCard(SchulnetzEvent ev, SubjectComment comment)
+    {
+        var card = new WpfBorder
+        {
+            Margin          = new Thickness(0, 10, 0, 0),
+            Padding         = new Thickness(12, 10, 10, 10),
+            CornerRadius    = new CornerRadius(10),
+            Background      = new SolidColorBrush(Color.FromArgb(0x14, 0x80, 0x80, 0x80)),
+            BorderBrush     = new SolidColorBrush(Color.FromArgb(0x26, 0x80, 0x80, 0x80)),
+            BorderThickness = new Thickness(1),
+        };
+        var body = new StackPanel();
+        card.Child = body;
+
+        if (_editingCommentId == comment.Id)
+        {
+            var editor = new TextBox
+            {
+                Text                        = _editingText,
+                AcceptsReturn               = true,
+                TextWrapping                = TextWrapping.Wrap,
+                MinHeight                   = 60,
+                MaxHeight                   = 200,
+                MaxLength                   = SubjectComment.MaxLength,
+                FontSize                    = 13,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            };
+            editor.TextChanged += (_, _) => _editingText = editor.Text;
+
+            void Save()
+            {
+                AppState.UpdateSubjectComment(comment.Id, editor.Text);
+                _editingCommentId = null;
+                ShowDetailPanel(ev);
+            }
+            editor.PreviewKeyDown += (_, e) =>
+            {
+                if (e.Key == Key.Enter && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { Save(); e.Handled = true; }
+                else if (e.Key == Key.Escape) { _editingCommentId = null; ShowDetailPanel(ev); e.Handled = true; }
+            };
+            body.Children.Add(editor);
+
+            var buttons = new StackPanel { Orientation = WpfOrientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+            var save = new WpfButton
+            {
+                Content = "Speichern",
+                Style   = (Style)FindResource("PrimaryButton"),
+                Padding = new Thickness(12, 5, 12, 5),
+                FontSize = 12,
+                Margin  = new Thickness(0, 0, 8, 0),
+            };
+            save.Click += (_, _) => Save();
+            var cancel = new WpfButton
+            {
+                Content  = "Abbrechen",
+                Style    = (Style)FindResource("SecondaryButton"),
+                Padding  = new Thickness(12, 5, 12, 5),
+                FontSize = 12,
+            };
+            cancel.Click += (_, _) => { _editingCommentId = null; ShowDetailPanel(ev); };
+            buttons.Children.Add(save);
+            buttons.Children.Add(cancel);
+            body.Children.Add(buttons);
+
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, () =>
+            {
+                editor.Focus();
+                editor.CaretIndex = editor.Text.Length;
+            });
+            return card;
+        }
+
+        body.Children.Add(new WpfTextBlock
+        {
+            Text         = comment.Text,
+            FontSize     = 13,
+            TextWrapping = TextWrapping.Wrap,
+            LineHeight   = 19,
+        });
+
+        var meta = new Grid { Margin = new Thickness(0, 6, 0, 0) };
+        var stamp = comment.CreatedAt.LocalDateTime.ToString("d. MMM yyyy, HH:mm", _deCH)
+                  + (comment.EditedAt is null ? "" : " · bearbeitet");
+        meta.Children.Add(new WpfTextBlock
+        {
+            Text              = stamp,
+            FontSize          = 11,
+            Opacity           = 0.45,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+
+        var tools = new StackPanel { Orientation = WpfOrientation.Horizontal, HorizontalAlignment = WpfHA.Right };
+        tools.Children.Add(CommentTool("\uE70F", "Bearbeiten", () =>
+        {
+            _editingCommentId = comment.Id;
+            _editingText      = comment.Text;
+            ShowDetailPanel(ev);
+        }));
+        tools.Children.Add(CommentTool("\uE74D", "Löschen", () =>
+        {
+            if (!Confirm("Diesen Kommentar löschen?")) return;
+            AppState.RemoveSubjectComment(comment.Id);
+            ShowDetailPanel(ev);
+        }));
+        meta.Children.Add(tools);
+        body.Children.Add(meta);
+
+        return card;
+    }
+
+    private static WpfBorder CommentTool(string glyph, string tooltip, Action onClick)
+    {
+        var tool = new WpfBorder
+        {
+            Width        = 26,
+            Height       = 24,
+            CornerRadius = new CornerRadius(6),
+            Background   = WpfBrushes.Transparent,
+            Cursor       = WpfCursors.Hand,
+            ToolTip      = tooltip,
+            Margin       = new Thickness(2, 0, 0, 0),
+            Child = new WpfTextBlock
+            {
+                Text                = glyph,
+                FontFamily          = new System.Windows.Media.FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
+                FontSize            = 12,
+                Opacity             = 0.65,
+                HorizontalAlignment = WpfHA.Center,
+                VerticalAlignment   = VerticalAlignment.Center,
+            },
+        };
+        tool.MouseEnter += (_, _) => tool.Background = new SolidColorBrush(Color.FromArgb(0x26, 0x80, 0x80, 0x80));
+        tool.MouseLeave += (_, _) => tool.Background = WpfBrushes.Transparent;
+        tool.MouseLeftButtonUp += (_, e) => { onClick(); e.Handled = true; };
+        return tool;
     }
 
     // ── Farbwahl im Detail-Panel ─────────────────────────────────────────────

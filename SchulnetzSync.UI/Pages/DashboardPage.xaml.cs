@@ -635,7 +635,7 @@ public partial class DashboardPage : Page
 
     /// <summary>Gleiche Farbe wie im Kalender: Einzelfarbe → Fach → Standard.</summary>
     private static Color LessonColor(SchulnetzEvent lesson)
-        => ParseColor(AppState.GetEventColor(lesson.Key, EventsPage.ExtractSubjectCode(lesson.Summary)),
+        => ParseColor(AppState.GetEventColor(lesson.Key, SubjectCode.FromSummary(lesson.Summary)),
                       Color.FromRgb(0x25, 0x63, 0xEB));
 
     private static Color ParseColor(string hex, Color fallback)
