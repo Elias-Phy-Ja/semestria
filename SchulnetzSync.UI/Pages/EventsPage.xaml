@@ -4,6 +4,143 @@
       xmlns:ui="http://schemas.modernwpf.com/2019"
       Title="Prüfungen &amp; Termine">
 
+    <Page.Resources>
+
+        <!-- Halbtransparentes Grau wirkt im hellen wie im dunklen Theme -->
+        <SolidColorBrush x:Key="HoverOverlay"   Color="#1A808080"/>
+        <SolidColorBrush x:Key="PressedOverlay" Color="#2A808080"/>
+        <SolidColorBrush x:Key="SubtleFill"     Color="#14808080"/>
+        <SolidColorBrush x:Key="SubtleBorder"   Color="#26808080"/>
+        <SolidColorBrush x:Key="AccentTint"     Color="{StaticResource AccentColor}" Opacity="0.18"/>
+
+        <!-- Kleiner Knopf mit dezentem Rahmen, beim Überfahren eine Fläche -->
+        <Style x:Key="ToolbarGhost" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SubtleBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="34"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverOverlay}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource PressedOverlay}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Breiterer Textknopf, z. B. «Heute» -->
+        <Style x:Key="ToolbarOutline" TargetType="Button" BasedOn="{StaticResource ToolbarGhost}">
+            <Setter Property="Padding" Value="14,0"/>
+        </Style>
+
+        <!-- Gefüllter Hauptknopf der Leiste -->
+        <Style x:Key="ToolbarAccent" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="12,0,14,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}" CornerRadius="8"/>
+                            <Border x:Name="Overlay" Background="Transparent" CornerRadius="8"/>
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Overlay" Property="Background" Value="#1FFFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Overlay" Property="Background" Value="#26000000"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Segment im Monat/Woche-Umschalter -->
+        <Style x:Key="SegmentRadio" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="6"
+                                Padding="14,0" MinWidth="72">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverOverlay}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Filter-Chip: gewählt = Akzent-Tönung mit Akzent-Rahmen -->
+        <Style x:Key="FilterChip" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="13"
+                                BorderThickness="1" BorderBrush="{StaticResource SubtleBorder}"
+                                Padding="12,4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverOverlay}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentTint}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Page.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- Toolbar -->
@@ -23,91 +160,84 @@
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>  <!-- Titel -->
-                    <ColumnDefinition Width="*"/>     <!-- Monatsnav (zentriert) -->
+                    <ColumnDefinition Width="*"/>     <!-- Navigation (zentriert) -->
                     <ColumnDefinition Width="Auto"/>  <!-- Ansicht + Aktionen -->
                 </Grid.ColumnDefinitions>
 
-                <!-- Titel -->
                 <TextBlock Grid.Column="0"
                            Text="Prüfungen &amp; Termine"
                            Style="{StaticResource TitleText}"
                            VerticalAlignment="Center"/>
 
-                <!-- Monatsnavigation zentriert -->
+                <!-- Navigation: ‹ Monat › und «Heute» -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal"
                             HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button x:Name="BtnPrevMonth" Content="‹" FontSize="20"
-                            Style="{StaticResource SecondaryButton}" Padding="10,4"
-                            Click="BtnPrevMonth_Click"/>
+                    <Button x:Name="BtnPrevMonth" Style="{StaticResource ToolbarGhost}"
+                            ToolTip="Zurück" Click="BtnPrevMonth_Click">
+                        <TextBlock Text="&#xE76B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"/>
+                    </Button>
                     <TextBlock x:Name="TxtMonthYear"
-                               FontSize="17" FontWeight="Bold"
+                               FontSize="17" FontWeight="SemiBold"
                                Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                               VerticalAlignment="Center" Margin="16,0"
+                               VerticalAlignment="Center" Margin="8,0"
                                MinWidth="190" TextAlignment="Center"/>
-                    <Button x:Name="BtnNextMonth" Content="›" FontSize="20"
-                            Style="{StaticResource SecondaryButton}" Padding="10,4"
-                            Click="BtnNextMonth_Click"/>
+                    <Button x:Name="BtnNextMonth" Style="{StaticResource ToolbarGhost}"
+                            ToolTip="Weiter" Click="BtnNextMonth_Click">
+                        <TextBlock Text="&#xE76C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"/>
+                    </Button>
                     <Button x:Name="BtnToday" Content="Heute"
-                            Style="{StaticResource SecondaryButton}"
-                            Padding="12,5" Margin="10,0,0,0"
-                            Click="BtnToday_Click"/>
+                            Style="{StaticResource ToolbarOutline}"
+                            Margin="10,0,0,0" Click="BtnToday_Click"/>
                 </StackPanel>
 
-                <!-- Rechts: Ansichts-Toggle + Aktionen (ohne Filter) -->
+                <!-- Rechts: Ansicht, Einstellungen, Neuer Eintrag -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- Monat / Woche Toggle -->
-                    <Border CornerRadius="7"
-                            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
-                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                            BorderThickness="1"
-                            Margin="0,0,10,0" Padding="2">
+                    <Border Background="{StaticResource SubtleFill}"
+                            BorderBrush="{StaticResource SubtleBorder}" BorderThickness="1"
+                            CornerRadius="9" Padding="3" Height="34">
                         <StackPanel Orientation="Horizontal">
-                            <Button x:Name="BtnViewMonth" Content="Monat"
-                                    Style="{StaticResource PrimaryButton}"
-                                    Padding="10,4" FontSize="12"
-                                    Click="BtnViewMonth_Click"/>
-                            <Button x:Name="BtnViewWeek" Content="Woche"
-                                    Style="{StaticResource SecondaryButton}"
-                                    Padding="10,4" FontSize="12"
-                                    Click="BtnViewWeek_Click"/>
+                            <RadioButton x:Name="BtnViewMonth" Content="Monat" GroupName="CalView"
+                                         Style="{StaticResource SegmentRadio}"
+                                         Checked="BtnViewMonth_Click"/>
+                            <RadioButton x:Name="BtnViewWeek" Content="Woche" GroupName="CalView"
+                                         Style="{StaticResource SegmentRadio}" IsChecked="True"
+                                         Checked="BtnViewWeek_Click"/>
                         </StackPanel>
                     </Border>
-                    <!-- Aktionsbuttons -->
-                    <Button x:Name="BtnAddEvent" Content="+"
-                            Style="{StaticResource SecondaryButton}"
-                            Padding="10,4" FontSize="15" Margin="0,0,5,0"
-                            ToolTip="Manuellen Eintrag hinzufügen"
-                            Click="BtnAddEvent_Click"/>
-                    <Button x:Name="BtnCalSettings" Content="⚙"
-                            Style="{StaticResource SecondaryButton}"
-                            Padding="9,4" FontSize="13"
-                            ToolTip="Kalender-Einstellungen"
-                            Click="BtnCalSettings_Click"/>
+
+                    <Button x:Name="BtnCalSettings" Style="{StaticResource ToolbarGhost}"
+                            Margin="10,0,4,0" ToolTip="Kalender-Einstellungen"
+                            Click="BtnCalSettings_Click">
+                        <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"/>
+                    </Button>
+
+                    <Button x:Name="BtnAddEvent" Style="{StaticResource ToolbarAccent}"
+                            ToolTip="Eigenen Eintrag hinzufügen"
+                            Click="BtnAddEvent_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                       FontSize="12" VerticalAlignment="Center" Margin="0,1,8,0"/>
+                            <TextBlock Text="Neu" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
 
-            <!-- ── Filter-Leiste (kompakt, zweite Zeile) ─────────────────── -->
+            <!-- ── Filter-Leiste ─────────────────────────────────────────── -->
             <StackPanel Grid.Row="1" Orientation="Horizontal"
-                        Margin="0,5,0,0" VerticalAlignment="Center">
-                <TextBlock Text="Anzeigen:"
-                           FontSize="11" Opacity="0.45"
-                           VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <Button x:Name="BtnFilterAll" Content="Alle"
-                        Style="{StaticResource PrimaryButton}"
-                        Padding="9,3" FontSize="11" Margin="0,0,4,0"
-                        Click="BtnFilter_Click" Tag="All"/>
-                <Button x:Name="BtnFilterPruefung" Content="Prüfungen"
-                        Style="{StaticResource SecondaryButton}"
-                        Padding="9,3" FontSize="11" Margin="0,0,4,0"
-                        Click="BtnFilter_Click" Tag="Pruefung"/>
-                <Button x:Name="BtnFilterTermin" Content="Termine"
-                        Style="{StaticResource SecondaryButton}"
-                        Padding="9,3" FontSize="11" Margin="0,0,4,0"
-                        Click="BtnFilter_Click" Tag="Termin"/>
-                <Button x:Name="BtnFilterLektion" Content="Stunden"
-                        Style="{StaticResource SecondaryButton}"
-                        Padding="9,3" FontSize="11"
-                        Click="BtnFilter_Click" Tag="Lektion"/>
+                        Margin="0,10,0,0" VerticalAlignment="Center">
+                <RadioButton x:Name="BtnFilterAll" Content="Alle" GroupName="CalFilter"
+                             Style="{StaticResource FilterChip}" IsChecked="True"
+                             Checked="BtnFilter_Click" Tag="All"/>
+                <RadioButton x:Name="BtnFilterPruefung" Content="Prüfungen" GroupName="CalFilter"
+                             Style="{StaticResource FilterChip}"
+                             Checked="BtnFilter_Click" Tag="Pruefung"/>
+                <RadioButton x:Name="BtnFilterTermin" Content="Termine" GroupName="CalFilter"
+                             Style="{StaticResource FilterChip}"
+                             Checked="BtnFilter_Click" Tag="Termin"/>
+                <RadioButton x:Name="BtnFilterLektion" Content="Stunden" GroupName="CalFilter"
+                             Style="{StaticResource FilterChip}"
+                             Checked="BtnFilter_Click" Tag="Lektion"/>
             </StackPanel>
         </Grid>
 

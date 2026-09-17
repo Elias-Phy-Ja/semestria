@@ -62,9 +62,6 @@ public partial class EventsPage : WpfPage
         Loaded   += (_, _) =>
         {
             AppState.Changed += OnStateChanged;
-            // Button-Styles mit dem Standard-Viewmode synchronisieren
-            BtnViewWeek.Style  = (Style)FindResource("PrimaryButton");
-            BtnViewMonth.Style = (Style)FindResource("SecondaryButton");
             if (!_selectedDate.HasValue) _selectedDate = DateTime.Today;
             Refresh();
         };
@@ -1539,17 +1536,16 @@ public partial class EventsPage : WpfPage
 
     private void BtnViewMonth_Click(object sender, RoutedEventArgs e)
     {
+        // Checked feuert schon während InitializeComponent()
+        if (!IsLoaded) return;
         _viewMode = "Month";
-        BtnViewMonth.Style = (Style)FindResource("PrimaryButton");
-        BtnViewWeek.Style  = (Style)FindResource("SecondaryButton");
         Refresh();
     }
 
     private void BtnViewWeek_Click(object sender, RoutedEventArgs e)
     {
+        if (!IsLoaded) return;
         _viewMode = "Week";
-        BtnViewWeek.Style  = (Style)FindResource("PrimaryButton");
-        BtnViewMonth.Style = (Style)FindResource("SecondaryButton");
         if (!_selectedDate.HasValue) _selectedDate = DateTime.Today;
         Refresh();
     }
@@ -1558,15 +1554,10 @@ public partial class EventsPage : WpfPage
 
     private void BtnFilter_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not WpfButton btn) return;
-        _filter        = btn.Tag as string ?? "All";
+        if (!IsLoaded || sender is not FrameworkElement chip) return;
+        _filter        = chip.Tag as string ?? "All";
         _selectedEvent = null;
         if (_panelMode == "Detail") ClosePanel();
-
-        BtnFilterAll.Style     = (Style)FindResource(_filter == "All"      ? "PrimaryButton" : "SecondaryButton");
-        BtnFilterPruefung.Style = (Style)FindResource(_filter == "Pruefung" ? "PrimaryButton" : "SecondaryButton");
-        BtnFilterTermin.Style   = (Style)FindResource(_filter == "Termin"   ? "PrimaryButton" : "SecondaryButton");
-        BtnFilterLektion.Style  = (Style)FindResource(_filter == "Lektion"  ? "PrimaryButton" : "SecondaryButton");
 
         Refresh();
     }
