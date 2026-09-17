@@ -86,7 +86,7 @@ public partial class EventsPage : WpfPage
     }
 
     /// <summary>Extrahiert das Fachkürzel aus einer Lektions-Summary (z.B. "TEU" aus "9:30 TEU_I26A").</summary>
-    private static string ExtractSubjectCode(string summary)
+    internal static string ExtractSubjectCode(string summary)
     {
         var s   = Regex.Replace(summary, @"^\d{1,2}:\d{2}\s+", ""); // Zeitpräfix entfernen
         var idx = s.IndexOf('_');
