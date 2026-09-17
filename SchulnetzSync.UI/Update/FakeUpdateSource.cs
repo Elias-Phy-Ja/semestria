@@ -27,8 +27,11 @@ public sealed class FakeUpdateSource(string version, bool mandatory) : IUpdateSo
         }
     }
 
-    public Task InstallAsync(CancellationToken ct)
-        => throw new InvalidOperationException(
-            "Attrappe: Es wird nichts installiert. Der echte Ablauf braucht eine "
-            + "aus dem Store installierte Version.");
+    /// <summary>
+    /// Installiert nichts, meldet aber den Ausgang, den der Store in der Praxis
+    /// liefert: Paket ersetzt, App muss sich selbst neu starten. So lässt sich
+    /// der Abschluss der Ladeansicht ohne Store durchspielen.
+    /// </summary>
+    public Task<InstallOutcome> InstallAsync(CancellationToken ct)
+        => Task.FromResult(InstallOutcome.NeedsRestart);
 }

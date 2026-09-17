@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Interop;
 using ModernWpf.Controls;
+using SchulnetzSync.Core.Update;
 using SchulnetzSync.UI.Pages;
 using SchulnetzSync.UI.Update;
 
@@ -108,9 +109,13 @@ public partial class MainWindow : Window
         UpdateFailureArea.Visibility   = Visibility.Collapsed;
         UpdatePromptArea.Visibility    = Visibility.Visible;
 
-        TxtUpdateHeadline.Text = version is null
-            ? "Ein Update ist verfügbar"
-            : $"Version {version} verfügbar";
+        // Der Store nennt als Version des Updates gelegentlich die bereits
+        // installierte. Eine Zahl, die nicht höher ist, wird darum verschwiegen.
+        bool nameVersion = UpdatePolicy.IsNewerThan(version, AppConstants.Version);
+
+        TxtUpdateHeadline.Text = nameVersion
+            ? $"Version {version} verfügbar"
+            : "Ein Update ist verfügbar";
 
         TxtUpdateBody.Text = mandatory
             ? $"Du hast {AppConstants.Version}. Dieses Update ist erforderlich, "
@@ -172,8 +177,9 @@ public partial class MainWindow : Window
 
             await _startup.InstallAsync(ct);
 
-            // Hierhin gelangt man nur, wenn Windows die App nicht beendet hat.
-            ShowUpdateFailure("Die Installation wurde nicht durchgeführt.");
+            // Hierhin gelangt man, wenn Windows die App nicht beendet hat. Das
+            // Paket ist dann ersetzt, im Speicher läuft aber der alte Code.
+            await FinishInstalledUpdateAsync();
         }
         catch (OperationCanceledException)
         {
@@ -184,6 +190,31 @@ public partial class MainWindow : Window
             App.LogLine("Update fehlgeschlagen: " + ex);
             ShowUpdateFailure(ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Schliesst ein Update ab, das eingespielt wurde, während die App lief:
+    /// kurz Bescheid geben und neu starten.
+    /// </summary>
+    private async Task FinishInstalledUpdateAsync()
+    {
+        LoadingProgressArea.Visibility = Visibility.Collapsed;
+        UpdateFailureArea.Visibility   = Visibility.Collapsed;
+        UpdateDoneArea.Visibility      = Visibility.Visible;
+        TxtUpdateDone.Text             = "Update installiert. Semestria startet neu…";
+
+        await Task.Delay(1200);
+
+        if (AppRelaunch.TryRelaunch())
+        {
+            System.Windows.Application.Current.Shutdown();
+            return;
+        }
+
+        UpdateDoneArea.Visibility = Visibility.Collapsed;
+        ShowUpdateFailure(
+            "Das Update ist installiert. Starte Semestria bitte von Hand neu, "
+            + "damit die neue Version läuft.");
     }
 
     /// <summary>

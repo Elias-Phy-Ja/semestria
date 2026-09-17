@@ -26,9 +26,11 @@ public interface IUpdateSource
     /// <summary>
     /// Installs the downloaded packages.
     ///
-    /// Ab hier übernimmt Windows: Es beendet die App, um das Paket zu ersetzen.
-    /// Der Aufruf kehrt im Normalfall nicht zurück. Kehrt er doch zurück, ist
-    /// die Installation nicht gelaufen.
+    /// Zwei Ausgänge sind normal: Windows beendet die App, um das Paket zu
+    /// ersetzen, dann kehrt der Aufruf gar nicht zurück. Oder es ersetzt das
+    /// Paket, während die App läuft, und meldet Erfolg zurück; dann läuft im
+    /// Speicher noch der alte Code und die App muss neu gestartet werden.
+    /// Alles andere wirft.
     /// </summary>
-    Task InstallAsync(CancellationToken ct);
+    Task<InstallOutcome> InstallAsync(CancellationToken ct);
 }

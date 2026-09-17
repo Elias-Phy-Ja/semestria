@@ -22,7 +22,8 @@ public class UpdateDecisionTests
     {
         public Task<IReadOnlyList<UpdateInfo>> CheckAsync(CancellationToken ct) => check(ct);
         public Task DownloadAsync(IProgress<double>? progress, CancellationToken ct) => Task.CompletedTask;
-        public Task InstallAsync(CancellationToken ct) => Task.CompletedTask;
+        public Task<InstallOutcome> InstallAsync(CancellationToken ct)
+            => Task.FromResult(InstallOutcome.NeedsRestart);
     }
 
     private static UpdateGate GateReturning(params UpdateInfo[] updates)
@@ -235,4 +236,18 @@ public class UpdateDecisionTests
 
         Assert.Equal(UpdatePrompt.Mandatory, decision.Prompt);
     }
+
+    // ── Versionsvergleich für die Anzeige ───────────────────────────────────
+
+    [Theory]
+    [InlineData("2.2.0.0", "2.1.0", true)]
+    [InlineData("2.2.0",   "2.1.0", true)]
+    [InlineData("3.0.0.0", "2.9.9", true)]
+    [InlineData("2.1.0.0", "2.1.0", false)]   // Store nennt die installierte Version
+    [InlineData("2.0.0.0", "2.1.0", false)]
+    [InlineData(null,      "2.1.0", false)]
+    [InlineData("",        "2.1.0", false)]
+    [InlineData("neu",     "2.1.0", false)]
+    public void IsNewerThan_OnlyHigherVersionsCount(string? offered, string current, bool expected)
+        => Assert.Equal(expected, UpdatePolicy.IsNewerThan(offered, current));
 }

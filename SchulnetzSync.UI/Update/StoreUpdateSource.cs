@@ -62,7 +62,7 @@ public sealed class StoreUpdateSource(IntPtr windowHandle) : IUpdateSource
         throw new InvalidOperationException($"Download endete mit Status {result.OverallState}.");
     }
 
-    public async Task InstallAsync(CancellationToken ct)
+    public async Task<InstallOutcome> InstallAsync(CancellationToken ct)
     {
         if (_pending is not { Count: > 0 })
             throw new InvalidOperationException("Vor der Installation muss CheckAsync laufen.");
@@ -70,12 +70,18 @@ public sealed class StoreUpdateSource(IntPtr windowHandle) : IUpdateSource
         var context = GetContext();
 
         // Die Pakete liegen bereits lokal, dieser Aufruf spielt sie ein.
-        // Windows beendet die App dabei — der Aufruf kehrt normalerweise nicht
-        // zurück. Tut er es doch, ist nichts installiert worden.
+        // Beendet Windows die App dabei, kehrt der Aufruf nicht zurück.
         var result = await context
             .RequestDownloadAndInstallStorePackageUpdatesAsync(_pending)
             .AsTask(ct)
             .ConfigureAwait(false);
+
+        // Completed heisst: Das Paket ist ersetzt, aber dieser Prozess läuft
+        // weiter mit dem alten Code. Deploying schliesst Windows im Hintergrund
+        // ab. Beides braucht einen Neustart, keine Fehlermeldung.
+        if (result.OverallState is StorePackageUpdateState.Completed
+                               or StorePackageUpdateState.Deploying)
+            return InstallOutcome.NeedsRestart;
 
         throw new InvalidOperationException(
             $"Installation nicht durchgeführt, Status {result.OverallState}.");

@@ -23,6 +23,13 @@ public sealed record UpdatePreferences(
     DateTimeOffset? RemindAfterUtc = null,
     int             PostponeCount  = 0);
 
+/// <summary>How an installation ended when the call came back at all.</summary>
+public enum InstallOutcome
+{
+    /// <summary>Installed while the app was running; it must restart itself.</summary>
+    NeedsRestart,
+}
+
 /// <summary>What the loading view should do with the update check.</summary>
 public enum UpdatePrompt
 {

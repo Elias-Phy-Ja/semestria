@@ -105,13 +105,13 @@ public sealed class StartupCoordinator(
     }
 
     /// <summary>
-    /// Installs the update. Windows beendet die App dabei; kehrt der Aufruf
-    /// zurück, ist nichts installiert worden.
+    /// Installs the update. Beendet Windows die App dabei, kehrt der Aufruf
+    /// nicht zurück; sonst sagt das Ergebnis, was noch fehlt.
     /// </summary>
-    public async Task InstallAsync(CancellationToken ct)
+    public async Task<InstallOutcome> InstallAsync(CancellationToken ct)
     {
         _status.Report("Update wird installiert…");
-        await _source.InstallAsync(ct).ConfigureAwait(false);
+        return await _source.InstallAsync(ct).ConfigureAwait(false);
     }
 
     /// <summary>Records that the user postponed this version.</summary>

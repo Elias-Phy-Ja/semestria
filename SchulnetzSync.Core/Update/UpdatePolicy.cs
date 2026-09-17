@@ -53,6 +53,33 @@ public static class UpdatePolicy
     }
 
     /// <summary>
+    /// True when <paramref name="offered"/> is a higher version than
+    /// <paramref name="current"/>.
+    ///
+    /// Der Store liefert als Version des Updates teils die bereits
+    /// installierte. Eine Zahl, die nicht höher ist als die laufende, darf
+    /// darum nicht als «Version X verfügbar» angezeigt werden.
+    /// Unlesbare Angaben gelten als nicht neuer.
+    /// </summary>
+    public static bool IsNewerThan(string? offered, string? current)
+        => TryParse(offered, out var a) && TryParse(current, out var b) && a > b;
+
+    private static bool TryParse(string? text, out Version version)
+    {
+        version = new Version(0, 0);
+        if (string.IsNullOrWhiteSpace(text)) return false;
+
+        // "2.2.0" und "2.2.0.0" sollen vergleichbar sein
+        if (!Version.TryParse(text.Trim(), out var parsed)) return false;
+
+        version = new Version(parsed.Major,
+                              parsed.Minor,
+                              Math.Max(parsed.Build, 0),
+                              Math.Max(parsed.Revision, 0));
+        return true;
+    }
+
+    /// <summary>
     /// The state after the user picked "Später erinnern": ask again tomorrow.
     ///
     /// Der Zähler wird mitgeführt, steuert die Frist aber nicht — jedes
