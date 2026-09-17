@@ -274,6 +274,28 @@ public partial class MainWindow : Window
         NavView.SelectedItem = NavDashboard;
     }
 
+    /// <summary>
+    /// Handles items that do not open a page. Synapkey lebt im Browser —
+    /// das Element wählt sich darum nicht selbst aus (SelectsOnInvoked=False).
+    /// </summary>
+    private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
+    {
+        if (args.InvokedItemContainer is not NavigationViewItem { Tag: "Synapkey" }) return;
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+                AppConstants.SynapkeyDashboardUrl) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            App.LogLine("Synapkey konnte nicht geöffnet werden: " + ex.Message);
+            MessageBox.Show(
+                "Der Browser konnte nicht geöffnet werden.\n\n" + AppConstants.SynapkeyDashboardUrl,
+                "Synapkey", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     private void NavView_SelectionChanged(NavigationView sender,
         NavigationViewSelectionChangedEventArgs args)
     {

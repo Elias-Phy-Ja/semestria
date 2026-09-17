@@ -19,6 +19,7 @@
                        IsBackButtonVisible="Collapsed"
                        OpenPaneLength="220"
                        SelectionChanged="NavView_SelectionChanged"
+                       ItemInvoked="NavView_ItemInvoked"
                        Loaded="NavView_Loaded">
 
         <!-- ── Sidebar-Logo ── -->
@@ -75,6 +76,21 @@
         </ui:NavigationView.MenuItems>
 
         <ui:NavigationView.FooterMenuItems>
+            <!--
+                Kein Seitenwechsel: öffnet die Web-App im Browser.
+                SelectsOnInvoked=False, damit die aktuelle Seite markiert bleibt.
+            -->
+            <ui:NavigationViewItem x:Name="NavSynapkey"
+                                   Tag="Synapkey"
+                                   Content="Synapkey"
+                                   SelectsOnInvoked="False"
+                                   ToolTipService.ToolTip="Synapkey-Dashboard im Browser öffnen">
+                <ui:NavigationViewItem.Icon>
+                    <!-- Segoe MDL2 «OpenInNewWindow» -->
+                    <ui:FontIcon Glyph="&#xE8A7;"/>
+                </ui:NavigationViewItem.Icon>
+            </ui:NavigationViewItem>
+
             <ui:NavigationViewItem x:Name="NavAbout"
                                    Tag="About"
                                    Content="Über &amp; Rechtliches">

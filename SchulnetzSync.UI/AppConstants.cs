@@ -54,4 +54,7 @@ public static class AppConstants
 
     /// <summary>GitHub-Link für Feedback / Issues.</summary>
     public const string GitHubUrl = "https://github.com/Elias-Phy-Ja/semestria";
+
+    /// <summary>Dashboard der Web-App Synapkey, erreichbar über die Seitenleiste.</summary>
+    public const string SynapkeyDashboardUrl = "https://synapkey.ch/dashboard.html";
 }
