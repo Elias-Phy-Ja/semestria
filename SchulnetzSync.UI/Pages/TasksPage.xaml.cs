@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using SchulnetzSync.Core.Tasks;
 using SchulnetzSync.UI.Model;
 // WinForms ist wegen NotifyIcon aktiviert und kollidiert bei vielen Steuerelementnamen
 using Button         = System.Windows.Controls.Button;
@@ -27,6 +28,15 @@ public partial class TasksPage : Page
     /// <summary>Angebotene Uhrzeiten in den beiden Zeit-Feldern.</summary>
     private static readonly string[] TimeSuggestions =
         ["07:30", "08:00", "09:00", "10:00", "12:00", "13:30", "16:00", "18:00", "20:00", "23:59"];
+
+    /// <summary>Abgabe ohne Uhrzeit: Ende des Tages, sonst wäre sie ab 00:00 überfällig.</summary>
+    private static readonly TimeSpan DefaultDueTime = new(23, 59, 0);
+
+    /// <summary>
+    /// Erinnerung ohne Uhrzeit: früher Abend. Mitternacht wäre wertlos — dann
+    /// schläft man oder hat den Tag schon abgeschlossen.
+    /// </summary>
+    private static readonly TimeSpan DefaultReminderTime = new(18, 0, 0);
 
     /// <summary>Aktuell bearbeitete Aufgabe; null = neue Aufgabe.</summary>
     private TaskItem? _editing;
@@ -307,12 +317,31 @@ public partial class TasksPage : Page
             return;
         }
 
-        var due    = ReadDateTime(DateDue,    CmbDueTime);
-        var remind = ReadDateTime(DateRemind, CmbRemindTime);
+        if (!TryReadDateTime(DateDue, CmbDueTime, DefaultDueTime, "Abgabe", out var due, out var dueError))
+        {
+            TxtEditorError.Text = dueError;
+            return;
+        }
+
+        if (!TryReadDateTime(DateRemind, CmbRemindTime, DefaultReminderTime, "Erinnerung",
+                             out var remind, out var remindError))
+        {
+            TxtEditorError.Text = remindError;
+            return;
+        }
 
         if (remind.HasValue && due.HasValue && remind.Value > due.Value)
         {
             TxtEditorError.Text = "Die Erinnerung liegt nach der Abgabe.";
+            return;
+        }
+
+        // Eine neu gesetzte Erinnerung in der Vergangenheit würde sofort auslösen.
+        // Eine unveränderte, bereits gezeigte beim Bearbeiten ist dagegen in Ordnung.
+        bool reminderIsNew = _editing is null || remind != _editing.RemindAt;
+        if (reminderIsNew && remind.HasValue && remind.Value < DateTimeOffset.Now)
+        {
+            TxtEditorError.Text = "Die Erinnerung liegt in der Vergangenheit.";
             return;
         }
 
@@ -371,7 +400,11 @@ public partial class TasksPage : Page
             return;
         }
 
-        var due = ReadDateTime(DateDue, CmbDueTime);
+        if (!TryReadDateTime(DateDue, CmbDueTime, DefaultDueTime, "Abgabe", out var due, out var error))
+        {
+            TxtEditorError.Text = error;
+            return;
+        }
         if (due is null)
         {
             TxtEditorError.Text = "Setze zuerst einen Abgabetermin.";
@@ -379,7 +412,12 @@ public partial class TasksPage : Page
         }
 
         TxtEditorError.Text = "";
-        SetDateTime(DateRemind, CmbRemindTime, due.Value.AddDays(-daysBefore));
+
+        // Tag vom Abgabetermin zurückrechnen, Uhrzeit aber auf den frühen Abend —
+        // «am Vortag» einer Abgabe um 23:59 hiesse sonst: kurz vor Mitternacht.
+        var day   = due.Value.Date.AddDays(-daysBefore) + DefaultReminderTime;
+        var local = new DateTimeOffset(day, TimeZoneInfo.Local.GetUtcOffset(day));
+        SetDateTime(DateRemind, CmbRemindTime, local);
     }
 
     /// <summary>Ohne Uhrzeit ist die Abgabe das Tagesende — sonst wäre sie um 00:00 sofort überfällig.</summary>
@@ -402,17 +440,47 @@ public partial class TasksPage : Page
         time.Text         = value.Value.ToString("HH:mm", DeCh);
     }
 
-    private static DateTimeOffset? ReadDateTime(DatePicker date, ComboBox time)
+    /// <summary>
+    /// Reads a date and time pair from the form.
+    /// </summary>
+    /// <param name="fallbackTime">Used when the time field is empty.</param>
+    /// <param name="field">Name for the error message, e.g. "Abgabe".</param>
+    /// <param name="value">Null when no date is set — that is allowed.</param>
+    /// <returns>
+    /// False only for unreadable input. Früher wurde eine unlesbare Uhrzeit still
+    /// durch 23:59 ersetzt; jetzt erfährt man, dass etwas nicht stimmt.
+    /// </returns>
+    private static bool TryReadDateTime(
+        DatePicker date, ComboBox time, TimeSpan fallbackTime, string field,
+        out DateTimeOffset? value, out string? error)
     {
-        if (date.SelectedDate is not { } day) return null;
+        value = null;
+        error = null;
+
+        if (date.SelectedDate is not { } day)
+        {
+            // Etwas getippt, das kein Datum ist? Nicht stillschweigend verwerfen.
+            if (!string.IsNullOrWhiteSpace(date.Text))
+            {
+                error = $"{field}: «{date.Text.Trim()}» ist kein gültiges Datum.";
+                return false;
+            }
+            return true;
+        }
 
         var text = time.Text.Trim();
-        var clock = TimeSpan.TryParseExact(text, [@"hh\:mm", @"h\:mm"], DeCh, out var parsed)
-            ? parsed
-            : new TimeSpan(23, 59, 0);   // ohne Uhrzeit: Ende des Tages
+        TimeSpan clock;
+        if (text.Length == 0)
+            clock = fallbackTime;
+        else if (!ClockTime.TryParse(text, out clock))
+        {
+            error = $"{field}: «{text}» ist keine gültige Uhrzeit. Zum Beispiel 8:30, 8.30 oder 0830.";
+            return false;
+        }
 
         var local = day.Date + clock;
-        return new DateTimeOffset(local, TimeZoneInfo.Local.GetUtcOffset(local));
+        value = new DateTimeOffset(local, TimeZoneInfo.Local.GetUtcOffset(local));
+        return true;
     }
 
     // ══════════════════════════════════════════════════════════════════════
