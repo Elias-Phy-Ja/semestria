@@ -39,6 +39,18 @@ Alternativ: `.msix`-Datei unter [Releases](../../releases) (Sideloading erforder
 
 ## Changelog
 
+### 17.09.2026 (v2.2)
+- [x] Dashboard neu: Stundenplan, Kennzahlen, Aufgaben, einklappbares Protokoll
+- [x] Einrichtung neu, inkl. Hinweis auf schulNetz.mobile
+- [x] Kalender: Kopfleiste aufgeräumt, Fachkürzel statt voller Titel
+- [x] Farben: 28 Farben, Farbmischer, einzelne Stunden und Termine färbbar
+- [x] Kommentare pro Fach
+- [x] Aufgaben: eigene Listenfarben, neues Design, Uhrzeiten wie getippt
+- [x] Link zum Synapkey-Dashboard in der Seitenleiste
+- [x] Standard neu: dunkles Design, nur Prüfungen nach Outlook
+- [x] Fix: Absturz des Dashboards ab dem 18. Oktober (Zeitumstellung)
+- [x] Fix: blaue Kachel hinter dem Taskleisten-Icon
+
 ### 04.09.2026
 - [x] Outlook-Kalender-Integration (Microsoft Graph)
 - [x] Titel kürzen (max. Zeichenlimit)

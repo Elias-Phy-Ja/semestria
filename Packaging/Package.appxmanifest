@@ -27,7 +27,7 @@
   <Identity
     Name="EliasWyss.Semestria"
     Publisher="CN=0FAC95B3-81E8-450F-9C41-2C238B2075E0"
-    Version="2.1.0.0"
+    Version="2.2.0.0"
     ProcessorArchitecture="x64" />
 
   <!-- ── Store-Metadaten ─────────────────────────────────────────────── -->

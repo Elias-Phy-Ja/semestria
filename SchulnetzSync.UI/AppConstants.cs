@@ -41,12 +41,12 @@ public static class AppConstants
     public const string AppName    = "Semestria";
     /// <summary>
     /// Angezeigte Version. Muss zur Version in Packaging\Package.appxmanifest
-    /// passen (dort vierstellig: 2.0.0.0).
+    /// passen (dort vierstellig: 2.2.0.0).
     /// </summary>
-    public const string Version    = "2.1.0";
+    public const string Version    = "2.2.0";
 
-    /// <summary>Kurzform für die Seitenleiste, z.B. "v2.0".</summary>
-    public const string VersionShort = "v2.1";
+    /// <summary>Kurzform für die Seitenleiste, z.B. "v2.2".</summary>
+    public const string VersionShort = "v2.2";
     public const string Publisher  = "Elias Wyss";
 
     /// <summary>Versionsnummer des akzeptierten Rechtsdokuments.</summary>
