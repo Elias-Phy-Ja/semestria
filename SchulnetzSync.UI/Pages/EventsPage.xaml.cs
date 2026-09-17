@@ -45,24 +45,8 @@ public partial class EventsPage : WpfPage
     private static readonly Color _lektionColor  = Color.FromRgb(0x25, 0x63, 0xEB); // Blau
     private static readonly Color _accentColor   = Color.FromRgb(0x5C, 0x6E, 0xF7);
 
-    // 14 vordefinierte Farben für den Color-Picker
-    private static readonly (string Hex, string Name)[] _palette =
-    {
-        ("#DC2626", "Rot"),
-        ("#EA580C", "Orange"),
-        ("#D97706", "Amber"),
-        ("#CA8A04", "Gelb"),
-        ("#65A30D", "Limette"),
-        ("#16A34A", "Grün"),
-        ("#0D9488", "Türkis"),
-        ("#0EA5E9", "Himmelblau"),
-        ("#2563EB", "Blau"),
-        ("#7C3AED", "Violett"),
-        ("#A21CAF", "Lila"),
-        ("#DB2777", "Pink"),
-        ("#6B7280", "Grau"),
-        ("#1E293B", "Dunkel"),
-    };
+    // Dieselben Farben wie bei den Aufgabenlisten
+    private static readonly (string Hex, string Name)[] _palette = ColorPalette.All;
 
     // ── Init ─────────────────────────────────────────────────────────────────
     public EventsPage()

@@ -4,17 +4,145 @@
       xmlns:ui="http://schemas.modernwpf.com/2019"
       Title="Aufgaben">
 
+    <Page.Resources>
+
+        <!-- Neutrale Überlagerungen: halbtransparentes Grau funktioniert im
+             hellen wie im dunklen Theme, ohne eigene Theme-Schlüssel. -->
+        <SolidColorBrush x:Key="HoverOverlay"   Color="#1A808080"/>
+        <SolidColorBrush x:Key="PressedOverlay" Color="#2A808080"/>
+        <SolidColorBrush x:Key="SubtleFill"     Color="#12808080"/>
+        <SolidColorBrush x:Key="SubtleBorder"   Color="#26808080"/>
+
+        <!-- Schlichter Knopf ohne Rahmen, nur Hover-Fläche -->
+        <Style x:Key="GhostButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                CornerRadius="7" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverOverlay}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource PressedOverlay}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Kleine abgerundete Auswahl-Chips -->
+        <Style x:Key="ChipButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="11,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="13"
+                                BorderThickness="1" BorderBrush="{StaticResource SubtleBorder}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverOverlay}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource PressedOverlay}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Segment-Umschalter statt weit verstreuter Radiobuttons -->
+        <Style x:Key="SegmentRadio" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="7" Padding="16,6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverOverlay}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Runder Abhakkreis; die Farbe setzt der Code über BorderBrush -->
+        <Style x:Key="RoundCheck" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Width="22" Height="22" Background="Transparent">
+                            <Ellipse x:Name="Ring" StrokeThickness="2"
+                                     Stroke="{TemplateBinding BorderBrush}" Fill="Transparent"/>
+                            <TextBlock x:Name="Tick" Text="✓" FontSize="12" FontWeight="Bold"
+                                       Foreground="White" Visibility="Collapsed"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Margin="0,1,0,0"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Ring" Property="Fill"
+                                        Value="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsChecked" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <!-- Vorschau: der Haken erscheint schon beim Überfahren -->
+                                <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="Tick" Property="Foreground"
+                                        Value="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="216"/>
+            <ColumnDefinition Width="240"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- ══ Listen-Leiste ══ -->
+        <!-- ══════════════ Listen-Leiste ══════════════ -->
         <Border Grid.Column="0"
-                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderBrush="{StaticResource SubtleBorder}"
                 BorderThickness="0,0,1,0">
-            <Grid Margin="16,28,12,16">
+            <Grid Margin="14,28,14,16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -23,25 +151,31 @@
 
                 <TextBlock Grid.Row="0" Text="LISTEN"
                            Style="{StaticResource SectionLabel}"
-                           Margin="4,0,0,10"/>
+                           Margin="10,0,0,10"/>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="ListRail"/>
                 </ScrollViewer>
 
                 <StackPanel Grid.Row="2">
+                    <Border Height="1" Background="{StaticResource SubtleBorder}" Margin="4,8,4,8"/>
+
                     <Button x:Name="BtnNewList"
-                            Content="+  Neue Liste"
-                            Style="{StaticResource SecondaryButton}"
+                            Style="{StaticResource GhostButton}"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Left"
-                            Padding="12,7"
-                            Margin="0,8,0,0"
-                            Click="BtnNewList_Click"/>
+                            Padding="10,8"
+                            Click="BtnNewList_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="+" FontSize="17" Margin="0,-3,10,0"
+                                       Foreground="{StaticResource AccentBrush}"/>
+                            <TextBlock Text="Neue Liste" FontSize="13"/>
+                        </StackPanel>
+                    </Button>
 
-                    <StackPanel x:Name="NewListBox" Visibility="Collapsed" Margin="0,8,0,0">
+                    <StackPanel x:Name="NewListBox" Visibility="Collapsed" Margin="4,6,4,0">
                         <TextBox x:Name="TxtNewList" Height="34" FontSize="13"
-                                 ui:ControlHelper.PlaceholderText="Name der Liste"
+                                 ui:ControlHelper.PlaceholderText="Name, dann Enter"
                                  KeyDown="TxtNewList_KeyDown"/>
                         <ContentControl x:Name="ListSuggestions" Margin="0,8,0,0"/>
                     </StackPanel>
@@ -49,59 +183,105 @@
             </Grid>
         </Border>
 
-        <!-- ══ Inhalt ══ -->
-        <Grid Grid.Column="1" Margin="28,28,32,0">
+        <!-- ══════════════ Inhalt ══════════════ -->
+        <Grid Grid.Column="1" Margin="36,28,36,0">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Kopf -->
-            <Grid Grid.Row="0" Margin="0,0,0,18">
+            <!-- Kopf: Listenfarbe, Titel, Optionen -->
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="HeaderSwatch" Grid.Column="0"
+                        Width="46" Height="46" CornerRadius="13"
+                        Margin="0,0,16,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="HeaderGlyph" FontSize="21" FontWeight="SemiBold"
+                               Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock x:Name="TxtPageTitle" Text="Alle Aufgaben"
+                               FontSize="26" FontWeight="Bold"/>
+                    <TextBlock x:Name="TxtSummary" FontSize="13" Opacity="0.65"
+                               Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <Button x:Name="BtnListOptions" Grid.Column="2"
+                        Content="⋯" FontSize="20" Padding="12,2,12,8"
+                        Style="{StaticResource GhostButton}"
+                        VerticalAlignment="Center"
+                        ToolTip="Listenfarbe und Optionen"
+                        Click="BtnListOptions_Click"/>
+
+                <Popup x:Name="ListOptionsPopup"
+                       PlacementTarget="{Binding ElementName=BtnListOptions}"
+                       Placement="Bottom" HorizontalOffset="-206" VerticalOffset="6"
+                       StaysOpen="False" AllowsTransparency="True">
+                    <Border Width="248" CornerRadius="12" Padding="16,14"
+                            BorderThickness="1" BorderBrush="{StaticResource SubtleBorder}"
+                            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                        <StackPanel>
+                            <TextBlock Text="FARBE" Style="{StaticResource SectionLabel}" Margin="0,0,0,10"/>
+                            <WrapPanel x:Name="ColorSwatches"/>
+                            <Border Height="1" Background="{StaticResource SubtleBorder}" Margin="0,12,0,8"/>
+                            <Button Style="{StaticResource GhostButton}"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    Foreground="{StaticResource DangerBrush}"
+                                    Content="Liste löschen"
+                                    Click="BtnDeleteList_Click"/>
+                        </StackPanel>
+                    </Border>
+                </Popup>
+            </Grid>
+
+            <!-- Schnelleingabe: tippen, Enter, fertig -->
+            <Grid Grid.Row="1" Margin="0,0,0,14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock x:Name="TxtPageTitle"
-                               Text="Alle Aufgaben"
-                               Style="{StaticResource TitleText}"
-                               Margin="0,0,0,4"/>
-                    <TextBlock x:Name="TxtSummary"
-                               Text="Hausaufgaben und To-dos."
-                               Style="{StaticResource BodyText}"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal"
-                            VerticalAlignment="Top">
-                    <Button x:Name="BtnDeleteList"
-                            Content="Liste löschen"
-                            Style="{StaticResource SecondaryButton}"
-                            Visibility="Collapsed"
-                            Margin="0,0,10,0"
-                            Click="BtnDeleteList_Click"/>
-                    <Button x:Name="BtnNew"
-                            Content="+  Neue Aufgabe"
-                            Style="{StaticResource PrimaryButton}"
-                            Click="BtnNew_Click"/>
-                </StackPanel>
+                <TextBox x:Name="TxtQuickAdd" Grid.Column="0"
+                         Height="44" FontSize="14"
+                         VerticalContentAlignment="Center"
+                         ui:ControlHelper.PlaceholderText="+   Aufgabe hinzufügen — Enter speichert"
+                         KeyDown="TxtQuickAdd_KeyDown"/>
+                <Button x:Name="BtnQuickDetails" Grid.Column="1"
+                        Content="Mit Details…"
+                        Style="{StaticResource SecondaryButton}"
+                        Height="44" Padding="16,0" Margin="10,0,0,0"
+                        ToolTip="Abgabe, Erinnerung und Notizen festlegen"
+                        Click="BtnQuickDetails_Click"/>
             </Grid>
 
-            <!-- Eingabeformular -->
-            <Border x:Name="EditorCard" Grid.Row="1"
+            <!-- Formular für Details -->
+            <Border x:Name="EditorCard" Grid.Row="2"
                     Style="{StaticResource Card}"
                     Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock x:Name="TxtEditorTitle"
-                               Text="NEUE AUFGABE"
-                               Style="{StaticResource SectionLabel}"
-                               Margin="0,0,0,12"/>
+                    <Grid Margin="0,0,0,12">
+                        <TextBlock x:Name="TxtEditorTitle" Text="NEUE AUFGABE"
+                                   Style="{StaticResource SectionLabel}"
+                                   VerticalAlignment="Center"/>
+                        <Button Content="✕" Style="{StaticResource GhostButton}"
+                                HorizontalAlignment="Right" Padding="9,3"
+                                ToolTip="Schliessen (Esc)"
+                                Click="BtnCancel_Click"/>
+                    </Grid>
 
-                    <TextBlock Text="Was ist zu tun?" Style="{StaticResource LabelText}"/>
-                    <TextBox x:Name="TxtTitle" Height="36" FontSize="13"
-                             Margin="0,0,0,14"
-                             ui:ControlHelper.PlaceholderText="z.B. Arbeitsblatt 3 lösen"
+                    <TextBox x:Name="TxtTitle" Height="40" FontSize="15"
+                             Margin="0,0,0,16"
+                             ui:ControlHelper.PlaceholderText="Was ist zu tun?"
                              KeyDown="TxtTitle_KeyDown"/>
 
                     <!--
@@ -109,133 +289,119 @@
                         36 px zum nächsten Feld. Sonst liest man die Uhrzeit als
                         Teil der folgenden Spalte.
                     -->
-                    <Grid Margin="0,0,0,14">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="36"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="36"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0">
+                    <WrapPanel Margin="0,0,0,12">
+                        <StackPanel Margin="0,0,36,8">
                             <TextBlock Text="Abgabe" Style="{StaticResource LabelText}"/>
                             <StackPanel Orientation="Horizontal">
-                                <DatePicker x:Name="DateDue" Height="36" Width="150"
+                                <DatePicker x:Name="DateDue" Height="36" Width="172"
                                             SelectedDateChanged="DateDue_Changed"/>
                                 <ComboBox x:Name="CmbDueTime" Height="36" Width="84"
-                                          FontSize="13" IsEditable="True"
-                                          Margin="6,0,0,0"
+                                          FontSize="13" IsEditable="True" Margin="6,0,0,0"
                                           ui:ControlHelper.PlaceholderText="Zeit"/>
                             </StackPanel>
                         </StackPanel>
 
-                        <StackPanel Grid.Column="2">
+                        <StackPanel Margin="0,0,36,8">
                             <TextBlock Text="Erinnerung" Style="{StaticResource LabelText}"/>
                             <StackPanel Orientation="Horizontal">
-                                <DatePicker x:Name="DateRemind" Height="36" Width="150"/>
+                                <DatePicker x:Name="DateRemind" Height="36" Width="172"/>
                                 <ComboBox x:Name="CmbRemindTime" Height="36" Width="84"
-                                          FontSize="13" IsEditable="True"
-                                          Margin="6,0,0,0"
+                                          FontSize="13" IsEditable="True" Margin="6,0,0,0"
                                           ui:ControlHelper.PlaceholderText="Zeit"/>
                             </StackPanel>
                         </StackPanel>
 
-                        <StackPanel Grid.Column="4">
+                        <StackPanel Margin="0,0,0,8" MinWidth="180">
                             <TextBlock Text="Liste" Style="{StaticResource LabelText}"/>
                             <ComboBox x:Name="CmbList" Height="36" FontSize="13"
-                                      IsEditable="True"
+                                      IsEditable="True" MinWidth="180"
                                       ui:ControlHelper.PlaceholderText="z.B. Deutsch"/>
                         </StackPanel>
-                    </Grid>
+                    </WrapPanel>
 
-                    <!-- Schnellwahl für die Erinnerung -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                        <TextBlock Text="Erinnern:" Style="{StaticResource LabelText}"
-                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Button Content="Am Vortag" Tag="1"
-                                Style="{StaticResource SecondaryButton}"
-                                Padding="10,4" FontSize="12" Margin="0,0,8,0"
-                                Click="BtnRemindPreset_Click"/>
-                        <Button Content="2 Tage vorher" Tag="2"
-                                Style="{StaticResource SecondaryButton}"
-                                Padding="10,4" FontSize="12" Margin="0,0,8,0"
-                                Click="BtnRemindPreset_Click"/>
-                        <Button Content="1 Woche vorher" Tag="7"
-                                Style="{StaticResource SecondaryButton}"
-                                Padding="10,4" FontSize="12" Margin="0,0,8,0"
-                                Click="BtnRemindPreset_Click"/>
-                        <Button Content="Keine" Tag="0"
-                                Style="{StaticResource SecondaryButton}"
-                                Padding="10,4" FontSize="12" Margin="0,0,20,0"
-                                Click="BtnRemindPreset_Click"/>
-                        <CheckBox x:Name="ChkImportant"
-                                  Content="★  Wichtig"
-                                  VerticalAlignment="Center"/>
-                    </StackPanel>
+                    <WrapPanel Margin="0,0,0,16">
+                        <TextBlock Text="Erinnern" Opacity="0.65" FontSize="12"
+                                   VerticalAlignment="Center" Margin="0,0,10,4"/>
+                        <Button Content="Am Vortag" Tag="1" Style="{StaticResource ChipButton}"
+                                Margin="0,0,6,4" Click="BtnRemindPreset_Click"/>
+                        <Button Content="2 Tage vorher" Tag="2" Style="{StaticResource ChipButton}"
+                                Margin="0,0,6,4" Click="BtnRemindPreset_Click"/>
+                        <Button Content="1 Woche vorher" Tag="7" Style="{StaticResource ChipButton}"
+                                Margin="0,0,6,4" Click="BtnRemindPreset_Click"/>
+                        <Button Content="Keine" Tag="0" Style="{StaticResource ChipButton}"
+                                Margin="0,0,24,4" Click="BtnRemindPreset_Click"/>
+                        <CheckBox x:Name="ChkImportant" Content="★  Wichtig"
+                                  VerticalAlignment="Center" Margin="0,0,0,4"/>
+                    </WrapPanel>
 
-                    <TextBlock Text="Notizen" Style="{StaticResource LabelText}"/>
                     <TextBox x:Name="TxtNotes" FontSize="13"
-                             MinHeight="52" MaxHeight="120"
+                             MinHeight="56" MaxHeight="120"
                              TextWrapping="Wrap" AcceptsReturn="True"
                              VerticalScrollBarVisibility="Auto"
-                             Margin="0,0,0,14"
-                             ui:ControlHelper.PlaceholderText="Optional"/>
+                             Margin="0,0,0,16"
+                             ui:ControlHelper.PlaceholderText="Notizen (optional)"/>
 
-                    <StackPanel Orientation="Horizontal">
-                        <Button x:Name="BtnSave"
-                                Content="Speichern"
-                                Style="{StaticResource PrimaryButton}"
-                                Margin="0,0,12,0"
-                                Click="BtnSave_Click"/>
-                        <Button Content="Abbrechen"
-                                Style="{StaticResource SecondaryButton}"
-                                Click="BtnCancel_Click"/>
-                        <TextBlock x:Name="TxtEditorError"
-                                   VerticalAlignment="Center" Margin="16,0,0,0"
-                                   FontSize="12"
-                                   Foreground="{StaticResource DangerBrush}"/>
-                    </StackPanel>
+                    <Grid>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="BtnSave" Content="Speichern"
+                                    Style="{StaticResource PrimaryButton}"
+                                    Margin="0,0,10,0" Click="BtnSave_Click"/>
+                            <Button Content="Abbrechen"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Click="BtnCancel_Click"/>
+                            <TextBlock x:Name="TxtEditorError"
+                                       VerticalAlignment="Center" Margin="16,0,0,0"
+                                       FontSize="12" TextWrapping="Wrap" MaxWidth="420"
+                                       Foreground="{StaticResource DangerBrush}"/>
+                        </StackPanel>
+                        <Button x:Name="BtnEditorDelete" Content="Löschen"
+                                Style="{StaticResource GhostButton}"
+                                Foreground="{StaticResource DangerBrush}"
+                                HorizontalAlignment="Right"
+                                Visibility="Collapsed"
+                                Click="BtnEditorDelete_Click"/>
+                    </Grid>
                 </StackPanel>
             </Border>
 
             <!-- Filter -->
-            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,14">
-                <RadioButton x:Name="RbOpen" GroupName="TaskFilter"
-                             Content="Offen"
-                             Margin="0,0,20,0" Tag="Open"
-                             Checked="Filter_Changed"/>
-                <RadioButton x:Name="RbDone" GroupName="TaskFilter"
-                             Content="Erledigt"
-                             Margin="0,0,20,0" Tag="Done"
-                             Checked="Filter_Changed"/>
-                <RadioButton x:Name="RbAll" GroupName="TaskFilter"
-                             Content="Alle" Tag="All"
-                             Checked="Filter_Changed"/>
+            <Grid Grid.Row="3" Margin="0,4,0,14">
+                <Border HorizontalAlignment="Left" CornerRadius="9" Padding="3"
+                        Background="{StaticResource SubtleFill}">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="RbOpen" GroupName="TaskFilter" Content="Offen"
+                                     Tag="Open" Style="{StaticResource SegmentRadio}"
+                                     Checked="Filter_Changed"/>
+                        <RadioButton x:Name="RbDone" GroupName="TaskFilter" Content="Erledigt"
+                                     Tag="Done" Style="{StaticResource SegmentRadio}"
+                                     Checked="Filter_Changed"/>
+                        <RadioButton x:Name="RbAll" GroupName="TaskFilter" Content="Alle"
+                                     Tag="All" Style="{StaticResource SegmentRadio}"
+                                     Checked="Filter_Changed"/>
+                    </StackPanel>
+                </Border>
                 <Button x:Name="BtnClearDone"
                         Content="Erledigte entfernen"
-                        Style="{StaticResource SecondaryButton}"
-                        Padding="10,4" FontSize="12"
-                        Margin="24,0,0,0"
+                        Style="{StaticResource GhostButton}"
+                        HorizontalAlignment="Right"
+                        FontSize="12" Opacity="0.75"
                         Click="BtnClearDone_Click"/>
-            </StackPanel>
+            </Grid>
 
-            <!-- Liste -->
-            <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto"
-                          Padding="0,0,0,24">
+            <!-- Aufgaben -->
+            <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto"
+                          Padding="0,0,6,24">
                 <StackPanel>
-                    <Border x:Name="EmptyHint" Style="{StaticResource InfoBox}"
-                            Visibility="Collapsed">
-                        <StackPanel>
-                            <TextBlock x:Name="TxtEmptyTitle"
-                                       Text="Noch keine Aufgaben"
-                                       FontWeight="SemiBold" FontSize="14"
-                                       Margin="0,0,0,4"/>
-                            <TextBlock x:Name="TxtEmptyBody"
-                                       Style="{StaticResource BodyText}"
-                                       Text="Lege mit «Neue Aufgabe» deine erste Hausaufgabe an."/>
-                        </StackPanel>
-                    </Border>
+                    <StackPanel x:Name="EmptyState" Visibility="Collapsed"
+                                HorizontalAlignment="Center" Margin="0,56,0,0">
+                        <TextBlock x:Name="TxtEmptyGlyph" FontSize="46"
+                                   HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                        <TextBlock x:Name="TxtEmptyTitle" FontSize="17" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                        <TextBlock x:Name="TxtEmptyBody" FontSize="13" Opacity="0.65"
+                                   HorizontalAlignment="Center" TextAlignment="Center"
+                                   TextWrapping="Wrap" MaxWidth="360"/>
+                    </StackPanel>
 
                     <StackPanel x:Name="TaskList"/>
                 </StackPanel>

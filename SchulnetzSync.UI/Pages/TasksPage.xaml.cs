@@ -6,11 +6,13 @@ using System.Windows.Media;
 using SchulnetzSync.Core.Tasks;
 using SchulnetzSync.UI.Model;
 // WinForms ist wegen NotifyIcon aktiviert und kollidiert bei vielen Steuerelementnamen
+using Brushes        = System.Windows.Media.Brushes;
 using Button         = System.Windows.Controls.Button;
 using CheckBox       = System.Windows.Controls.CheckBox;
-using Cursors        = System.Windows.Input.Cursors;
 using ColorConverter = System.Windows.Media.ColorConverter;
 using ComboBox       = System.Windows.Controls.ComboBox;
+using Cursors        = System.Windows.Input.Cursors;
+using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using KeyEventArgs   = System.Windows.Input.KeyEventArgs;
 using Orientation    = System.Windows.Controls.Orientation;
 using RadioButton    = System.Windows.Controls.RadioButton;
@@ -37,6 +39,10 @@ public partial class TasksPage : Page
     /// schläft man oder hat den Tag schon abgeschlossen.
     /// </summary>
     private static readonly TimeSpan DefaultReminderTime = new(18, 0, 0);
+
+    private static readonly Color ImportantColor = Color.FromRgb(0xF5, 0x9E, 0x0B);
+    private static readonly Color OverdueColor   = Color.FromRgb(0xEF, 0x44, 0x44);
+    private static readonly Color NeutralColor   = Color.FromRgb(0x6B, 0x72, 0x80);
 
     /// <summary>Aktuell bearbeitete Aufgabe; null = neue Aufgabe.</summary>
     private TaskItem? _editing;
@@ -69,6 +75,33 @@ public partial class TasksPage : Page
     private void OnStateChanged() => Dispatcher.Invoke(Refresh);
 
     // ══════════════════════════════════════════════════════════════════════
+    // Farben
+    // ══════════════════════════════════════════════════════════════════════
+
+    private Color AccentColor
+        => TryFindResource("AccentColor") is Color c ? c : Color.FromRgb(0x5C, 0x6E, 0xF7);
+
+    /// <summary>Farbe eines Eintrags der Leiste, echte Liste oder Pseudo-Liste.</summary>
+    private Color ColorOf(string key) => key switch
+    {
+        ViewAll         => AccentColor,
+        ViewImportant   => ImportantColor,
+        TaskItem.NoList => NeutralColor,
+        _               => ParseColor(AppState.TaskListColor(key)),
+    };
+
+    private Color ParseColor(string hex)
+    {
+        try   { return (Color)ColorConverter.ConvertFromString(hex); }
+        catch { return AccentColor; }
+    }
+
+    private static SolidColorBrush Tint(Color c, byte alpha)
+        => new(Color.FromArgb(alpha, c.R, c.G, c.B));
+
+    private Brush Resource(string key) => (Brush)FindResource(key);
+
+    // ══════════════════════════════════════════════════════════════════════
     // Listen-Leiste
     // ══════════════════════════════════════════════════════════════════════
 
@@ -76,93 +109,93 @@ public partial class TasksPage : Page
     {
         ListRail.Children.Clear();
 
-        int openAll       = all.Count(t => !t.IsDone);
-        int openImportant = all.Count(t => !t.IsDone && t.IsImportant);
+        ListRail.Children.Add(RailItem("Alle",    ViewAll,       "☰", all.Count(t => !t.IsDone)));
+        ListRail.Children.Add(RailItem("Wichtig", ViewImportant, "★", all.Count(t => !t.IsDone && t.IsImportant)));
 
-        ListRail.Children.Add(RailButton("Alle", ViewAll, openAll, null));
-        ListRail.Children.Add(RailButton("★  Wichtig", ViewImportant, openImportant, null));
+        var lists = AppState.TaskLists();
+        if (lists.Count > 0)
+            ListRail.Children.Add(new Border { Height = 12 });
 
-        ListRail.Children.Add(new Separator
-        {
-            Style  = (Style)FindResource("Divider"),
-            Margin = new Thickness(4, 8, 4, 8)
-        });
-
-        foreach (var name in AppState.TaskLists())
+        foreach (var name in lists)
         {
             int open = all.Count(t => !t.IsDone
                 && string.Equals(t.ListName, name, StringComparison.OrdinalIgnoreCase));
-            ListRail.Children.Add(RailButton(name, name, open, ListColor(name)));
+            ListRail.Children.Add(RailItem(name, name, null, open));
         }
 
         // «Ohne Liste» nur zeigen, wenn es solche Aufgaben gibt
         int orphans = all.Count(t => !t.IsDone && string.IsNullOrWhiteSpace(t.ListName));
         if (orphans > 0 || _selectedList == TaskItem.NoList)
-            ListRail.Children.Add(RailButton(TaskItem.NoList, TaskItem.NoList, orphans, null));
+            ListRail.Children.Add(RailItem(TaskItem.NoList, TaskItem.NoList, null, orphans));
     }
 
-    private UIElement RailButton(string label, string key, int count, Color? dot)
+    /// <param name="glyph">Zeichen für Pseudo-Listen; null zeichnet ein Farbfeld.</param>
+    private UIElement RailItem(string label, string key, string? glyph, int count)
     {
         bool selected = _selectedList == key;
+        var  color    = ColorOf(key);
 
         var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        if (dot is { } c)
-        {
-            var mark = new Border
+        UIElement icon = glyph is not null
+            ? new TextBlock
             {
-                Background        = new SolidColorBrush(c),
-                Width             = 8,
-                Height            = 8,
-                CornerRadius      = new CornerRadius(4),
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin            = new Thickness(0, 0, 8, 0)
+                Text                = glyph,
+                FontSize            = 15,
+                Foreground          = new SolidColorBrush(color),
+                VerticalAlignment   = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin              = new Thickness(1, 0, 0, 0),
+            }
+            : new Border
+            {
+                Background          = new SolidColorBrush(color),
+                Width               = 13,
+                Height              = 13,
+                CornerRadius        = new CornerRadius(4),
+                VerticalAlignment   = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin              = new Thickness(2, 0, 0, 0),
             };
-            Grid.SetColumn(mark, 0);
-            grid.Children.Add(mark);
-        }
+        Grid.SetColumn(icon, 0);
+        grid.Children.Add(icon);
 
         var text = new TextBlock
         {
             Text              = label,
-            FontSize          = 13,
+            FontSize          = 13.5,
             FontWeight        = selected ? FontWeights.SemiBold : FontWeights.Normal,
             VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming      = TextTrimming.CharacterEllipsis
+            TextTrimming      = TextTrimming.CharacterEllipsis,
         };
         Grid.SetColumn(text, 1);
         grid.Children.Add(text);
 
         if (count > 0)
         {
-            var badge = new TextBlock
-            {
-                Text              = count.ToString(),
-                FontSize          = 12,
-                Opacity           = 0.55,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin            = new Thickness(8, 0, 0, 0)
-            };
-            Grid.SetColumn(badge, 2);
-            grid.Children.Add(badge);
+            var pill = CountPill(count);
+            Grid.SetColumn(pill, 2);
+            grid.Children.Add(pill);
         }
 
         var item = new Border
         {
             Child        = grid,
-            Padding      = new Thickness(10, 8, 10, 8),
-            CornerRadius = new CornerRadius(6),
+            Padding      = new Thickness(10, 9, 10, 9),
+            CornerRadius = new CornerRadius(8),
             Margin       = new Thickness(0, 0, 0, 2),
             Cursor       = Cursors.Hand,
-            Tag          = key
+            Background   = selected ? Tint(color, 0x33) : Brushes.Transparent,
         };
 
-        if (selected)
-            item.SetResourceReference(Border.BackgroundProperty,
-                "SystemControlBackgroundChromeMediumLowBrush");
+        if (!selected)
+        {
+            item.MouseEnter += (_, _) => item.Background = Resource("HoverOverlay");
+            item.MouseLeave += (_, _) => item.Background = Brushes.Transparent;
+        }
 
         item.MouseLeftButtonUp += (_, _) =>
         {
@@ -173,6 +206,16 @@ public partial class TasksPage : Page
 
         return item;
     }
+
+    private UIElement CountPill(int count) => new Border
+    {
+        Background        = Resource("SubtleFill"),
+        CornerRadius      = new CornerRadius(9),
+        Padding           = new Thickness(7, 1, 7, 1),
+        VerticalAlignment = VerticalAlignment.Center,
+        Margin            = new Thickness(8, 0, 0, 0),
+        Child             = new TextBlock { Text = count.ToString(), FontSize = 11.5, Opacity = 0.75 },
+    };
 
     private void BtnNewList_Click(object sender, RoutedEventArgs e)
     {
@@ -198,7 +241,7 @@ public partial class TasksPage : Page
                 Text     = "Aus deinem Stundenplan:",
                 FontSize = 11,
                 Opacity  = 0.55,
-                Margin   = new Thickness(2, 0, 0, 4)
+                Margin   = new Thickness(2, 0, 0, 6),
             });
 
             var wrap = new WrapPanel();
@@ -206,19 +249,11 @@ public partial class TasksPage : Page
             {
                 var chip = new Button
                 {
-                    Content  = name,
-                    Style    = (Style)FindResource("SecondaryButton"),
-                    Padding  = new Thickness(8, 3, 8, 3),
-                    FontSize = 11,
-                    Margin   = new Thickness(0, 0, 4, 4),
-                    Tag      = name
+                    Content = name,
+                    Style   = (Style)FindResource("ChipButton"),
+                    Margin  = new Thickness(0, 0, 5, 5),
                 };
-                chip.Click += (_, _) =>
-                {
-                    AppState.AddTaskList(name);
-                    _selectedList         = name;
-                    NewListBox.Visibility = Visibility.Collapsed;
-                };
+                chip.Click += (_, _) => CreateList(name);
                 wrap.Children.Add(chip);
             }
             panel.Children.Add(wrap);
@@ -233,16 +268,75 @@ public partial class TasksPage : Page
         if (e.Key != Key.Enter) return;
 
         var name = TxtNewList.Text.Trim();
-        if (name.Length == 0) return;
+        if (name.Length > 0) CreateList(name);
+    }
 
+    private void CreateList(string name)
+    {
         AppState.AddTaskList(name);
         _selectedList         = name;
         TxtNewList.Text       = "";
         NewListBox.Visibility = Visibility.Collapsed;
+        Refresh();
+    }
+
+    // ── Listenoptionen ───────────────────────────────────────────────────────
+
+    private void BtnListOptions_Click(object sender, RoutedEventArgs e)
+    {
+        if (IsPseudoList(_selectedList)) return;
+        BuildColorSwatches();
+
+        // Erst nach dem Klick öffnen: Der Button hält die Maus noch, während
+        // Click läuft. Ein sofort geöffnetes Popup mit StaysOpen=False deutet
+        // das Loslassen als Klick daneben und schliesst sich gleich wieder.
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input,
+            () => ListOptionsPopup.IsOpen = true);
+    }
+
+    private void BuildColorSwatches()
+    {
+        ColorSwatches.Children.Clear();
+        var current = AppState.TaskListColor(_selectedList);
+
+        foreach (var (hex, name) in ColorPalette.All)
+        {
+            bool active = string.Equals(hex, current, StringComparison.OrdinalIgnoreCase);
+
+            var swatch = new Border
+            {
+                Width        = 28,
+                Height       = 28,
+                CornerRadius = new CornerRadius(14),
+                Margin       = new Thickness(0, 0, 6, 6),
+                Background   = new SolidColorBrush(ParseColor(hex)),
+                Cursor       = Cursors.Hand,
+                ToolTip      = name,
+                Child        = active
+                    ? new TextBlock
+                    {
+                        Text                = "✓",
+                        Foreground          = Brushes.White,
+                        FontWeight          = FontWeights.Bold,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment   = VerticalAlignment.Center,
+                    }
+                    : null,
+            };
+
+            swatch.MouseLeftButtonUp += (_, _) =>
+            {
+                ListOptionsPopup.IsOpen = false;
+                AppState.SetTaskListColor(_selectedList, hex);
+            };
+
+            ColorSwatches.Children.Add(swatch);
+        }
     }
 
     private void BtnDeleteList_Click(object sender, RoutedEventArgs e)
     {
+        ListOptionsPopup.IsOpen = false;
         if (IsPseudoList(_selectedList)) return;
 
         int inList = AppState.Tasks.Count(t =>
@@ -258,31 +352,70 @@ public partial class TasksPage : Page
 
         if (confirm != MessageBoxResult.Yes) return;
 
-        AppState.RemoveTaskList(_selectedList);
+        var removed = _selectedList;
         _selectedList = ViewAll;
+        AppState.RemoveTaskList(removed);
     }
 
     private static bool IsPseudoList(string key)
         => key is ViewAll or ViewImportant or TaskItem.NoList;
 
     // ══════════════════════════════════════════════════════════════════════
+    // Schnelleingabe
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void TxtQuickAdd_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape) { TxtQuickAdd.Text = ""; return; }
+        if (e.Key != Key.Enter) return;
+
+        var title = TxtQuickAdd.Text.Trim();
+        if (title.Length == 0) return;
+
+        // Wer in «Erledigt» tippt, soll die neue Aufgabe trotzdem sehen.
+        if (_filter == "Done") RbOpen.IsChecked = true;
+
+        AppState.AddTask(new TaskItem(
+            Id:            Guid.NewGuid(),
+            Title:         title,
+            ListName:      IsPseudoList(_selectedList) ? "" : _selectedList,
+            Notes:         null,
+            DueAt:         null,
+            RemindAt:      null,
+            ReminderShown: false,
+            IsImportant:   _selectedList == ViewImportant,
+            IsDone:        false,
+            CreatedAt:     DateTimeOffset.Now,
+            CompletedAt:   null));
+
+        TxtQuickAdd.Text = "";
+        e.Handled = true;
+    }
+
+    private void BtnQuickDetails_Click(object sender, RoutedEventArgs e)
+    {
+        var title = TxtQuickAdd.Text.Trim();
+        TxtQuickAdd.Text = "";
+        OpenEditor(null, title);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     // Formular
     // ══════════════════════════════════════════════════════════════════════
 
-    private void BtnNew_Click(object sender, RoutedEventArgs e) => OpenEditor(null);
-
     private void BtnCancel_Click(object sender, RoutedEventArgs e) => CloseEditor();
 
-    private void OpenEditor(TaskItem? task)
+    private void OpenEditor(TaskItem? task, string? prefillTitle = null)
     {
         _editing = task;
 
-        TxtEditorTitle.Text    = task is null ? "NEUE AUFGABE" : "AUFGABE BEARBEITEN";
-        TxtEditorError.Text    = "";
-        CmbList.ItemsSource    = AppState.TaskLists();
-        TxtTitle.Text          = task?.Title ?? "";
-        TxtNotes.Text          = task?.Notes ?? "";
-        ChkImportant.IsChecked = task?.IsImportant ?? false;
+        TxtEditorTitle.Text      = task is null ? "NEUE AUFGABE" : "AUFGABE BEARBEITEN";
+        TxtEditorError.Text      = "";
+        BtnEditorDelete.Visibility = task is null ? Visibility.Collapsed : Visibility.Visible;
+        CmbList.ItemsSource      = AppState.TaskLists();
+        TxtTitle.Text            = task?.Title ?? prefillTitle ?? "";
+        TxtNotes.Text            = task?.Notes ?? "";
+        ChkImportant.IsChecked   = task?.IsImportant ?? (_selectedList == ViewImportant);
 
         // Neue Aufgaben landen in der Liste, die gerade offen ist.
         CmbList.Text = task?.ListName
@@ -293,18 +426,27 @@ public partial class TasksPage : Page
 
         EditorCard.Visibility = Visibility.Visible;
         TxtTitle.Focus();
+        TxtTitle.CaretIndex = TxtTitle.Text.Length;
     }
 
     private void CloseEditor()
     {
         _editing = null;
-        if (_initialized) EditorCard.Visibility = Visibility.Collapsed;
+        if (!_initialized) return;
+        EditorCard.Visibility = Visibility.Collapsed;
+        TxtEditorError.Text   = "";
     }
 
     private void TxtTitle_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)  BtnSave_Click(sender, e);
         if (e.Key == Key.Escape) CloseEditor();
+    }
+
+    private void BtnEditorDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (_editing is null) return;
+        if (ConfirmDelete(_editing)) CloseEditor();
     }
 
     private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -338,8 +480,8 @@ public partial class TasksPage : Page
 
         // Eine neu gesetzte Erinnerung in der Vergangenheit würde sofort auslösen.
         // Eine unveränderte, bereits gezeigte beim Bearbeiten ist dagegen in Ordnung.
-        bool reminderIsNew = _editing is null || remind != _editing.RemindAt;
-        if (reminderIsNew && remind.HasValue && remind.Value < DateTimeOffset.Now)
+        bool reminderChanged = _editing is null || remind != _editing.RemindAt;
+        if (reminderChanged && remind.HasValue && remind.Value < DateTimeOffset.Now)
         {
             TxtEditorError.Text = "Die Erinnerung liegt in der Vergangenheit.";
             return;
@@ -369,9 +511,6 @@ public partial class TasksPage : Page
         }
         else
         {
-            // Wurde die Erinnerung verschoben, soll sie erneut ausgelöst werden.
-            bool reminderMoved = remind != _editing.RemindAt;
-
             AppState.UpdateTask(_editing with
             {
                 Title         = title,
@@ -380,7 +519,8 @@ public partial class TasksPage : Page
                 DueAt         = due,
                 RemindAt      = remind,
                 IsImportant   = important,
-                ReminderShown = reminderMoved ? false : _editing.ReminderShown,
+                // Verschobene Erinnerung soll erneut ausgelöst werden
+                ReminderShown = reminderChanged ? false : _editing.ReminderShown,
             });
         }
 
@@ -494,17 +634,36 @@ public partial class TasksPage : Page
         Refresh();
     }
 
+    /// <summary>Entfernt erledigte Aufgaben — nur im gerade gezeigten Bereich.</summary>
     private void BtnClearDone_Click(object sender, RoutedEventArgs e)
     {
-        int done = AppState.Tasks.Count(t => t.IsDone);
+        var inScope = InScope();
+        int done    = AppState.Tasks.Count(t => t.IsDone && inScope(t));
         if (done == 0) return;
 
+        var where = IsPseudoList(_selectedList) && _selectedList != TaskItem.NoList
+            ? (_selectedList == ViewImportant ? " unter «Wichtig»" : "")
+            : $" in «{_selectedList}»";
+
         var confirm = MessageBox.Show(
-            $"{done} erledigte Aufgaben endgültig entfernen?",
+            $"{done} erledigte Aufgaben{where} endgültig entfernen?",
             "Erledigte entfernen",
             MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
 
-        if (confirm == MessageBoxResult.Yes) AppState.ClearCompletedTasks();
+        if (confirm == MessageBoxResult.Yes) AppState.ClearCompletedTasks(inScope);
+    }
+
+    /// <summary>Welche Aufgaben zur Auswahl in der Leiste gehören.</summary>
+    private Func<TaskItem, bool> InScope()
+    {
+        var list = _selectedList;
+        return list switch
+        {
+            ViewAll         => _ => true,
+            ViewImportant   => t => t.IsImportant,
+            TaskItem.NoList => t => string.IsNullOrWhiteSpace(t.ListName),
+            _               => t => string.Equals(t.ListName, list, StringComparison.OrdinalIgnoreCase),
+        };
     }
 
     private void Refresh()
@@ -513,34 +672,20 @@ public partial class TasksPage : Page
         var all = AppState.Tasks;
 
         BuildRail(all);
+        UpdateHeader();
 
-        // Auswahl in der Leiste bestimmt, welche Aufgaben in Frage kommen
-        var scoped = (_selectedList switch
-        {
-            ViewAll         => all,
-            ViewImportant   => all.Where(t => t.IsImportant),
-            TaskItem.NoList => all.Where(t => string.IsNullOrWhiteSpace(t.ListName)),
-            _ => all.Where(t => string.Equals(t.ListName, _selectedList, StringComparison.OrdinalIgnoreCase)),
-        }).ToList();
-
-        TxtPageTitle.Text = _selectedList switch
-        {
-            ViewAll       => "Alle Aufgaben",
-            ViewImportant => "Wichtig",
-            _             => _selectedList,
-        };
-
-        BtnDeleteList.Visibility = IsPseudoList(_selectedList)
-            ? Visibility.Collapsed : Visibility.Visible;
+        var scoped = all.Where(InScope()).ToList();
 
         int open    = scoped.Count(t => !t.IsDone);
+        int done    = scoped.Count - open;
         int overdue = scoped.Count(t => t.IsOverdue(now));
 
-        TxtSummary.Text = scoped.Count == 0
-            ? "Hausaufgaben und To-dos."
-            : overdue > 0 ? $"{open} offen · {overdue} überfällig" : $"{open} offen";
+        var parts = new List<string> { open == 1 ? "1 offen" : $"{open} offen" };
+        if (overdue > 0) parts.Add($"{overdue} überfällig");
+        if (done > 0)    parts.Add($"{done} erledigt");
+        TxtSummary.Text = scoped.Count == 0 ? "Noch keine Aufgaben" : string.Join("  ·  ", parts);
 
-        BtnClearDone.IsEnabled = scoped.Any(t => t.IsDone);
+        BtnClearDone.Visibility = done > 0 ? Visibility.Visible : Visibility.Collapsed;
 
         var items = (_filter switch
         {
@@ -553,16 +698,17 @@ public partial class TasksPage : Page
 
         if (items.Count == 0)
         {
-            ShowEmptyHint();
+            ShowEmptyState(scoped);
             return;
         }
-        EmptyHint.Visibility = Visibility.Collapsed;
+        EmptyState.Visibility = Visibility.Collapsed;
 
         // In einer einzelnen Liste braucht es keine Gruppenköpfe.
         if (_selectedList is not (ViewAll or ViewImportant))
         {
+            var color = ColorOf(_selectedList);
             foreach (var task in Sort(items))
-                TaskList.Children.Add(BuildRow(task, ListColor(task.ListLabel), now));
+                TaskList.Children.Add(BuildRow(task, color, now));
             return;
         }
 
@@ -575,14 +721,37 @@ public partial class TasksPage : Page
             TaskList.Children.Add(BuildGroup(group.Key, group, now));
     }
 
-    private void ShowEmptyHint()
+    private void UpdateHeader()
     {
-        EmptyHint.Visibility = Visibility.Visible;
-        (TxtEmptyTitle.Text, TxtEmptyBody.Text) = _filter switch
+        var color = ColorOf(_selectedList);
+        HeaderSwatch.Background = new SolidColorBrush(color);
+
+        (TxtPageTitle.Text, HeaderGlyph.Text) = _selectedList switch
         {
-            "Done" => ("Noch nichts erledigt", "Abgehakte Aufgaben erscheinen hier."),
-            "All"  => ("Noch keine Aufgaben", "Lege mit «Neue Aufgabe» deine erste Hausaufgabe an."),
-            _      => ("Nichts offen", "Alles erledigt. Neue Aufgaben legst du oben rechts an."),
+            ViewAll         => ("Alle Aufgaben", "☰"),
+            ViewImportant   => ("Wichtig", "★"),
+            TaskItem.NoList => (TaskItem.NoList, "–"),
+            _               => (_selectedList, _selectedList[..1].ToUpper(DeCh)),
+        };
+
+        BtnListOptions.Visibility = IsPseudoList(_selectedList)
+            ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void ShowEmptyState(IReadOnlyList<TaskItem> scoped)
+    {
+        EmptyState.Visibility = Visibility.Visible;
+
+        (TxtEmptyGlyph.Text, TxtEmptyTitle.Text, TxtEmptyBody.Text) = (_filter, _selectedList) switch
+        {
+            ("Done", _) =>
+                ("✓", "Noch nichts erledigt", "Abgehakte Aufgaben landen hier."),
+            (_, ViewImportant) =>
+                ("★", "Nichts als wichtig markiert", "Markiere Aufgaben mit dem Stern, dann erscheinen sie hier."),
+            ("Open", _) when scoped.Count > 0 =>
+                ("🎉", "Alles erledigt", "Stark. Neue Aufgaben tippst du oben ein."),
+            _ =>
+                ("📝", "Noch keine Aufgaben", "Tipp oben eine Aufgabe ein und drück Enter."),
         };
     }
 
@@ -596,40 +765,32 @@ public partial class TasksPage : Page
 
     private UIElement BuildGroup(string list, IEnumerable<TaskItem> tasks, DateTimeOffset now)
     {
-        var color = ListColor(list);
-        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 18) };
+        var color   = ColorOf(list);
+        var ordered = Sort(tasks).ToList();
+        var panel   = new StackPanel { Margin = new Thickness(0, 0, 0, 20) };
 
         var header = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Margin      = new Thickness(0, 0, 0, 8)
+            Margin      = new Thickness(2, 0, 0, 8),
         };
         header.Children.Add(new Border
         {
             Background        = new SolidColorBrush(color),
-            Width             = 10,
-            Height            = 10,
-            CornerRadius      = new CornerRadius(5),
+            Width             = 11,
+            Height            = 11,
+            CornerRadius      = new CornerRadius(3),
             VerticalAlignment = VerticalAlignment.Center,
-            Margin            = new Thickness(0, 0, 8, 0)
+            Margin            = new Thickness(0, 0, 9, 0),
         });
         header.Children.Add(new TextBlock
         {
             Text              = list,
-            FontSize          = 13,
+            FontSize          = 13.5,
             FontWeight        = FontWeights.Bold,
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
         });
-
-        var ordered = Sort(tasks).ToList();
-
-        header.Children.Add(new TextBlock
-        {
-            Text              = $"  ({ordered.Count})",
-            FontSize          = 12,
-            Opacity           = 0.55,
-            VerticalAlignment = VerticalAlignment.Center
-        });
+        header.Children.Add(CountPill(ordered.Count));
         panel.Children.Add(header);
 
         foreach (var task in ordered)
@@ -644,14 +805,10 @@ public partial class TasksPage : Page
 
         var card = new Border
         {
-            BorderBrush     = new SolidColorBrush(overdue
-                                ? Color.FromRgb(0xEF, 0x44, 0x44)
-                                : listColor),
-            BorderThickness = new Thickness(3, 1, 1, 1),
-            CornerRadius    = new CornerRadius(8),
-            Padding         = new Thickness(14, 10, 14, 10),
+            CornerRadius    = new CornerRadius(10),
             Margin          = new Thickness(0, 0, 0, 6),
-            Opacity         = task.IsDone ? 0.55 : 1.0
+            BorderThickness = new Thickness(1),
+            BorderBrush     = overdue ? Tint(OverdueColor, 0x70) : Brushes.Transparent,
         };
 
         // Theme-Brushes von ModernWpf lassen sich nicht statisch auflösen —
@@ -659,126 +816,173 @@ public partial class TasksPage : Page
         card.SetResourceReference(Border.BackgroundProperty,
             "SystemControlBackgroundChromeMediumLowBrush");
 
+        // Innere Fläche für den Hover-Effekt über dem Theme-Hintergrund
+        var surface = new Border
+        {
+            CornerRadius = new CornerRadius(10),
+            Padding      = new Thickness(14, 11, 8, 11),
+            Background   = Brushes.Transparent,
+            Cursor       = Cursors.Hand,
+        };
+        card.Child = surface;
+
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        surface.Child = grid;
 
+        // ── Abhakkreis ──
         var check = new CheckBox
         {
+            Style             = (Style)FindResource("RoundCheck"),
+            BorderBrush       = new SolidColorBrush(listColor),
             IsChecked         = task.IsDone,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin            = new Thickness(0, 0, 10, 0),
-            Tag               = task
+            Margin            = new Thickness(0, 0, 14, 0),
+            Tag               = task,
+            ToolTip           = task.IsDone ? "Wieder öffnen" : "Erledigt",
         };
         check.Checked   += TaskCheck_Changed;
         check.Unchecked += TaskCheck_Changed;
         Grid.SetColumn(check, 0);
         grid.Children.Add(check);
 
+        // ── Inhalt ──
         var body = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
 
         body.Children.Add(new TextBlock
         {
             Text            = task.Title,
-            FontSize        = 14,
+            FontSize        = 14.5,
             FontWeight      = FontWeights.SemiBold,
             TextWrapping    = TextWrapping.Wrap,
-            TextDecorations = task.IsDone ? TextDecorations.Strikethrough : null
+            TextDecorations = task.IsDone ? TextDecorations.Strikethrough : null,
+            Opacity         = task.IsDone ? 0.55 : 1.0,
         });
 
-        var meta = DescribeSchedule(task, now);
-        if (meta.Length > 0)
-        {
-            var metaText = new TextBlock
-            {
-                Text     = meta,
-                FontSize = 12,
-                Margin   = new Thickness(0, 3, 0, 0),
-                Opacity  = overdue ? 1.0 : 0.70
-            };
-            if (overdue)
-                metaText.Foreground = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44));
-            else
-                metaText.SetResourceReference(TextBlock.ForegroundProperty,
-                    "SystemControlForegroundBaseHighBrush");
-            body.Children.Add(metaText);
-        }
+        var chips = BuildChips(task, now);
+        if (chips.Children.Count > 0) body.Children.Add(chips);
 
         if (!string.IsNullOrWhiteSpace(task.Notes))
             body.Children.Add(new TextBlock
             {
-                Text         = task.Notes,
+                Text         = task.Notes.ReplaceLineEndings(" "),
                 FontSize     = 12,
-                Opacity      = 0.60,
-                TextWrapping = TextWrapping.Wrap,
-                Margin       = new Thickness(0, 4, 0, 0)
+                Opacity      = 0.55,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Margin       = new Thickness(0, 5, 0, 0),
+                ToolTip      = task.Notes,
             });
 
         Grid.SetColumn(body, 1);
         grid.Children.Add(body);
 
+        // ── Aktionen, erst beim Überfahren sichtbar ──
         var actions = new StackPanel
         {
             Orientation       = Orientation.Horizontal,
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            Visibility        = Visibility.Hidden,
+            Margin            = new Thickness(8, 0, 0, 0),
         };
-
-        // Stern: Priorität direkt in der Zeile umschalten
-        var star = new Button
-        {
-            Content         = task.IsImportant ? "★" : "☆",
-            FontSize        = 16,
-            Padding         = new Thickness(6, 0, 6, 2),
-            Background      = System.Windows.Media.Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            Cursor          = Cursors.Hand,
-            ToolTip         = task.IsImportant
-                                ? "Nicht mehr als wichtig markieren"
-                                : "Als wichtig markieren",
-            Foreground      = task.IsImportant
-                                ? new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B))
-                                : System.Windows.Media.Brushes.Gray,
-            Tag             = task
-        };
-        star.Click += TaskStar_Click;
-        actions.Children.Add(star);
-
-        var edit = new Button
-        {
-            Content  = "Bearbeiten",
-            Style    = (Style)FindResource("SecondaryButton"),
-            Padding  = new Thickness(10, 4, 10, 4),
-            FontSize = 12,
-            Margin   = new Thickness(6, 0, 6, 0),
-            Tag      = task
-        };
-        edit.Click += (_, _) => OpenEditor(task);
-        actions.Children.Add(edit);
-
-        var delete = new Button
-        {
-            Content  = "🗑",
-            Style    = (Style)FindResource("SecondaryButton"),
-            Padding  = new Thickness(10, 4, 10, 4),
-            FontSize = 12,
-            ToolTip  = "Aufgabe löschen",
-            Tag      = task
-        };
-        delete.Click += TaskDelete_Click;
-        actions.Children.Add(delete);
-
+        actions.Children.Add(IconButton("✎", "Bearbeiten", (_, _) => OpenEditor(task)));
+        actions.Children.Add(IconButton("🗑", "Löschen",    (_, _) => ConfirmDelete(task)));
         Grid.SetColumn(actions, 2);
         grid.Children.Add(actions);
 
-        card.Child = grid;
+        // ── Stern ──
+        var star = IconButton(
+            task.IsImportant ? "★" : "☆",
+            task.IsImportant ? "Nicht mehr wichtig" : "Als wichtig markieren",
+            (_, _) => AppState.UpdateTask(task with { IsImportant = !task.IsImportant }));
+        star.FontSize   = 18;
+        star.Foreground = task.IsImportant
+            ? new SolidColorBrush(ImportantColor)
+            : Tint(NeutralColor, 0xCC);
+        Grid.SetColumn(star, 3);
+        grid.Children.Add(star);
+
+        surface.MouseEnter += (_, _) =>
+        {
+            surface.Background = Resource("HoverOverlay");
+            actions.Visibility = Visibility.Visible;
+        };
+        surface.MouseLeave += (_, _) =>
+        {
+            surface.Background = Brushes.Transparent;
+            actions.Visibility = Visibility.Hidden;
+        };
+
+        // Klick auf die Zeile öffnet sie. Kreis und Knöpfe fangen ihre Klicks
+        // selbst ab, lösen das hier also nicht aus.
+        surface.MouseLeftButtonUp += (_, _) => OpenEditor(task);
+
         return card;
     }
 
-    private void TaskStar_Click(object sender, RoutedEventArgs e)
+    private Button IconButton(string glyph, string tooltip, RoutedEventHandler onClick)
     {
-        if (sender is not Button { Tag: TaskItem task }) return;
-        AppState.UpdateTask(task with { IsImportant = !task.IsImportant });
+        var button = new Button
+        {
+            Content = glyph,
+            Style   = (Style)FindResource("GhostButton"),
+            Padding = new Thickness(8, 2, 8, 4),
+            FontSize = 14,
+            ToolTip = tooltip,
+        };
+        button.Click += onClick;
+        return button;
+    }
+
+    /// <summary>Kleine Etiketten für Abgabe und Erinnerung.</summary>
+    private WrapPanel BuildChips(TaskItem task, DateTimeOffset now)
+    {
+        var panel = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
+
+        if (task.DueAt is { } due)
+        {
+            var time = due.TimeOfDay == DefaultDueTime ? "" : $", {due:HH\\:mm}";
+            var text = FormatDay(due) + time;
+
+            if (task.IsDone)
+                panel.Children.Add(Chip("📅 " + text, null));
+            else if (due < now)
+                panel.Children.Add(Chip("⚠ Überfällig · " + text, OverdueColor));
+            else if (due.Date <= now.Date.AddDays(1))
+                panel.Children.Add(Chip("📅 " + text, ImportantColor));
+            else
+                panel.Children.Add(Chip("📅 " + text, null));
+        }
+
+        if (!task.IsDone && task.RemindAt is { } remind && remind > now)
+            panel.Children.Add(Chip($"🔔 {FormatDay(remind)}, {remind:HH\\:mm}", null));
+
+        return panel;
+    }
+
+    /// <param name="tint">Farbe für Hervorhebung; null für ein neutrales Etikett.</param>
+    private UIElement Chip(string text, Color? tint)
+    {
+        var label = new TextBlock { Text = text, FontSize = 11.5 };
+
+        if (tint is { } c)
+            label.Foreground = new SolidColorBrush(c);
+        else
+        {
+            label.SetResourceReference(TextBlock.ForegroundProperty, "SystemControlForegroundBaseHighBrush");
+            label.Opacity = 0.75;
+        }
+
+        return new Border
+        {
+            Background   = tint is { } t ? Tint(t, 0x26) : Resource("SubtleFill"),
+            CornerRadius = new CornerRadius(6),
+            Padding      = new Thickness(7, 2, 7, 3),
+            Margin       = new Thickness(0, 0, 6, 0),
+            Child        = label,
+        };
     }
 
     private void TaskCheck_Changed(object sender, RoutedEventArgs e)
@@ -794,63 +998,33 @@ public partial class TasksPage : Page
         });
     }
 
-    private void TaskDelete_Click(object sender, RoutedEventArgs e)
+    /// <returns>True when the task was deleted.</returns>
+    private static bool ConfirmDelete(TaskItem task)
     {
-        if (sender is not Button { Tag: TaskItem task }) return;
-
         var confirm = MessageBox.Show(
             $"«{task.Title}» löschen?",
             "Aufgabe löschen",
             MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
 
-        if (confirm == MessageBoxResult.Yes) AppState.RemoveTask(task.Id);
+        if (confirm != MessageBoxResult.Yes) return false;
+        AppState.RemoveTask(task.Id);
+        return true;
     }
 
     // ══════════════════════════════════════════════════════════════════════
     // Darstellung
     // ══════════════════════════════════════════════════════════════════════
 
-    /// <summary>Beschreibt Abgabe und Erinnerung in einer Zeile.</summary>
-    private static string DescribeSchedule(TaskItem task, DateTimeOffset now)
-    {
-        var parts = new List<string>();
-
-        if (task.DueAt is { } due)
-        {
-            var when = FormatDay(due);
-            var time = due.TimeOfDay == new TimeSpan(23, 59, 0) ? "" : $", {due:HH\\:mm}";
-
-            parts.Add(task.IsDone
-                ? $"Abgabe war {when}{time}"
-                : due < now
-                    ? $"Überfällig seit {when}{time}"
-                    : $"Abgabe {when}{time}");
-        }
-
-        if (!task.IsDone && task.RemindAt is { } remind && remind > now)
-            parts.Add($"Erinnerung {FormatDay(remind).ToLowerInvariant()}");
-
-        return string.Join("  ·  ", parts);
-    }
-
     private static string FormatDay(DateTimeOffset value)
     {
         int days = (value.Date - DateTime.Today).Days;
         return days switch
         {
-            0  => "heute",
-            1  => "morgen",
-            -1 => "gestern",
+            0  => "Heute",
+            1  => "Morgen",
+            -1 => "Gestern",
             > 1 and < 7 => value.ToString("dddd", DeCh),
             _  => value.ToString("ddd, d. MMM", DeCh),
         };
-    }
-
-    /// <summary>Nutzt dieselbe Farbe wie das Fach im Kalender, sofern es eine gibt.</summary>
-    private static Color ListColor(string list)
-    {
-        var key = list == TaskItem.NoList ? "Lektion" : list;
-        try { return (Color)ColorConverter.ConvertFromString(AppState.GetEventColor(key)); }
-        catch { return Color.FromRgb(0x25, 0x63, 0xEB); }
     }
 }

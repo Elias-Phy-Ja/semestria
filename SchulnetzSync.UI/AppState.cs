@@ -313,10 +313,16 @@ public static class AppState
         Notify();
     }
 
-    /// <summary>Entfernt alle erledigten Aufgaben.</summary>
-    public static int ClearCompletedTasks()
+    /// <summary>
+    /// Entfernt erledigte Aufgaben.
+    /// </summary>
+    /// <param name="scope">
+    /// Schränkt auf einen Bereich ein, etwa eine Liste. Wer in «DEU» aufräumt,
+    /// erwartet nicht, dass auch «ENG» geleert wird. Null = alle.
+    /// </param>
+    public static int ClearCompletedTasks(Func<TaskItem, bool>? scope = null)
     {
-        int removed = _tasks.RemoveAll(t => t.IsDone);
+        int removed = _tasks.RemoveAll(t => t.IsDone && (scope is null || scope(t)));
         if (removed > 0) { SaveTasks(); Notify(); }
         return removed;
     }
@@ -365,9 +371,73 @@ public static class AppState
             if (string.Equals(_tasks[i].ListName, name, StringComparison.OrdinalIgnoreCase))
                 _tasks[i] = _tasks[i] with { ListName = "" };
 
+        _taskListColors.Remove(name);
+
         SaveTaskLists();
+        SaveTaskListColors();
         SaveTasks();
         Notify();
+    }
+
+    // ── Listenfarben ─────────────────────────────────────────────────────────
+    //
+    // Bewusst getrennt von den Kalenderfarben: Eine Liste «WIR» hat kein Fach,
+    // und auch eine Liste «DEU» soll anders aussehen dürfen als die Lektionen.
+
+    private static readonly string _taskListColorsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Semestria", "task-list-colors.json");
+
+    private static readonly Dictionary<string, string> _taskListColors = LoadTaskListColors();
+
+    /// <summary>
+    /// Farbe einer Liste als Hex-Wert.
+    ///
+    /// Hat eine Liste noch keine, bekommt sie beim ersten Abruf die am wenigsten
+    /// genutzte Palettenfarbe und behält sie. Ohne Speichern würden sich die
+    /// Farben verschieben, sobald eine Liste dazukommt.
+    /// </summary>
+    public static string TaskListColor(string name)
+    {
+        if (_taskListColors.TryGetValue(name, out var hex)) return hex;
+
+        hex = ColorPalette.NextAutoColor(_taskListColors.Values);
+        _taskListColors[name] = hex;
+        SaveTaskListColors();
+        return hex;
+    }
+
+    public static void SetTaskListColor(string name, string hex)
+    {
+        _taskListColors[name] = hex;
+        SaveTaskListColors();
+        Notify();
+    }
+
+    private static Dictionary<string, string> LoadTaskListColors()
+    {
+        try
+        {
+            if (File.Exists(_taskListColorsPath))
+            {
+                var loaded = JsonSerializer.Deserialize<Dictionary<string, string>>(
+                    File.ReadAllText(_taskListColorsPath));
+                if (loaded is not null)
+                    return new Dictionary<string, string>(loaded, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        catch { }
+        return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static void SaveTaskListColors()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_taskListColorsPath)!);
+            File.WriteAllText(_taskListColorsPath, JsonSerializer.Serialize(_taskListColors));
+        }
+        catch { }
     }
 
     /// <summary>
