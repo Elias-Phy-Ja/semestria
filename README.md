@@ -67,10 +67,12 @@ Alternativ: `.msix`-Datei unter [Releases](../../releases) (Sideloading erforder
 - [x] Loading screen
 - [x] Versions abruf um Updatebeachrichtigung zu ermöglichen (Updater)
 
-*Summary: Beim Starten der Applikation lädt ein loading screen der Microsoft Stora anfragt ob ein Update verfügbar ist um dies anzuzeigen.*
+*Summary: Beim Starten der Applikation lädt ein loading screen der Microsoft Store anfragt ob ein Update verfügbar ist um dies anzuzeigen.*
 
-### Next Session:
-- [ ] Aufgaben Eintrag überprüfen
-- [ ] Listenfarbe ändern unabhängig von Stundenplan
-- [ ] Updater überprüfen
-- [ ] Deeplink für meine Web-Applikation [Synapkey](https://synapkey.ch)
+### 17.09.2026
+- [x] Aufgaben Eintrag überprüfen
+- [x] Listenfarbe ändern unabhängig von Stundenplan
+- [x] Deeplink für meine Web-Applikation [Synapkey](https://synapkey.ch)
+
+*Summary: Heute ist sehr viel geschehen, von Design überarbeitung bis CoreLogik änderungen. 
+[Details](Session%20Summary/2026-09-17-v2.2.md)*
