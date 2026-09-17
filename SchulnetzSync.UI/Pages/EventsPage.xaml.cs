@@ -1,10 +1,13 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using SchulnetzSync.Core.Colors;
 using SchulnetzSync.Core.Model;
+using SchulnetzSync.UI.Controls;
+using Point          = System.Windows.Point;
 
 // WPF/WinForms-Ambiguität auflösen
 using WpfBorder      = System.Windows.Controls.Border;
@@ -94,11 +97,11 @@ public partial class EventsPage : WpfPage
         return code.ToUpperInvariant();
     }
 
-    /// <summary>Gibt die effektive Farbe für ein Event zurück (custom → default).</summary>
+    /// <summary>Effektive Farbe eines Events: Einzelfarbe → Fach/Kategorie → Standard.</summary>
     private Color GetEventColor(SchulnetzEvent ev)
     {
         var key = GetColorKey(ev);
-        var hex = AppState.GetEventColor(key);
+        var hex = AppState.GetEventColor(ev.Key, key);
         try { return (Color)System.Windows.Media.ColorConverter.ConvertFromString(hex); }
         catch
         {
@@ -841,52 +844,16 @@ public partial class EventsPage : WpfPage
             Margin       = new Thickness(0, 10, 0, 20)
         });
 
-        // ── Farbe ändern ──
-        var colorLabel = isLektion
-            ? $"Farbe für alle {colorKey}-Stunden"
-            : isPruefung ? "Farbe für alle Prüfungen"
-            :              "Farbe für alle Termine";
-
-        DetailContent.Children.Add(new WpfTextBlock
+        // ── Farbe ──
+        // Beim Wechsel auf einen anderen Eintrag: Ebene danach wählen, ob er
+        // schon eine eigene Farbe hat, und den Mischer schliessen.
+        if (_colorScopeEventKey != ev.Key)
         {
-            Text       = colorLabel,
-            FontSize   = 11,
-            FontWeight = FontWeights.SemiBold,
-            Opacity    = 0.75,
-            Margin     = new Thickness(0, 0, 0, 8)
-        });
-
-        // Farbpalette
-        var paletteWrap = new WpfWrapPanel { Orientation = WpfOrientation.Horizontal };
-        foreach (var (hex, name) in _palette)
-        {
-            var dot = new WpfBorder
-            {
-                Width        = 24,
-                Height       = 24,
-                CornerRadius = new CornerRadius(12),
-                Margin       = new Thickness(0, 0, 6, 6),
-                Cursor       = WpfCursors.Hand,
-                Background   = new SolidColorBrush(
-                                   (Color)System.Windows.Media.ColorConverter.ConvertFromString(hex)),
-                ToolTip      = name,
-                Tag          = (colorKey, hex)
-            };
-
-            // Aktuelle Farbe markieren
-            var currentHex = AppState.GetEventColor(colorKey);
-            if (string.Equals(hex, currentHex, StringComparison.OrdinalIgnoreCase))
-            {
-                dot.BorderThickness = new Thickness(2);
-                dot.BorderBrush     = WpfBrushes.White;
-                dot.Width           = 22;
-                dot.Height          = 22;
-            }
-
-            dot.MouseLeftButtonUp += ColorDot_Click;
-            paletteWrap.Children.Add(dot);
+            _colorScopeEventKey = ev.Key;
+            _colorScopeSingle   = AppState.HasOwnEventColor(ev.Key);
+            _mixerOpen          = false;
         }
-        DetailContent.Children.Add(paletteWrap);
+        DetailContent.Children.Add(BuildColorSection(ev, colorKey, isLektion, isPruefung));
 
         // Löschen für manuelle Events
         if (isManual)
@@ -911,6 +878,241 @@ public partial class EventsPage : WpfPage
         }
 
         OpenPanel("Detail");
+    }
+
+    // ── Farbwahl im Detail-Panel ─────────────────────────────────────────────
+
+    /// <summary>True: Farbe gilt nur für diesen Eintrag. False: für das ganze Fach bzw. die Kategorie.</summary>
+    private bool _colorScopeSingle;
+
+    /// <summary>Eintrag, für den <see cref="_colorScopeSingle"/> zuletzt bestimmt wurde.</summary>
+    private string? _colorScopeEventKey;
+
+    private bool _mixerOpen;
+
+    private UIElement BuildColorSection(SchulnetzEvent ev, string colorKey, bool isLektion, bool isPruefung)
+    {
+        var section  = new StackPanel { Margin = new Thickness(0, 0, 0, 4) };
+        bool hasOwn  = AppState.HasOwnEventColor(ev.Key);
+
+        var groupLabel  = isLektion ? $"Alle {colorKey}-Stunden"
+                        : isPruefung ? "Alle Prüfungen"
+                        :              "Alle Termine";
+        var singleLabel = isLektion ? "Nur diese Stunde" : "Nur dieser Eintrag";
+
+        section.Children.Add(new WpfTextBlock
+        {
+            Text       = "FARBE",
+            FontSize   = 11,
+            FontWeight = FontWeights.SemiBold,
+            Opacity    = 0.6,
+            Margin     = new Thickness(0, 0, 0, 8),
+        });
+
+        // ── Umschalter: welche Ebene wird gefärbt ──
+        var scope = new StackPanel { Orientation = WpfOrientation.Horizontal };
+        scope.Children.Add(ScopeButton(singleLabel, _colorScopeSingle, () =>
+        {
+            _colorScopeSingle = true;
+            ShowDetailPanel(ev);
+        }));
+        scope.Children.Add(ScopeButton(groupLabel, !_colorScopeSingle, () =>
+        {
+            _colorScopeSingle = false;
+            ShowDetailPanel(ev);
+        }));
+        section.Children.Add(new WpfBorder
+        {
+            Child               = scope,
+            Padding             = new Thickness(3),
+            CornerRadius        = new CornerRadius(8),
+            Background          = new SolidColorBrush(Color.FromArgb(0x14, 0x80, 0x80, 0x80)),
+            HorizontalAlignment = WpfHA.Left,
+            Margin              = new Thickness(0, 0, 0, 8),
+        });
+
+        // Was die Wahl bewirkt — besonders wichtig, wenn eine Einzelfarbe die
+        // Fachfarbe überdeckt und eine Änderung am Fach hier nichts zeigt.
+        // Eigene Formulierung statt ToLower(): das Fachkürzel bleibt gross
+        var groupPhrase = isLektion  ? $"alle {colorKey}-Stunden"
+                        : isPruefung ? "alle Prüfungen"
+                        :              "alle Termine";
+        var hint = _colorScopeSingle
+            ? (hasOwn ? "Dieser Eintrag hat eine eigene Farbe." : $"Färbt nur diesen Eintrag, nicht {groupPhrase}.")
+            : (hasOwn ? "Dieser Eintrag hat eine eigene Farbe und behält sie."
+                      : $"Färbt {groupPhrase}.");
+        section.Children.Add(new WpfTextBlock
+        {
+            Text         = hint,
+            FontSize     = 11,
+            Opacity      = 0.5,
+            TextWrapping = TextWrapping.Wrap,
+            Margin       = new Thickness(0, 0, 0, 10),
+        });
+
+        // ── Palette ──
+        var currentHex = _colorScopeSingle
+            ? AppState.GetEventColor(ev.Key, colorKey)
+            : AppState.GetEventColor(colorKey);
+        bool inPalette = _palette.Any(p => string.Equals(p.Hex, currentHex, StringComparison.OrdinalIgnoreCase));
+
+        // Sieben pro Reihe, damit die Farbfamilien aus ColorPalette zusammenbleiben
+        var paletteWrap = new WpfWrapPanel
+        {
+            Orientation         = WpfOrientation.Horizontal,
+            MaxWidth            = 7 * 30,
+            HorizontalAlignment = WpfHA.Left,
+        };
+        foreach (var (hex, name) in _palette)
+        {
+            bool active = string.Equals(hex, currentHex, StringComparison.OrdinalIgnoreCase);
+            var dot = ColorDot(new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString(hex)),
+                               name, active, null);
+            dot.MouseLeftButtonUp += (_, e) => { ApplyColor(ev, colorKey, hex); e.Handled = true; };
+            paletteWrap.Children.Add(dot);
+        }
+
+        // Eigene Farbe: Regenbogenkreis, markiert, wenn die aktuelle Farbe gemischt ist
+        var rainbow = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
+        foreach (var (stop, c) in new[] { (0.0, "#FF0000"), (0.33, "#FFD400"), (0.55, "#00D26A"), (0.78, "#0A84FF"), (1.0, "#BF5AF2") })
+            rainbow.GradientStops.Add(new GradientStop((Color)System.Windows.Media.ColorConverter.ConvertFromString(c), stop));
+
+        section.Children.Add(paletteWrap);
+
+        // Eigene Zeile mit Beschriftung — ein Kreis allein am Ende der Palette
+        // wird leicht übersehen.
+        var mixDot = ColorDot(rainbow, "Eigene Farbe mischen", _mixerOpen || !inPalette, "+");
+        mixDot.Margin = new Thickness(0, 0, 10, 0);
+        var customRow = new StackPanel { Orientation = WpfOrientation.Horizontal };
+        customRow.Children.Add(mixDot);
+        customRow.Children.Add(new WpfTextBlock
+        {
+            Text              = _mixerOpen ? "Mischer schliessen" : "Eigene Farbe mischen…",
+            FontSize          = 12,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+        var custom = new WpfBorder
+        {
+            Child               = customRow,
+            Background          = WpfBrushes.Transparent,   // ganze Zeile klickbar
+            Cursor              = WpfCursors.Hand,
+            HorizontalAlignment = WpfHA.Left,
+            Margin              = new Thickness(0, 4, 0, 4),
+        };
+        custom.MouseLeftButtonUp += (_, e) =>
+        {
+            _mixerOpen = !_mixerOpen;
+            ShowDetailPanel(ev);
+            e.Handled = true;
+        };
+        section.Children.Add(custom);
+
+        // ── Mischer ──
+        if (_mixerOpen)
+        {
+            var mixer = new ColorMixer { Margin = new Thickness(0, 8, 0, 10) };
+            if (RgbColor.TryParseHex(currentHex, out var start))
+                mixer.SelectedColor = start;
+            section.Children.Add(mixer);
+
+            var buttons = new StackPanel { Orientation = WpfOrientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
+            var apply = new WpfButton
+            {
+                Content = "Übernehmen",
+                Style   = (Style)FindResource("PrimaryButton"),
+                Padding = new Thickness(14, 6, 14, 6),
+                Margin  = new Thickness(0, 0, 8, 0),
+            };
+            apply.Click += (_, _) => ApplyColor(ev, colorKey, mixer.SelectedColor.ToHex());
+            var cancel = new WpfButton
+            {
+                Content = "Abbrechen",
+                Style   = (Style)FindResource("SecondaryButton"),
+                Padding = new Thickness(14, 6, 14, 6),
+            };
+            cancel.Click += (_, _) => { _mixerOpen = false; ShowDetailPanel(ev); };
+            buttons.Children.Add(apply);
+            buttons.Children.Add(cancel);
+            section.Children.Add(buttons);
+        }
+
+        // ── Einzelfarbe entfernen ──
+        if (_colorScopeSingle && hasOwn)
+        {
+            var reset = new WpfButton
+            {
+                Content             = isLektion ? $"Eigene Farbe entfernen (zurück zu {colorKey})"
+                                                : "Eigene Farbe entfernen",
+                Style               = (Style)FindResource("SecondaryButton"),
+                HorizontalAlignment = WpfHA.Left,
+                Padding             = new Thickness(12, 5, 12, 5),
+                Margin              = new Thickness(0, 6, 0, 0),
+            };
+            reset.Click += (_, _) =>
+            {
+                AppState.ClearOwnEventColor(ev.Key);
+                ShowDetailPanel(ev);
+            };
+            section.Children.Add(reset);
+        }
+
+        return section;
+    }
+
+    /// <summary>Speichert die Farbe auf der gewählten Ebene und baut das Panel neu.</summary>
+    private void ApplyColor(SchulnetzEvent ev, string colorKey, string hex)
+    {
+        _mixerOpen = false;
+
+        if (_colorScopeSingle)
+            AppState.SetOwnEventColor(ev.Key, hex);
+        else
+            AppState.SetCategoryColor(colorKey, hex);   // löst Notify → Refresh aus
+
+        ShowDetailPanel(ev);
+    }
+
+    private WpfBorder ColorDot(Brush fill, string tooltip, bool active, string? glyph) => new()
+    {
+        Width           = 24,
+        Height          = 24,
+        CornerRadius    = new CornerRadius(12),
+        Margin          = new Thickness(0, 0, 6, 6),
+        Cursor          = WpfCursors.Hand,
+        Background      = fill,
+        ToolTip         = tooltip,
+        BorderThickness = active ? new Thickness(2.5) : new Thickness(0),
+        BorderBrush     = active ? WpfBrushes.White : null,
+        Child           = glyph is null ? null : new WpfTextBlock
+        {
+            Text                = glyph,
+            Foreground          = WpfBrushes.White,
+            FontWeight          = FontWeights.Bold,
+            FontSize            = 15,
+            HorizontalAlignment = WpfHA.Center,
+            VerticalAlignment   = VerticalAlignment.Center,
+            Margin              = new Thickness(0, -2, 0, 0),
+        },
+    };
+
+    private WpfBorder ScopeButton(string label, bool active, Action onClick)
+    {
+        var text = new WpfTextBlock { Text = label, FontSize = 12 };
+        if (active)
+            text.Foreground = WpfBrushes.White;
+        else
+            text.SetResourceReference(WpfTextBlock.ForegroundProperty, "SystemControlForegroundBaseHighBrush");
+
+        var button = new WpfBorder
+        {
+            Child        = text,
+            Padding      = new Thickness(10, 5, 10, 6),
+            CornerRadius = new CornerRadius(6),
+            Cursor       = WpfCursors.Hand,
+            Background   = active ? (Brush)FindResource("AccentBrush") : WpfBrushes.Transparent,
+        };
+        button.MouseLeftButtonUp += (_, e) => { onClick(); e.Handled = true; };
+        return button;
     }
 
     // ══════════════════════════════════════════════════════════════════════

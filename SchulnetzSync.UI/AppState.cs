@@ -187,7 +187,73 @@ public static class AppState
     {
         _categoryColors.Clear();
         SaveColors();
+        _eventColors.Clear();
+        SaveEventColors();
         Notify();
+    }
+
+    // ── Einzelfarben ─────────────────────────────────────────────────────────
+    //
+    // Eine Farbe für genau einen Eintrag, etwa eine einzelne TEU-Lektion oder
+    // den Termin «Via». Sie sticht die Fach- und Kategoriefarbe.
+    //
+    // Schlüssel ist der Event-Key. Prüfungen und Termine behalten ihn auch
+    // beim Verschieben (P_65100). Bei Lektionen enthält er Datum, Zeit und
+    // Raum — wird genau diese Lektion verlegt, fällt die Einzelfarbe auf die
+    // Fachfarbe zurück.
+
+    private static readonly string _eventColorsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Semestria", "event-colors.json");
+
+    private static readonly Dictionary<string, string> _eventColors = LoadEventColors();
+
+    /// <summary>
+    /// Effektive Farbe eines Eintrags: Einzelfarbe → Fach/Kategorie → Standard.
+    /// </summary>
+    /// <param name="eventKey">Der Event-Key des Eintrags.</param>
+    /// <param name="groupKey">"Pruefung", "Termin" oder das Fachkürzel.</param>
+    public static string GetEventColor(string eventKey, string groupKey)
+        => _eventColors.TryGetValue(eventKey, out var hex) ? hex : GetEventColor(groupKey);
+
+    /// <summary>True when this single entry has its own colour.</summary>
+    public static bool HasOwnEventColor(string eventKey) => _eventColors.ContainsKey(eventKey);
+
+    public static void SetOwnEventColor(string eventKey, string hex)
+    {
+        _eventColors[eventKey] = hex;
+        SaveEventColors();
+        Notify();
+    }
+
+    /// <summary>Entfernt die Einzelfarbe; der Eintrag zeigt wieder die Fach- bzw. Kategoriefarbe.</summary>
+    public static void ClearOwnEventColor(string eventKey)
+    {
+        if (!_eventColors.Remove(eventKey)) return;
+        SaveEventColors();
+        Notify();
+    }
+
+    private static Dictionary<string, string> LoadEventColors()
+    {
+        try
+        {
+            if (File.Exists(_eventColorsPath))
+                return JsonSerializer.Deserialize<Dictionary<string, string>>(
+                    File.ReadAllText(_eventColorsPath)) ?? [];
+        }
+        catch { }
+        return [];
+    }
+
+    private static void SaveEventColors()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_eventColorsPath)!);
+            File.WriteAllText(_eventColorsPath, JsonSerializer.Serialize(_eventColors));
+        }
+        catch { }
     }
 
     private static Dictionary<string, string> LoadColors()
@@ -527,6 +593,7 @@ public static class AppState
         _suppressedKeys.Clear(); SaveSuppressed();
         _manualEvents.Clear();   SaveManual();
         _categoryColors.Clear(); SaveColors();
+        _eventColors.Clear();    SaveEventColors();
         Notify();
     }
 

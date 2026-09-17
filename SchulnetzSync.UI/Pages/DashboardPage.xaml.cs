@@ -343,7 +343,7 @@ public partial class DashboardPage : Page
     private static Color ResolveColor(SchulnetzEvent ev)
     {
         var key = ev.Type == SchulnetzEventType.Pruefung ? "Pruefung" : "Termin";
-        try { return (Color)System.Windows.Media.ColorConverter.ConvertFromString(AppState.GetEventColor(key)); }
+        try { return (Color)System.Windows.Media.ColorConverter.ConvertFromString(AppState.GetEventColor(ev.Key, key)); }
         catch
         {
             return ev.Type == SchulnetzEventType.Pruefung

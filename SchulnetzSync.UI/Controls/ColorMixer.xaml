@@ -1,0 +1,89 @@
+<UserControl x:Class="SchulnetzSync.UI.Controls.ColorMixer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019">
+
+    <StackPanel>
+
+        <!-- Sättigung (links → rechts) und Helligkeit (oben → unten) -->
+        <Grid x:Name="SvArea" Height="150" Cursor="Cross" Background="Transparent"
+              MouseLeftButtonDown="SvArea_MouseDown"
+              MouseMove="SvArea_MouseMove"
+              MouseLeftButtonUp="Area_MouseUp"
+              SizeChanged="Area_SizeChanged">
+            <Border x:Name="SvHue" CornerRadius="8" Background="Red"/>
+            <Border CornerRadius="8">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#FFFFFFFF" Offset="0"/>
+                        <GradientStop Color="#00FFFFFF" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+            <Border CornerRadius="8">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#00000000" Offset="0"/>
+                        <GradientStop Color="#FF000000" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+            <Canvas IsHitTestVisible="False" ClipToBounds="False">
+                <Ellipse x:Name="SvThumb" Width="16" Height="16"
+                         Stroke="White" StrokeThickness="2.5">
+                    <Ellipse.Effect>
+                        <DropShadowEffect ShadowDepth="0" BlurRadius="4" Opacity="0.7"/>
+                    </Ellipse.Effect>
+                </Ellipse>
+            </Canvas>
+        </Grid>
+
+        <!-- Farbton -->
+        <Grid x:Name="HueArea" Height="16" Margin="0,12,0,0" Cursor="Hand"
+              Background="Transparent"
+              MouseLeftButtonDown="HueArea_MouseDown"
+              MouseMove="HueArea_MouseMove"
+              MouseLeftButtonUp="Area_MouseUp"
+              SizeChanged="Area_SizeChanged">
+            <Border CornerRadius="8">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#FF0000" Offset="0"/>
+                        <GradientStop Color="#FFFF00" Offset="0.1667"/>
+                        <GradientStop Color="#00FF00" Offset="0.3333"/>
+                        <GradientStop Color="#00FFFF" Offset="0.5"/>
+                        <GradientStop Color="#0000FF" Offset="0.6667"/>
+                        <GradientStop Color="#FF00FF" Offset="0.8333"/>
+                        <GradientStop Color="#FF0000" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+            <Canvas IsHitTestVisible="False" ClipToBounds="False">
+                <Ellipse x:Name="HueThumb" Width="20" Height="20"
+                         Stroke="White" StrokeThickness="3" Canvas.Top="-2">
+                    <Ellipse.Effect>
+                        <DropShadowEffect ShadowDepth="0" BlurRadius="4" Opacity="0.7"/>
+                    </Ellipse.Effect>
+                </Ellipse>
+            </Canvas>
+        </Grid>
+
+        <!-- Vorschau und Hex-Wert -->
+        <Grid Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border x:Name="Preview" Grid.Column="0"
+                    Width="36" Height="36" CornerRadius="18"
+                    BorderThickness="1" BorderBrush="#40808080"/>
+            <TextBox x:Name="TxtHex" Grid.Column="1"
+                     Margin="10,0,0,0" Height="34"
+                     FontFamily="Consolas" FontSize="14"
+                     VerticalContentAlignment="Center"
+                     ui:ControlHelper.PlaceholderText="#RRGGBB"
+                     ToolTip="Farbcode, z.B. #2563EB"
+                     TextChanged="TxtHex_TextChanged"/>
+        </Grid>
+    </StackPanel>
+</UserControl>
