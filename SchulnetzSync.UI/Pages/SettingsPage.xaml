@@ -22,7 +22,6 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                         <RadioButton x:Name="RbSystem" GroupName="Theme"
                                      Content="System"
-                                     IsChecked="True"
                                      Margin="0,0,24,0"
                                      Checked="Theme_Changed" Tag="System"/>
                         <RadioButton x:Name="RbLight" GroupName="Theme"
@@ -30,7 +29,7 @@
                                      Margin="0,0,24,0"
                                      Checked="Theme_Changed" Tag="Light"/>
                         <RadioButton x:Name="RbDark" GroupName="Theme"
-                                     Content="Dunkel"
+                                     Content="Dunkel" IsChecked="True"
                                      Checked="Theme_Changed" Tag="Dark"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource NoteText}"

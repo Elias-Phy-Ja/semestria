@@ -22,9 +22,13 @@ public sealed class SyncConfig
     /// <summary>Target calendar ID. Null = primary calendar.</summary>
     public string? CalendarId { get; set; }
 
-    /// <summary>Which event types to synchronise. Default: both.</summary>
+    /// <summary>
+    /// Which event types to synchronise to Outlook. Default: exams only.
+    /// Termine sind opt-in: Der Feed enthält Hunderte davon, die den
+    /// Outlook-Kalender sonst ungefragt füllen würden.
+    /// </summary>
     public HashSet<SchulnetzEventType> EnabledTypes { get; set; } =
-        [SchulnetzEventType.Pruefung, SchulnetzEventType.Termin];
+        [SchulnetzEventType.Pruefung];
 
     /// <summary>Mark exams as cancelled instead of deleting when they vanish.</summary>
     public bool CancelInsteadOfDelete { get; set; } = true;
@@ -50,8 +54,17 @@ public sealed class SyncConfig
     /// <summary>Version of the legal documents the user accepted. 0 = never accepted.</summary>
     public int AcceptedLegalVersion { get; set; }
 
-    /// <summary>Theme preference: "Light" | "Dark" | null = System.</summary>
+    /// <summary>Theme the app uses when the user has never chosen one.</summary>
+    public const string DefaultTheme = "Dark";
+
+    /// <summary>
+    /// Theme preference: "Light" | "Dark" | "System". Null = never chosen,
+    /// which means <see cref="DefaultTheme"/>.
+    /// </summary>
     public string? ThemePreference { get; set; }
+
+    /// <summary>The theme to apply: the stored choice, or <see cref="DefaultTheme"/>.</summary>
+    public string ResolveTheme() => ThemePreference ?? DefaultTheme;
 
     /// <summary>
     /// If true, the app silently refreshes the feed from the network on every startup.

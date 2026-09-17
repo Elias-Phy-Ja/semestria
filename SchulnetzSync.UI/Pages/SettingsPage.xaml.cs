@@ -56,7 +56,7 @@ public partial class SettingsPage : Page
             ChkAutoRefresh.IsChecked  = config.AutoRefreshFeed;
 
             // Theme-RadioButton setzen
-            switch (config.ThemePreference)
+            switch (config.ResolveTheme())
             {
                 case "Light": RbLight.IsChecked  = true; break;
                 case "Dark":  RbDark.IsChecked   = true; break;
@@ -116,7 +116,8 @@ public partial class SettingsPage : Page
             _       => null
         };
 
-        AppState.Config.ThemePreference = (pref == "System") ? null : pref;
+        // "System" wird ausdrücklich gespeichert: null hiesse "nie gewählt" und damit dunkel
+        AppState.Config.ThemePreference = pref;
         ConfigManager.Save(AppState.Config);
     }
 

@@ -47,8 +47,8 @@ public partial class App : Application
         else if (e.Args.Contains("--fake-update", StringComparer.OrdinalIgnoreCase))
             _updateSources = new FakeUpdateSourceFactory("2.1.0.0", mandatory: false);
 
-        // Theme aus Config laden (null = Systemstandard)
-        ThemeManager.Current.ApplicationTheme = AppState.Config.ThemePreference switch
+        // Theme aus Config laden; ohne eigene Wahl startet die App dunkel
+        ThemeManager.Current.ApplicationTheme = AppState.Config.ResolveTheme() switch
         {
             "Light" => (ApplicationTheme?)ApplicationTheme.Light,
             "Dark"  => (ApplicationTheme?)ApplicationTheme.Dark,
