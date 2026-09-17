@@ -97,8 +97,10 @@ Write-Host "  → $packDir" -ForegroundColor Green
 # Ohne PRI-Datei kann Windows die Asset-Varianten nicht aufloesen: Es findet nur
 # die eine Datei, die woertlich im Manifest steht, und legt das Taskleisten-Icon
 # auf eine Flaeche in BackgroundColor. Erst mit PRI werden die
-# targetsize-*_altform-unplated-Varianten gefunden — also das Icon ohne
-# Hintergrund.
+# targetsize-*_altform-unplated-Varianten gefunden, also das Icon ohne
+# Hintergrund. Voraussetzung: Das Manifest nennt die Bilder ohne Qualifier
+# (Assets\Square44x44Logo.png). Steht dort Square44x44Logo.scale-100.png,
+# nimmt Windows genau diese Datei und die Kachel bleibt trotz PRI blau.
 
 Write-Host ""
 Write-Host "[3/5] resources.pri erzeugen..."
