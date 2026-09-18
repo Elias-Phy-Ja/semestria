@@ -20,7 +20,7 @@ Semestria liest Prüfungen und Schultermine aus dem persönlichen Schulnetz-iCal
 
 <img src="Pictures/Screenshot%202026-09-17%20200344.png" width="860" alt="Dashboard von Semestria" />
 
-<sub><b>Dashboard</b> — Stand des letzten Abgleichs, die Zahlen des Semesters, was als Nächstes ansteht und der Stundenplan von morgen.</sub>
+<sub><b>Dashboard</b> Stand des letzten Abgleichs, die Zahlen des Semesters, was als Nächstes ansteht und der Stundenplan von morgen.</sub>
 
 </div>
 
@@ -39,7 +39,7 @@ Semestria liest Prüfungen und Schultermine aus dem persönlichen Schulnetz-iCal
 </tr>
 </table>
 
-**[→ Alle Screenshots ansehen](Pictures/README.md)**
+**[Alle Screenshots ansehen](Pictures/README.md)**
 
 
 ## Features
@@ -66,6 +66,9 @@ Alternativ: `.msix`-Datei unter [Releases](../../releases) (Sideloading erforder
 | Distribution | MSIX · Microsoft Store |
 
 ## Changelog
+
+Ausführliche Notizen zu den einzelnen Arbeitstagen liegen unter
+[Session Summary](Session%20Summary/).
 
 ### 17.09.2026 (v2.2)
 - [x] Dashboard neu: Stundenplan, Kennzahlen, Aufgaben, einklappbares Protokoll
