@@ -1,11 +1,11 @@
 namespace SchulnetzSync.Core.Calendar;
 
 /// <summary>
-/// Thrown by <see cref="MsalAuthProvider.AcquireTokenSilentAsync"/> when the
-/// cached token has expired and an interactive browser login is required.
+/// Thrown by <see cref="MsalAuthProvider.AcquireTokenSilentAsync"/> once the cached
+/// token is gone and only a browser login can fix it.
 ///
-/// In --silent mode the caller must catch this, show a toast, and exit with
-/// code 3 instead of opening a browser window.
+/// In --silent mode the caller catches this, shows a toast and exits with code 3 —
+/// a scheduled background run must never pop a login window at the user.
 /// </summary>
 public sealed class InteractiveLoginRequiredException : Exception
 {

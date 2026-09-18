@@ -12,15 +12,15 @@ namespace SchulnetzSync.UI.Controls;
 /// <summary>
 /// Free colour picker: a saturation/brightness field, a hue slider and a hex box.
 ///
-/// Rechnet intern in HSV (siehe <see cref="HsvColor"/>). Der Farbton wird
-/// getrennt gehalten, damit er beim Ziehen durch Grau oder Schwarz nicht
-/// verloren geht — aus reinem RGB liesse er sich dort nicht zurückgewinnen.
+/// Works in HSV internally (see <see cref="HsvColor"/>). The hue is kept separately so it
+/// survives a drag through grey or black — from plain RGB it could not be recovered there,
+/// and the slider would jump back to red the moment you let go.
 /// </summary>
 public partial class ColorMixer : UserControl
 {
-    private HsvColor _hsv = new(221, 0.84, 0.92);   // Standardblau der App
+    private HsvColor _hsv = new(221, 0.84, 0.92);   // the default blue of the app
 
-    /// <summary>Verhindert, dass das Hex-Feld sich selbst neu schreibt, während man tippt.</summary>
+    /// <summary>Stops the hex box from rewriting itself while someone is typing in it.</summary>
     private bool _typingHex;
 
     /// <summary>Raised whenever the colour changes, by dragging or typing.</summary>
@@ -43,7 +43,7 @@ public partial class ColorMixer : UserControl
         }
     }
 
-    // ── Sättigung / Helligkeit ───────────────────────────────────────────────
+    // ── Saturation and brightness field ──────────────────────────────────────
 
     private void SvArea_MouseDown(object sender, MouseButtonEventArgs e)
     {
@@ -64,7 +64,7 @@ public partial class ColorMixer : UserControl
         UpdateVisuals(updateHex: true);
     }
 
-    // ── Farbton ──────────────────────────────────────────────────────────────
+    // ── Hue slider ───────────────────────────────────────────────────────────
 
     private void HueArea_MouseDown(object sender, MouseButtonEventArgs e)
     {
@@ -79,7 +79,7 @@ public partial class ColorMixer : UserControl
 
     private void SetHueFromPoint(Point p)
     {
-        // Knapp unter 360, damit ganz rechts nicht wieder zu 0° umspringt
+        // Just under 360, so the far right does not snap back to 0° and look broken
         double h = Math.Clamp(p.X / Math.Max(1, HueArea.ActualWidth), 0, 1) * 359.9;
         _hsv = _hsv with { H = h };
         UpdateVisuals(updateHex: true);
@@ -91,7 +91,7 @@ public partial class ColorMixer : UserControl
     private void Area_SizeChanged(object sender, SizeChangedEventArgs e)
         => UpdateVisuals(updateHex: false, notify: false);
 
-    // ── Hex-Eingabe ──────────────────────────────────────────────────────────
+    // ── Hex input ────────────────────────────────────────────────────────────
 
     private void TxtHex_TextChanged(object sender, TextChangedEventArgs e)
     {
@@ -100,12 +100,12 @@ public partial class ColorMixer : UserControl
 
         var parsed = HsvColor.FromRgb(rgb);
 
-        // Grau hat keinen eigenen Farbton — den bisherigen behalten
+        // Grey carries no hue of its own, so keep the one we had
         _hsv = parsed.S == 0 ? parsed with { H = _hsv.H } : parsed;
         UpdateVisuals(updateHex: false);
     }
 
-    // ── Darstellung ──────────────────────────────────────────────────────────
+    // ── Drawing ──────────────────────────────────────────────────────────────
 
     private void UpdateVisuals(bool updateHex, bool notify = true)
     {

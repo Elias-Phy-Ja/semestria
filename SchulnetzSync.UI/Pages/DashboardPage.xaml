@@ -6,7 +6,7 @@
 
     <Page.Resources>
 
-        <!-- Halbtransparentes Grau wirkt im hellen wie im dunklen Theme -->
+        <!-- Half-transparent grey works in both the light and the dark theme -->
         <SolidColorBrush x:Key="HoverOverlay"   Color="#1A808080"/>
         <SolidColorBrush x:Key="PressedOverlay" Color="#2A808080"/>
         <SolidColorBrush x:Key="SubtleFill"     Color="#12808080"/>
@@ -14,7 +14,7 @@
 
         <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
-        <!-- Karte ohne Aussenabstand; den Abstand regelt das Layout -->
+        <!-- Card without an outer margin; the layout around it handles spacing -->
         <Style x:Key="DashCard" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource SubtleBorder}"/>
@@ -29,7 +29,7 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
-        <!-- Gefüllter Hauptknopf -->
+        <!-- Filled primary button -->
         <Style x:Key="AccentAction" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
@@ -63,7 +63,7 @@
             </Setter>
         </Style>
 
-        <!-- Umrandeter Nebenknopf -->
+        <!-- Outlined secondary button -->
         <Style x:Key="OutlineAction" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -95,7 +95,7 @@
             </Setter>
         </Style>
 
-        <!-- Textlink rechts in Kartenköpfen, z. B. «Kalender ›» -->
+        <!-- Text link on the right of a card header, e.g. "Kalender ›" -->
         <Style x:Key="LinkAction" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -120,7 +120,7 @@
             </Setter>
         </Style>
 
-        <!-- Kennzahl-Kachel, als Knopf klickbar -->
+        <!-- A number tile, clickable like a button -->
         <Style x:Key="StatTile" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
             <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"/>
@@ -149,7 +149,7 @@
             </Setter>
         </Style>
 
-        <!-- Runder Abhakkreis; die Farbe setzt der Code über BorderBrush -->
+        <!-- Round tick circle; the code sets its colour through BorderBrush -->
         <Style x:Key="RoundCheck" TargetType="CheckBox">
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
@@ -180,7 +180,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="32,26,20,32">
 
-            <!-- ══════════════ Kopf ══════════════ -->
+            <!-- ══════════════ Header ══════════════ -->
             <StackPanel Margin="0,0,12,20">
                 <TextBlock x:Name="TxtGreeting" Text="Hallo"
                            FontSize="26" FontWeight="Bold"/>
@@ -188,7 +188,7 @@
                            FontSize="13.5" Opacity="0.65" Margin="0,2,0,0"/>
             </StackPanel>
 
-            <!-- Hinweis: Feed-URL fehlt -->
+            <!-- Warning shown when there is no feed URL yet -->
             <Border x:Name="SetupHint" Visibility="Collapsed"
                     CornerRadius="14" Padding="18,14" Margin="0,0,12,12"
                     Background="#1FF59E0B" BorderBrush="#66F59E0B" BorderThickness="1">
@@ -223,7 +223,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Statussymbol: Kreis mit Glyphe, beim Laden ein Ring -->
+                    <!-- Status icon: a circle with a glyph, a spinning ring while loading -->
                     <Grid Width="52" Height="52" VerticalAlignment="Center" Margin="0,0,16,0">
                         <Ellipse x:Name="StatusDisc" Fill="#2622C55E"/>
                         <TextBlock x:Name="StatusGlyph" Text="&#xE73E;"
@@ -287,7 +287,7 @@
                 </Grid>
             </Border>
 
-            <!-- ══════════════ Kennzahlen ══════════════ -->
+            <!-- ══════════════ Numbers ══════════════ -->
             <UniformGrid x:Name="StatGrid" Columns="4">
                 <Button x:Name="TilePruefung" Style="{StaticResource StatTile}" Click="BtnGoEvents_Click"
                         ToolTip="Kalender öffnen">
@@ -358,7 +358,7 @@
                 </Button>
             </UniformGrid>
 
-            <!-- ══════════════ Inhalt: zwei Spalten, schmal untereinander ══════════════ -->
+            <!-- ══════════════ Content: two columns, stacked when narrow ══════════════ -->
             <Grid x:Name="ContentGrid">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition x:Name="MainColumn" Width="*"/>
@@ -369,7 +369,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Als Nächstes -->
+                <!-- "Als Nächstes" -->
                 <Border x:Name="UpcomingCard" Style="{StaticResource DashCard}"
                         Margin="0,0,12,12" VerticalAlignment="Top">
                     <StackPanel>
@@ -406,7 +406,7 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Seitenspalte: Stundenplan + Aufgaben -->
+                <!-- Side column: timetable and tasks -->
                 <StackPanel x:Name="SidePanel" Grid.Column="1">
 
                     <Border Style="{StaticResource DashCard}" Margin="0,0,12,12">
@@ -454,7 +454,7 @@
                 </StackPanel>
             </Grid>
 
-            <!-- ══════════════ Protokoll (einklappbar) ══════════════ -->
+            <!-- ══════════════ Log, collapsible ══════════════ -->
             <Border Style="{StaticResource DashCard}" Margin="0,0,12,0" Padding="0">
                 <StackPanel>
                     <Button x:Name="BtnToggleLog" Click="BtnToggleLog_Click" HorizontalAlignment="Stretch"

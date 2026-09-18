@@ -6,14 +6,15 @@ using SchulnetzSync.Core.Feed;
 using SchulnetzSync.Core.Model;
 using SchulnetzSync.Core.Sync;
 
-// -----------------------------------------------------------------------
-// CLI entry point for SchulnetzSync
-// Exit codes: 0=success, 1=error, 2=blocked by safety check, 3=login needed
-// -----------------------------------------------------------------------
+// Command line entry point. Mostly here for scheduled runs and for debugging the
+// sync without the UI in the way.
+//
+// Exit codes: 0 = done, 1 = error, 2 = plan was blocked, 3 = interactive login needed.
+// The Task Scheduler reads those, so do not renumber them.
 
 var rootCmd = new RootCommand("SchulnetzSync — Schulnetz → Outlook Kalender");
 
-// Options
+// Everything the CLI understands. --silent is the one the scheduled task uses.
 var dryRunOpt  = new Option<bool>("--dry-run",  "Plan berechnen und anzeigen, nichts schreiben");
 var syncOpt    = new Option<bool>("--sync",     "Plan berechnen und ausführen");
 var silentOpt  = new Option<bool>("--silent",   "Wie --sync, ohne Ausgabe, ohne interaktiven Login");
@@ -45,7 +46,7 @@ rootCmd.SetHandler(async ctx =>
 
     var config = ConfigManager.Load();
 
-    // --login — interactive sign-in only
+    // --login: sign in and nothing else, so the silent runs afterwards have a token.
     if (login)
     {
         if (config.ClientId is null)
@@ -59,7 +60,7 @@ rootCmd.SetHandler(async ctx =>
         ctx.ExitCode = 0; return;
     }
 
-    // --purge
+    // --purge: bulk delete, guarded by --confirm because there is no undo.
     if (purge is not null)
     {
         if (!confirm)
@@ -83,7 +84,7 @@ rootCmd.SetHandler(async ctx =>
         ctx.ExitCode = 0; return;
     }
 
-    // --dry-run / --sync / --silent
+    // No mode given at all — print the usage instead of guessing what was meant.
     if (!dryRun && !sync && !silent)
     {
         Console.WriteLine(rootCmd.Description);
@@ -91,7 +92,7 @@ rootCmd.SetHandler(async ctx =>
         ctx.ExitCode = 0; return;
     }
 
-    // Override feed URL for this run (testing)
+    // --feed wins over the stored URL, which is how tests run against a local file.
     string? plainUrl = feedUrl ?? ConfigManager.GetFeedUrl(config);
     if (plainUrl is null)
     {
@@ -99,7 +100,7 @@ rootCmd.SetHandler(async ctx =>
         ctx.ExitCode = 1; return;
     }
 
-    // Override enabled types for this run
+    // --types narrows the run without touching the saved settings.
     var options = config.ToSyncOptions();
     if (types is not null)
     {
@@ -120,7 +121,7 @@ rootCmd.SetHandler(async ctx =>
             };
     }
 
-    // Fetch and parse feed
+    // Fetch and parse the feed.
     using var http       = new HttpClient();
     var feedSource       = new HttpFeedSource(http, plainUrl);
     string icsContent;
@@ -137,7 +138,7 @@ rootCmd.SetHandler(async ctx =>
     var feedHealth = FeedParser.CheckPlausibility(icsContent);
     var feedEvents = FeedParser.Parse(icsContent);
 
-    // Read tracked events from calendar (skip in dry-run to avoid needing a token)
+    // A dry run stays offline on purpose: no token needed, so it works on any machine.
     IReadOnlyList<TrackedEvent> tracked = [];
     if (!dryRun)
     {
@@ -156,7 +157,7 @@ rootCmd.SetHandler(async ctx =>
             new Progress<string>(Console.WriteLine), ctx.GetCancellationToken());
     }
 
-    // Build plan
+    // The diff itself. Everything above was only gathering its inputs.
     var plan = SyncEngine.Build(feedEvents, tracked, options, feedHealth, DateTimeOffset.Now);
 
     if (!silent)
@@ -167,7 +168,7 @@ rootCmd.SetHandler(async ctx =>
         ctx.ExitCode = plan.CanExecute ? 0 : 2; return;
     }
 
-    // Execute
+    // From here on the calendar actually gets written to.
     if (!plan.CanExecute)
     {
         if (!silent)
@@ -199,9 +200,7 @@ rootCmd.SetHandler(async ctx =>
 
 return await rootCmd.InvokeAsync(args);
 
-// -----------------------------------------------------------------------
-// Helpers
-// -----------------------------------------------------------------------
+// ── Helpers ─────────────────────────────────────────────────────────────
 
 static async Task<string?> GetTokenAsync(
     SyncConfig config, bool silent, InvocationContext ctx)
@@ -221,7 +220,8 @@ static async Task<string?> GetTokenAsync(
     {
         if (silent)
         {
-            // In silent mode: never open a browser, signal exit code 3.
+            // Silent means silent: a scheduled run must never pop a browser window
+            // at someone. Exit code 3 tells the caller a login is due.
             ctx.ExitCode = 3; return null;
         }
         return await auth.AcquireTokenInteractiveAsync(ctx.GetCancellationToken());

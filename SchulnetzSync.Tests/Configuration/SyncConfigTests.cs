@@ -5,6 +5,7 @@ using Xunit;
 
 namespace SchulnetzSync.Tests.Configuration;
 
+/// <summary>Defaults that must not drift, plus what happens to a saved config on update.</summary>
 public class SyncConfigTests
 {
     [Fact]
@@ -38,7 +39,7 @@ public class SyncConfigTests
     [Fact]
     public void SavedTypes_AreKeptWhenLoading()
     {
-        // Wer Termine schon eingeschaltet hat, behält sie nach dem Update
+        // Someone who switched Termine on keeps them after an update.
         var saved  = new SyncConfig { EnabledTypes = [SchulnetzEventType.Pruefung, SchulnetzEventType.Termin] };
         var loaded = JsonSerializer.Deserialize<SyncConfig>(JsonSerializer.Serialize(saved))!;
 

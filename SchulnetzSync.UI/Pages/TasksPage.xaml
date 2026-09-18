@@ -6,14 +6,14 @@
 
     <Page.Resources>
 
-        <!-- Neutrale Überlagerungen: halbtransparentes Grau funktioniert im
-             hellen wie im dunklen Theme, ohne eigene Theme-Schlüssel. -->
+        <!-- Neutral overlays: half-transparent grey works in the light and the dark
+             theme alike, without needing theme keys of its own. -->
         <SolidColorBrush x:Key="HoverOverlay"   Color="#1A808080"/>
         <SolidColorBrush x:Key="PressedOverlay" Color="#2A808080"/>
         <SolidColorBrush x:Key="SubtleFill"     Color="#12808080"/>
         <SolidColorBrush x:Key="SubtleBorder"   Color="#26808080"/>
 
-        <!-- Schlichter Knopf ohne Rahmen, nur Hover-Fläche -->
+        <!-- Plain button with no border, just a hover fill -->
         <Style x:Key="GhostButton" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -44,7 +44,7 @@
             </Setter>
         </Style>
 
-        <!-- Kleine abgerundete Auswahl-Chips -->
+        <!-- Small rounded selection chips -->
         <Style x:Key="ChipButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Padding" Value="11,4"/>
@@ -69,7 +69,7 @@
             </Setter>
         </Style>
 
-        <!-- Segment-Umschalter statt weit verstreuter Radiobuttons -->
+        <!-- A segmented switch instead of radio buttons scattered around -->
         <Style x:Key="SegmentRadio" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
             <Setter Property="FontSize" Value="13"/>
@@ -94,7 +94,7 @@
             </Setter>
         </Style>
 
-        <!-- Runder Abhakkreis; die Farbe setzt der Code über BorderBrush -->
+        <!-- Round tick circle; the code sets its colour through BorderBrush -->
         <Style x:Key="RoundCheck" TargetType="CheckBox">
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
@@ -120,7 +120,7 @@
                                     <Condition Property="IsMouseOver" Value="True"/>
                                     <Condition Property="IsChecked" Value="False"/>
                                 </MultiTrigger.Conditions>
-                                <!-- Vorschau: der Haken erscheint schon beim Überfahren -->
+                                <!-- Preview: the tick already shows on hover -->
                                 <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="Tick" Property="Foreground"
                                         Value="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
@@ -138,7 +138,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- ══════════════ Listen-Leiste ══════════════ -->
+        <!-- ══════════════ List rail ══════════════ -->
         <Border Grid.Column="0"
                 BorderBrush="{StaticResource SubtleBorder}"
                 BorderThickness="0,0,1,0">
@@ -183,7 +183,7 @@
             </Grid>
         </Border>
 
-        <!-- ══════════════ Inhalt ══════════════ -->
+        <!-- ══════════════ Content ══════════════ -->
         <Grid Grid.Column="1" Margin="36,28,36,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -193,7 +193,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Kopf: Listenfarbe, Titel, Optionen -->
+            <!-- Header: list colour, title, options -->
             <Grid Grid.Row="0" Margin="0,0,0,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -245,7 +245,7 @@
                 </Popup>
             </Grid>
 
-            <!-- Schnelleingabe: tippen, Enter, fertig -->
+            <!-- Quick add: type, press Enter, done -->
             <Grid Grid.Row="1" Margin="0,0,0,14">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -264,7 +264,7 @@
                         Click="BtnQuickDetails_Click"/>
             </Grid>
 
-            <!-- Formular für Details -->
+            <!-- The detail form -->
             <Border x:Name="EditorCard" Grid.Row="2"
                     Style="{StaticResource Card}"
                     Visibility="Collapsed">
@@ -285,9 +285,8 @@
                              KeyDown="TxtTitle_KeyDown"/>
 
                     <!--
-                        Datum und Uhrzeit gehören zusammen: 6 px zwischen ihnen,
-                        36 px zum nächsten Feld. Sonst liest man die Uhrzeit als
-                        Teil der folgenden Spalte.
+                        Date and time belong together: 6 px between them, 36 px to the next
+                        field. Otherwise the time reads as part of the column after it.
                     -->
                     <WrapPanel Margin="0,0,0,12">
                         <StackPanel Margin="0,0,36,8">
@@ -388,7 +387,7 @@
                         Click="BtnClearDone_Click"/>
             </Grid>
 
-            <!-- Aufgaben -->
+            <!-- The tasks -->
             <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto"
                           Padding="0,0,6,24">
                 <StackPanel>

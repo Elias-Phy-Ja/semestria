@@ -3,12 +3,13 @@ using Xunit;
 
 namespace SchulnetzSync.Tests.Tasks;
 
+/// <summary>The input shapes people actually type into the task due-time field.</summary>
 public class ClockTimeTests
 {
     [Theory]
     [InlineData("08:30", 8, 30)]
     [InlineData("8:30",  8, 30)]
-    [InlineData("8.30",  8, 30)]   // Schweizer Schreibweise
+    [InlineData("8.30",  8, 30)]   // how most people here write it
     [InlineData("08.30", 8, 30)]
     [InlineData("8h30",  8, 30)]
     [InlineData("830",   8, 30)]
@@ -32,7 +33,7 @@ public class ClockTimeTests
     [InlineData("   ")]
     [InlineData("24:00")]
     [InlineData("8:60")]
-    [InlineData("8:5")]      // 8:05 oder 8:50? nicht raten
+    [InlineData("8:5")]      // 8:05 or 8:50? no guessing
     [InlineData("12345")]
     [InlineData("8:30:00")]
     [InlineData("-8:30")]

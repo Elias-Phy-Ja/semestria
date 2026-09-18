@@ -13,7 +13,7 @@
 
     <Window.Resources>
 
-        <!-- Halbtransparentes Grau wirkt im hellen wie im dunklen Theme -->
+        <!-- Half-transparent grey works in both the light and the dark theme -->
         <SolidColorBrush x:Key="HoverOverlay"   Color="#1A808080"/>
         <SolidColorBrush x:Key="PressedOverlay" Color="#2A808080"/>
         <SolidColorBrush x:Key="SubtleFill"     Color="#12808080"/>
@@ -49,7 +49,7 @@
             <Setter Property="Padding" Value="18,16"/>
         </Style>
 
-        <!-- Rundes Icon-Kästchen mit Akzent-Tönung -->
+        <!-- Round icon box with an accent tint -->
         <Style x:Key="IconTile" TargetType="Border">
             <Setter Property="Width" Value="38"/>
             <Setter Property="Height" Value="38"/>
@@ -65,7 +65,7 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
-        <!-- Nummer in der Anleitung -->
+        <!-- Step number in the walkthrough -->
         <Style x:Key="NumberBadge" TargetType="Border">
             <Setter Property="Width" Value="26"/>
             <Setter Property="Height" Value="26"/>
@@ -163,7 +163,7 @@
             </Setter>
         </Style>
 
-        <!-- Grosse Auswahlkarte (Outlook ja / später) -->
+        <!-- The big choice cards: Outlook now, or later -->
         <Style x:Key="ChoiceCard" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
             <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"/>
@@ -198,7 +198,7 @@
             <Setter Property="FontSize" Value="13.5"/>
         </Style>
 
-        <!-- Nachbau der Schulnetz-Oberfläche: bewusst neutral, ohne Schul-Branding -->
+        <!-- A mock-up of the Schulnetz page, deliberately neutral and without school branding -->
         <SolidColorBrush x:Key="PortalBlue"  Color="#3B77B8"/>
         <SolidColorBrush x:Key="PortalText"  Color="#333333"/>
         <SolidColorBrush x:Key="PortalLink"  Color="#2F6DB0"/>
@@ -213,7 +213,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- ══════════════════════════════════════════════════════════
-             LINKS: Marke und Schrittleiste
+             LEFT: branding and the step rail
              ══════════════════════════════════════════════════════════ -->
         <Border Grid.Column="0">
             <Border.Background>
@@ -241,7 +241,7 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Schritte, vom Code aufgebaut -->
+                <!-- The steps themselves, built in code -->
                 <StackPanel x:Name="StepRail" Grid.Row="1" Margin="0,44,0,0"/>
 
                 <StackPanel Grid.Row="2" Orientation="Horizontal" Opacity="0.75">
@@ -255,7 +255,7 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════════════════
-             RECHTS: Inhalt und Fusszeile
+             RIGHT: content and footer
              ══════════════════════════════════════════════════════════ -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
@@ -266,7 +266,7 @@
             <ScrollViewer x:Name="ContentScroll" VerticalScrollBarVisibility="Auto">
                 <Grid Margin="48,40,48,24" MaxWidth="600" HorizontalAlignment="Left">
 
-                    <!-- ══════════ SCHRITT 1: Willkommen ══════════ -->
+                    <!-- ══════════ STEP 1: welcome ══════════ -->
                     <StackPanel x:Name="Step1">
                         <TextBlock Text="WILLKOMMEN" Style="{StaticResource Eyebrow}"/>
                         <TextBlock Text="Willkommen bei Semestria" Style="{StaticResource StepTitle}"/>
@@ -317,7 +317,7 @@
                         </UniformGrid>
                     </StackPanel>
 
-                    <!-- ══════════ SCHRITT 2: Rechtliches ══════════ -->
+                    <!-- ══════════ STEP 2: legal ══════════ -->
                     <StackPanel x:Name="Step2" Visibility="Collapsed">
                         <TextBlock Text="SCHRITT 2 VON 5" Style="{StaticResource Eyebrow}"/>
                         <TextBlock Text="Kurz das Kleingedruckte" Style="{StaticResource StepTitle}"/>
@@ -354,7 +354,7 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- ══════════ SCHRITT 3: Feed-URL ══════════ -->
+                    <!-- ══════════ STEP 3: feed URL ══════════ -->
                     <StackPanel x:Name="Step3" Visibility="Collapsed">
                         <TextBlock Text="SCHRITT 3 VON 5" Style="{StaticResource Eyebrow}"/>
                         <TextBlock Text="Verbinde dein Schulnetz" Style="{StaticResource StepTitle}"/>
@@ -396,7 +396,7 @@
                                     Ohne diesen Schritt gibt es keinen Kalender-Link.
                                 </TextBlock>
 
-                                <!-- Nachbau des Kastens -->
+                                <!-- Mock-up of the box -->
                                 <Border Background="White" CornerRadius="8" Margin="0,12,0,0" Padding="16,14"
                                         BorderBrush="#D8DDE3" BorderThickness="1">
                                     <StackPanel>
@@ -472,7 +472,7 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- 4: Einfügen -->
+                        <!-- 4: paste it in -->
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -515,10 +515,10 @@
                         </Grid>
                     </StackPanel>
 
-                    <!-- ══════════ SCHRITT 4: Outlook ══════════ -->
+                    <!-- ══════════ STEP 4: Outlook ══════════ -->
                     <Grid x:Name="Step4" Visibility="Collapsed">
 
-                        <!-- 4a: Frage -->
+                        <!-- 4a: the question -->
                         <StackPanel x:Name="Step4Ask">
                             <TextBlock Text="SCHRITT 4 VON 5 · OPTIONAL" Style="{StaticResource Eyebrow}"/>
                             <TextBlock Text="Auch in Outlook anzeigen?" Style="{StaticResource StepTitle}"/>
@@ -570,7 +570,7 @@
                                 </Grid>
                             </Button>
 
-                            <!-- Nur im Entwickler-Build ohne eigene Registrierung -->
+                            <!-- Developer builds without a registration of their own -->
                             <Border x:Name="NoRegistrationHint" Visibility="Collapsed"
                                     CornerRadius="10" Padding="14,10"
                                     Background="#1FF59E0B" BorderBrush="#66F59E0B" BorderThickness="1">
@@ -579,7 +579,7 @@
                             </Border>
                         </StackPanel>
 
-                        <!-- 4b: Anmeldung -->
+                        <!-- 4b: signing in -->
                         <StackPanel x:Name="Step4Setup" Visibility="Collapsed">
                             <TextBlock Text="SCHRITT 4 VON 5 · OUTLOOK" Style="{StaticResource Eyebrow}"/>
                             <TextBlock Text="Mit Microsoft anmelden" Style="{StaticResource StepTitle}"/>
@@ -637,9 +637,8 @@
                                        Foreground="{StaticResource DangerBrush}" Margin="0,10,0,0"/>
 
                             <!--
-                                Nur sichtbar, wenn diese Version keine eigene
-                                App-Registrierung mitbringt (Entwickler-Build).
-                                Endnutzer sehen das nie.
+                                Only visible when this build ships without an app
+                                registration of its own. End users never see it.
                             -->
                             <Expander x:Name="AdvancedIdSection" Header="Eigene App-ID verwenden"
                                       Visibility="Collapsed" Margin="0,24,0,0">
@@ -683,7 +682,7 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- ══════════ SCHRITT 5: Fertig ══════════ -->
+                    <!-- ══════════ STEP 5: done ══════════ -->
                     <StackPanel x:Name="Step5" Visibility="Collapsed">
                         <Border Width="64" Height="64" CornerRadius="32" HorizontalAlignment="Left"
                                 Background="#2622C55E" Margin="0,0,0,20">
@@ -714,7 +713,7 @@
                 </Grid>
             </ScrollViewer>
 
-            <!-- ══════════ Fusszeile ══════════ -->
+            <!-- ══════════ Footer ══════════ -->
             <Border Grid.Row="1" BorderBrush="{StaticResource SubtleBorder}" BorderThickness="0,1,0,0"
                     Padding="48,14">
                 <Grid>

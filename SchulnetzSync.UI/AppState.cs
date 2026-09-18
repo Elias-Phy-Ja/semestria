@@ -7,7 +7,7 @@ using SchulnetzSync.UI.Model;
 
 namespace SchulnetzSync.UI;
 
-// ── Manuell erstellter Termin (nur lokal, nie in Outlook) ────────────────────
+// ── An entry the user made by hand. Local only, never pushed to Outlook. ─────
 public sealed record ManualEventData(
     Guid Id,
     string Title,
@@ -18,8 +18,12 @@ public sealed record ManualEventData(
     string TypeKey);   // "Pruefung" | "Termin"
 
 /// <summary>
-/// Globaler App-Zustand — einzige Quelle der Wahrheit für Config und letzte Sync-Ergebnisse.
-/// Alle Seiten lesen von hier und abonnieren <see cref="Changed"/> für Aktualisierungen.
+/// Global state — the single source of truth for the config, the cached feed, the tasks,
+/// the colours and the comments. Every page reads from here and subscribes to
+/// <see cref="Changed"/> rather than talking to the other pages.
+///
+/// Everything is written to %LOCALAPPDATA%\Semestria as it changes, so a crash costs at
+/// most the keystroke that was in flight.
 /// </summary>
 public static class AppState
 {
@@ -31,38 +35,38 @@ public static class AppState
         set { _config = value; Changed?.Invoke(); }
     }
 
-    /// <summary>Wird ausgelöst wenn sich Config oder ein Sync-Ergebnis ändert.</summary>
+    /// <summary>Fires whenever the config or a sync result changes.</summary>
     public static event Action? Changed;
 
-    /// <summary>Aktuelle Sync-Statusmeldung (leer = kein laufender Sync).</summary>
+    /// <summary>Current status line; empty means nothing is running.</summary>
     public static string SyncStatus { get; set; } = string.Empty;
 
-    /// <summary>Ob gerade ein Sync läuft.</summary>
+    /// <summary>True while a sync is running.</summary>
     public static bool IsSyncing { get; set; }
 
     /// <summary>
-    /// Ob gerade der Feed im Hintergrund geladen wird (Auto-Refresh beim Start).
-    /// Getrennt von <see cref="IsSyncing"/>, damit das Dashboard beides anzeigen kann.
+    /// True while the feed is being pulled in the background, i.e. the auto-refresh at
+    /// start. Kept apart from <see cref="IsSyncing"/> so the dashboard can show both.
     /// </summary>
     public static bool IsRefreshingFeed { get; set; }
 
     /// <summary>
-    /// Hält fest, dass der Feed soeben erfolgreich geladen wurde, und persistiert
-    /// den Zeitstempel. Löst <see cref="Changed"/> aus.
+    /// Notes that the feed came in successfully and stores the timestamp.
+    /// Raises <see cref="Changed"/>.
     /// </summary>
     public static void MarkFeedRefreshed(DateTimeOffset when)
     {
         _config.LastFeedRefreshAt = when;
-        try { ConfigManager.Save(_config); } catch { /* Zeitstempel ist nicht kritisch */ }
+        try { ConfigManager.Save(_config); } catch { /* a timestamp is not worth failing over */ }
         Notify();
     }
 
-    // ── Persistierter Feed-Cache ─────────────────────────────────────────────
+    // ── Cached feed, kept on disk ────────────────────────────────────────────
     private static readonly string _cachePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Semestria", "cached-events.json");
 
-    // Enums als Strings serialisieren damit SchulnetzEventType korrekt rund-reist
+    // Enums as strings, otherwise SchulnetzEventType does not survive the round trip
     private static readonly JsonSerializerOptions _eventJsonOpts = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -72,8 +76,8 @@ public static class AppState
     private static IReadOnlyList<SchulnetzEvent> _cachedFeedEvents = LoadCachedEvents();
 
     /// <summary>
-    /// Zuletzt geparste Feed-Events — wird nach jedem Sync-Lauf (inkl. Dry-Run) befüllt.
-    /// Wird auf Disk persistiert und beim nächsten Start automatisch geladen.
+    /// The events from the last parse, filled after every run including a dry one. Written
+    /// to disk so the calendar has something to show before the first refresh comes back.
     /// </summary>
     public static IReadOnlyList<SchulnetzEvent> CachedFeedEvents
     {
@@ -94,7 +98,7 @@ public static class AppState
                     File.ReadAllText(_cachePath), _eventJsonOpts)
                     ?? [];
         }
-        catch { /* bei korrupten Daten leer starten */ }
+        catch { /* corrupt file: start empty rather than not at all */ }
         return [];
     }
 
@@ -109,7 +113,7 @@ public static class AppState
         catch { }
     }
 
-    // ── Ausgeblendete Events ─────────────────────────────────────────────────
+    // ── Entries the user hid ─────────────────────────────────────────────────
     private static readonly string _suppressedPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Semestria", "suppressed.json");
@@ -144,7 +148,7 @@ public static class AppState
         catch { }
     }
 
-    // ── Kategoriefarben ──────────────────────────────────────────────────────
+    // ── Colours per category and per subject ─────────────────────────────────
     private static readonly string _colorsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Semestria", "colors.json");
@@ -154,14 +158,14 @@ public static class AppState
     public static IReadOnlyDictionary<string, string> CategoryColors => _categoryColors;
 
     /// <summary>
-    /// Gibt die Hex-Farbe für einen Schlüssel zurück.
-    /// Fallback-Kette für Fachkürzel: spezifisch → globale Lektion-Farbe → Standardfarbe.
+    /// The hex colour for a key. For a subject code the chain runs: colour set for this
+    /// subject, then the global lesson colour, then the built-in default.
     /// </summary>
     public static string GetEventColor(string key)
     {
         if (_categoryColors.TryGetValue(key, out var c)) return c;
 
-        // Fachkürzel (kein fixes Kategorie-Schlüssel) → globale Lektion-Farbe verwenden
+        // A subject code rather than one of the fixed categories, so fall back to Lektion.
         if (key != "Pruefung" && key != "Termin" && key != "Lektion" &&
             _categoryColors.TryGetValue("Lektion", out var lektionColor))
             return lektionColor;
@@ -171,9 +175,9 @@ public static class AppState
 
     private static string DefaultColor(string key) => key switch
     {
-        "Pruefung" => "#DC2626",   // Rot
-        "Termin"   => "#D97706",   // Amber/Gelb
-        _          => "#2563EB"    // Blau (Lektionen + Fachkürzel)
+        "Pruefung" => "#DC2626",   // red
+        "Termin"   => "#D97706",   // amber
+        _          => "#2563EB"    // blue, for lessons and subject codes
     };
 
     public static void SetCategoryColor(string key, string hex)
@@ -192,15 +196,14 @@ public static class AppState
         Notify();
     }
 
-    // ── Einzelfarben ─────────────────────────────────────────────────────────
+    // ── Colours for one single entry ─────────────────────────────────────────
     //
-    // Eine Farbe für genau einen Eintrag, etwa eine einzelne TEU-Lektion oder
-    // den Termin «Via». Sie sticht die Fach- und Kategoriefarbe.
+    // A colour for exactly one entry, say one TEU lesson or the "Via" appointment.
+    // It beats both the subject and the category colour.
     //
-    // Schlüssel ist der Event-Key. Prüfungen und Termine behalten ihn auch
-    // beim Verschieben (P_65100). Bei Lektionen enthält er Datum, Zeit und
-    // Raum — wird genau diese Lektion verlegt, fällt die Einzelfarbe auf die
-    // Fachfarbe zurück.
+    // Keyed by the event key. Exams and appointments keep theirs when they move
+    // (P_65100), but a lesson key contains date, time and room — so if that exact
+    // lesson gets rescheduled, its individual colour falls back to the subject one.
 
     private static readonly string _eventColorsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -209,10 +212,10 @@ public static class AppState
     private static readonly Dictionary<string, string> _eventColors = LoadEventColors();
 
     /// <summary>
-    /// Effektive Farbe eines Eintrags: Einzelfarbe → Fach/Kategorie → Standard.
+    /// The colour an entry actually gets: individual, then subject or category, then default.
     /// </summary>
-    /// <param name="eventKey">Der Event-Key des Eintrags.</param>
-    /// <param name="groupKey">"Pruefung", "Termin" oder das Fachkürzel.</param>
+    /// <param name="eventKey">Key of the entry itself.</param>
+    /// <param name="groupKey">"Pruefung", "Termin", or the subject code.</param>
     public static string GetEventColor(string eventKey, string groupKey)
         => _eventColors.TryGetValue(eventKey, out var hex) ? hex : GetEventColor(groupKey);
 
@@ -226,7 +229,7 @@ public static class AppState
         Notify();
     }
 
-    /// <summary>Entfernt die Einzelfarbe; der Eintrag zeigt wieder die Fach- bzw. Kategoriefarbe.</summary>
+    /// <summary>Drops the individual colour, so the entry goes back to its group colour.</summary>
     public static void ClearOwnEventColor(string eventKey)
     {
         if (!_eventColors.Remove(eventKey)) return;
@@ -278,7 +281,7 @@ public static class AppState
         catch { }
     }
 
-    // ── Manuelle Events ──────────────────────────────────────────────────────
+    // ── Hand-made entries ────────────────────────────────────────────────────
     private static readonly string _manualPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Semestria", "manual-events.json");
@@ -287,8 +290,8 @@ public static class AppState
     public static IReadOnlyList<ManualEventData> ManualEvents => _manualEvents;
 
     /// <summary>
-    /// Die manuellen Einträge als <see cref="SchulnetzEvent"/> — für Kalender,
-    /// Dashboard und Sync, damit alle drei dieselbe Umwandlung verwenden.
+    /// The hand-made entries as <see cref="SchulnetzEvent"/>, for the calendar, the
+    /// dashboard and the sync — one conversion, so all three agree on what they show.
     /// </summary>
     public static IEnumerable<SchulnetzEvent> ManualAsEvents()
         => _manualEvents.Select(m => new SchulnetzEvent(
@@ -345,14 +348,14 @@ public static class AppState
         catch { }
     }
 
-    // ── Aufgaben ─────────────────────────────────────────────────────────────
+    // ── Tasks ────────────────────────────────────────────────────────────────
     private static readonly string _tasksPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Semestria", "tasks.json");
 
     private static List<TaskItem> _tasks = LoadTasks();
 
-    /// <summary>Alle Aufgaben, offene wie erledigte, in Eingabereihenfolge.</summary>
+    /// <summary>Every task, open and done, in the order they were added.</summary>
     public static IReadOnlyList<TaskItem> Tasks => _tasks;
 
     public static void AddTask(TaskItem task)
@@ -362,7 +365,7 @@ public static class AppState
         Notify();
     }
 
-    /// <summary>Ersetzt eine Aufgabe anhand ihrer Id. Unbekannte Ids werden ignoriert.</summary>
+    /// <summary>Replaces a task by id. An unknown id is simply ignored.</summary>
     public static void UpdateTask(TaskItem task)
     {
         var i = _tasks.FindIndex(t => t.Id == task.Id);
@@ -379,12 +382,10 @@ public static class AppState
         Notify();
     }
 
-    /// <summary>
-    /// Entfernt erledigte Aufgaben.
-    /// </summary>
+    /// <summary>Removes finished tasks.</summary>
     /// <param name="scope">
-    /// Schränkt auf einen Bereich ein, etwa eine Liste. Wer in «DEU» aufräumt,
-    /// erwartet nicht, dass auch «ENG» geleert wird. Null = alle.
+    /// Limits the clean-up to one area, usually a list. Someone tidying up "DEU" does not
+    /// expect "ENG" to be emptied as well. Null clears everything.
     /// </param>
     public static int ClearCompletedTasks(Func<TaskItem, bool>? scope = null)
     {
@@ -393,7 +394,7 @@ public static class AppState
         return removed;
     }
 
-    // ── Aufgabenlisten ───────────────────────────────────────────────────────
+    // ── Task lists ───────────────────────────────────────────────────────────
     private static readonly string _taskListsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Semestria", "task-lists.json");
@@ -401,9 +402,8 @@ public static class AppState
     private static List<string> _taskLists = LoadTaskLists();
 
     /// <summary>
-    /// Alle Listennamen: ausdrücklich angelegte plus solche, die noch an einer
-    /// Aufgabe hängen. So verschwindet eine Liste nicht, nur weil sie nie
-    /// separat angelegt wurde.
+    /// Every list name: the ones created on purpose plus the ones still attached to a
+    /// task. That way a list does not vanish just because nobody ever created it formally.
     /// </summary>
     public static IReadOnlyList<string> TaskLists()
         => _taskLists
@@ -413,7 +413,7 @@ public static class AppState
             .OrderBy(n => n, StringComparer.CurrentCulture)
             .ToList();
 
-    /// <summary>Legt eine Liste an. Doppelte Namen werden ignoriert.</summary>
+    /// <summary>Creates a list. A name that already exists is ignored.</summary>
     public static void AddTaskList(string name)
     {
         name = name.Trim();
@@ -426,8 +426,8 @@ public static class AppState
     }
 
     /// <summary>
-    /// Entfernt eine Liste. Die Aufgaben darin bleiben erhalten und rutschen
-    /// nach «Ohne Liste» — Löschen der Liste soll keine Arbeit vernichten.
+    /// Removes a list. The tasks in it survive and move to "Ohne Liste" — deleting a
+    /// list should never destroy work.
     /// </summary>
     public static void RemoveTaskList(string name)
     {
@@ -445,10 +445,11 @@ public static class AppState
         Notify();
     }
 
-    // ── Listenfarben ─────────────────────────────────────────────────────────
+    // ── Colours for the task lists ───────────────────────────────────────────
     //
-    // Bewusst getrennt von den Kalenderfarben: Eine Liste «WIR» hat kein Fach,
-    // und auch eine Liste «DEU» soll anders aussehen dürfen als die Lektionen.
+    // Deliberately separate from the calendar colours: a list called "WIR" has no subject
+    // behind it, and even a list called "DEU" should be allowed to look different from the
+    // DEU lessons.
 
     private static readonly string _taskListColorsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -457,11 +458,11 @@ public static class AppState
     private static readonly Dictionary<string, string> _taskListColors = LoadTaskListColors();
 
     /// <summary>
-    /// Farbe einer Liste als Hex-Wert.
+    /// A list colour as hex.
     ///
-    /// Hat eine Liste noch keine, bekommt sie beim ersten Abruf die am wenigsten
-    /// genutzte Palettenfarbe und behält sie. Ohne Speichern würden sich die
-    /// Farben verschieben, sobald eine Liste dazukommt.
+    /// A list without one gets the least used colour from the palette on first read and
+    /// keeps it. Without storing it the colours would shuffle around every time a new list
+    /// appeared.
     /// </summary>
     public static string TaskListColor(string name)
     {
@@ -507,8 +508,8 @@ public static class AppState
     }
 
     /// <summary>
-    /// Vorschläge für neue Listen: die Fachkürzel aus den Lektionen des Feeds,
-    /// soweit es dafür noch keine Liste gibt.
+    /// Suggestions for new lists: the subject codes from the lessons in the feed, minus
+    /// the ones that already have a list.
     /// </summary>
     public static IReadOnlyList<string> SuggestedListNames()
     {
@@ -554,7 +555,7 @@ public static class AppState
                 return JsonSerializer.Deserialize<List<TaskItem>>(
                     File.ReadAllText(_tasksPath)) ?? [];
         }
-        catch { /* bei korrupten Daten leer starten */ }
+        catch { /* corrupt file: start empty rather than not at all */ }
         return [];
     }
 
@@ -568,14 +569,14 @@ public static class AppState
         catch { }
     }
 
-    // ── Fachkommentare ───────────────────────────────────────────────────────
+    // ── Subject comments ─────────────────────────────────────────────────────
     private static readonly string _subjectCommentsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "Semestria", "subject-comments.json");
 
     private static readonly List<SubjectComment> _subjectComments = LoadSubjectComments();
 
-    /// <summary>Kommentare zu einem Fach, neueste zuerst.</summary>
+    /// <summary>The notes on one subject, newest first.</summary>
     public static IReadOnlyList<SubjectComment> CommentsFor(string subject)
         => _subjectComments
             .Where(c => string.Equals(c.Subject, subject, StringComparison.OrdinalIgnoreCase))
@@ -585,7 +586,7 @@ public static class AppState
     public static int CommentCount(string subject)
         => _subjectComments.Count(c => string.Equals(c.Subject, subject, StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>Legt einen Kommentar an. Leerer Text wird ignoriert.</summary>
+    /// <summary>Adds a note. Empty text is ignored.</summary>
     public static void AddSubjectComment(string subject, string text)
     {
         var clean = CleanComment(text);
@@ -597,7 +598,7 @@ public static class AppState
         Notify();
     }
 
-    /// <summary>Ändert den Text. Leerer Text löscht den Kommentar nicht, sondern wird ignoriert.</summary>
+    /// <summary>Changes the text. Emptying the box does not delete the note, it is ignored.</summary>
     public static void UpdateSubjectComment(Guid id, string text)
     {
         var clean = CleanComment(text);
@@ -630,7 +631,7 @@ public static class AppState
                 return JsonSerializer.Deserialize<List<SubjectComment>>(
                     File.ReadAllText(_subjectCommentsPath)) ?? [];
         }
-        catch { /* bei korrupten Daten leer starten */ }
+        catch { /* corrupt file: start empty rather than not at all */ }
         return [];
     }
 
@@ -644,9 +645,9 @@ public static class AppState
         catch { }
     }
 
-    // ── Kalender-Reset-Helpers ───────────────────────────────────────────────
+    // ── Resetting the calendar ───────────────────────────────────────────────
 
-    /// <summary>Löscht ausgeblendete Einträge und manuelle Events (Farben bleiben).</summary>
+    /// <summary>Clears hidden entries and hand-made events. Colours stay.</summary>
     public static void ClearCalendar()
     {
         _suppressedKeys.Clear(); SaveSuppressed();
@@ -654,7 +655,7 @@ public static class AppState
         Notify();
     }
 
-    /// <summary>Setzt alles zurück: ausgeblendete Einträge, manuelle Events und Farben.</summary>
+    /// <summary>Clears the lot: hidden entries, hand-made events and every colour.</summary>
     public static void ResetAll()
     {
         _suppressedKeys.Clear(); SaveSuppressed();
@@ -664,7 +665,7 @@ public static class AppState
         Notify();
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // ── Small helpers ────────────────────────────────────────────────────────
 
     public static void Reload()
     {

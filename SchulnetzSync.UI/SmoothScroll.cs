@@ -6,20 +6,18 @@ using System.Windows.Media;
 namespace SchulnetzSync.UI;
 
 /// <summary>
-/// Makes the wheel scroll proportionally to the actual wheel delta, and lets a
-/// nested scroll area hand over to its parent once it reaches its end.
+/// Scrolls in proportion to the actual wheel delta, and lets a nested scroll area hand
+/// the movement over to its parent once it has hit its end.
 ///
-/// WPF behandelt jedes Rad-Ereignis gleich: Egal wie klein der Ausschlag ist,
-/// es scrollt drei Zeilen. Eine Maus sendet pro Rastung genau ein Ereignis,
-/// ein Präzisions-Touchpad dagegen viele kleine pro Wischbewegung — jedes davon
-/// löst dann einen vollen Sprung aus, und die Seite rast unkontrolliert davon.
+/// WPF treats every wheel event the same: however small the movement, it scrolls three
+/// lines. A mouse sends exactly one event per notch, but a precision touchpad sends many
+/// small ones per swipe — each of which then triggers a full jump, and the page bolts.
 /// </summary>
 public static class SmoothScroll
 {
     /// <summary>
-    /// Pixel pro Delta-Einheit. Eine Mausrastung (120) ergibt 48 px und damit
-    /// genau die drei Zeilen, die Windows als Standard vorgibt — für die Maus
-    /// ändert sich also nichts.
+    /// Pixels per delta unit. One mouse notch (120) comes to 48 px, which is exactly the
+    /// three lines Windows uses by default — so nothing changes for a mouse.
     /// </summary>
     private const double PixelsPerUnit = 0.4;
 
@@ -35,14 +33,13 @@ public static class SmoothScroll
         if (e.Handled || e.Delta == 0) return;
         if (sender is not ScrollViewer sv) return;
 
-        // PreviewMouseWheel tunnelt von aussen nach innen. Ohne diese Prüfung
-        // würde bei verschachtelten Bereichen die äussere Seite scrollen,
-        // obwohl der Zeiger über dem inneren Feld steht.
+        // PreviewMouseWheel tunnels from the outside in. Without this check the outer
+        // page would scroll even while the pointer sits over the inner box.
         if (!ReferenceEquals(InnermostScrollViewer(e.OriginalSource as DependencyObject), sv))
             return;
 
         var target = FirstScrollableInDirection(sv, e.Delta);
-        if (target is null) return;   // nichts kann scrollen → Ereignis weiterreichen
+        if (target is null) return;   // nothing here can scroll, so let the event pass
 
         target.ScrollToVerticalOffset(target.VerticalOffset - e.Delta * PixelsPerUnit);
         e.Handled = true;
@@ -60,9 +57,8 @@ public static class SmoothScroll
     }
 
     /// <summary>
-    /// Walks outwards until it finds a scroll area with room left in that
-    /// direction. So a short inner box hands the movement over to the page
-    /// instead of swallowing it.
+    /// Walks outwards until it finds a scroll area with room left in that direction, so a
+    /// short inner box passes the movement on to the page instead of swallowing it.
     /// </summary>
     private static ScrollViewer? FirstScrollableInDirection(ScrollViewer from, int delta)
     {
@@ -82,8 +78,8 @@ public static class SmoothScroll
     }
 
     /// <summary>
-    /// Visual parent for visuals, logical parent otherwise — der OriginalSource
-    /// eines Rad-Ereignisses kann ein Textelement ohne visuellen Eltern sein.
+    /// Visual parent for visuals, logical parent otherwise — the OriginalSource of a wheel
+    /// event can be a text element that has no visual parent at all.
     /// </summary>
     private static DependencyObject? ParentOf(DependencyObject element)
         => element is Visual or System.Windows.Media.Media3D.Visual3D

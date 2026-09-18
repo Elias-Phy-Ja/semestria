@@ -1,33 +1,27 @@
 namespace SchulnetzSync.Core.Model;
 
-/// <summary>
-/// Controls which event types are synced and how conflicts are resolved.
-/// </summary>
+/// <summary>Which event types a run touches, and how it handles the awkward cases.</summary>
 public sealed class SyncOptions
 {
     /// <summary>
-    /// The set of event types to synchronise on this run.
-    /// Only <see cref="SchulnetzEventType.Pruefung"/> and
-    /// <see cref="SchulnetzEventType.Termin"/> are valid members;
-    /// <see cref="SchulnetzEventType.Lektion"/> is always silently excluded.
+    /// Types to sync on this run. Only Pruefung and Termin mean anything here —
+    /// Lektion is dropped no matter what the caller passes in.
     /// </summary>
     public IReadOnlySet<SchulnetzEventType> EnabledTypes { get; init; }
         = new HashSet<SchulnetzEventType> { SchulnetzEventType.Pruefung, SchulnetzEventType.Termin };
 
-    /// <summary>
-    /// Target calendar ID. Null means the user's primary calendar.
-    /// </summary>
+    /// <summary>Target calendar. Null means the primary calendar of the account.</summary>
     public string? CalendarId { get; init; }
 
     /// <summary>
-    /// When true, a disappeared exam is marked "[Abgesagt] …" instead of being deleted.
-    /// Only applies to <see cref="SchulnetzEventType.Pruefung"/>.
+    /// Rename a vanished exam to "[Abgesagt] …" instead of deleting it. Exams only:
+    /// a cancelled exam is news worth keeping, a vanished appointment usually is not.
     /// </summary>
     public bool CancelInsteadOfDelete { get; init; } = true;
 
     /// <summary>
-    /// When true, the diff engine attempts to fill a missing exam room
-    /// from a lesson that starts at the same time.
+    /// Fill a missing exam room from the lesson starting at the same time.
+    /// The feed leaves the room off exams often enough to make this worth doing.
     /// </summary>
     public bool EnrichExamLocationFromLesson { get; init; } = true;
 }

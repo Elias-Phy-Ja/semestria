@@ -5,8 +5,8 @@ using System.Text.Json;
 namespace SchulnetzSync.Core.Configuration;
 
 /// <summary>
-/// Loads and saves <see cref="SyncConfig"/> from the user's AppData folder.
-/// The feed URL is protected via DPAPI (Windows Data Protection API).
+/// Reads and writes <see cref="SyncConfig"/> in the user AppData folder.
+/// The feed URL goes through DPAPI, so the file alone is useless on another machine.
 /// </summary>
 public static class ConfigManager
 {
@@ -22,14 +22,9 @@ public static class ConfigManager
         PropertyNameCaseInsensitive = true,
     };
 
-    // -----------------------------------------------------------------------
-    // Load / Save
-    // -----------------------------------------------------------------------
+    // ── Load / Save ─────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Loads the config from disk. Returns a fresh default instance if the
-    /// file does not exist yet.
-    /// </summary>
+    /// <summary>Loads the config, or a fresh default one on first start.</summary>
     public static SyncConfig Load()
     {
         if (!File.Exists(ConfigPath))
@@ -39,7 +34,7 @@ public static class ConfigManager
         return JsonSerializer.Deserialize<SyncConfig>(json, JsonOpts) ?? new SyncConfig();
     }
 
-    /// <summary>Persists the config to disk, creating the directory if needed.</summary>
+    /// <summary>Writes the config, creating the folder on the way if needed.</summary>
     public static void Save(SyncConfig config)
     {
         Directory.CreateDirectory(ConfigDir);
@@ -47,13 +42,11 @@ public static class ConfigManager
         File.WriteAllText(ConfigPath, json, Encoding.UTF8);
     }
 
-    // -----------------------------------------------------------------------
-    // Feed URL encryption (DPAPI — Windows only)
-    // -----------------------------------------------------------------------
+    // ── Feed URL, DPAPI (Windows only) ──────────────────────────────────────
 
     /// <summary>
-    /// Encrypts the feed URL with DPAPI and stores the Base-64 result in the config.
-    /// The plain-text URL is never written to disk.
+    /// Encrypts the feed URL and stores the Base-64 result. The plain URL is never
+    /// written anywhere, because it contains the personal token.
     /// </summary>
     public static void SetFeedUrl(SyncConfig config, string plainUrl)
     {
@@ -62,10 +55,7 @@ public static class ConfigManager
         config.FeedUrlEncrypted = Convert.ToBase64String(encrypted);
     }
 
-    /// <summary>
-    /// Decrypts and returns the feed URL.
-    /// Returns null if no URL has been stored yet.
-    /// </summary>
+    /// <summary>Decrypts the stored feed URL, or null when there is none yet.</summary>
     public static string? GetFeedUrl(SyncConfig config)
     {
         if (config.FeedUrlEncrypted is null) return null;

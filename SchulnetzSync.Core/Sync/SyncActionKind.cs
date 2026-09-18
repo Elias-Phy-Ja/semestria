@@ -1,37 +1,36 @@
 namespace SchulnetzSync.Core.Sync;
 
-/// <summary>The kind of action the diff engine wants to perform.</summary>
+/// <summary>What the diff engine wants to do with a single event.</summary>
 public enum SyncActionKind
 {
-    /// <summary>Event is new in the feed — create it in the calendar.</summary>
+    /// <summary>New in the feed — create it.</summary>
     Create,
 
-    /// <summary>Event exists in both but its content changed — update the calendar entry.</summary>
+    /// <summary>Known on both sides but the content moved — update the calendar entry.</summary>
     Update,
 
-    /// <summary>Event has been missing for 24 h+ — delete the calendar entry.</summary>
+    /// <summary>Gone from the feed for more than 24 h — delete it.</summary>
     Delete,
 
     /// <summary>
-    /// Exam has been missing for 24 h+ and CancelInsteadOfDelete is on —
-    /// set the title to "[Abgesagt] …" instead of deleting.
+    /// Same as Delete, but for an exam while CancelInsteadOfDelete is on:
+    /// retitle to "[Abgesagt] …" so the cancellation stays visible.
     /// </summary>
     MarkCancelled,
 
     /// <summary>
-    /// Event disappeared from the feed for the first time —
-    /// stamp schulnetzMissingSince; do not delete yet.
+    /// First run in which the event is missing — only stamp schulnetzMissingSince.
+    /// Nothing is deleted yet, because feeds hiccup.
     /// </summary>
     FlagMissing,
 
-    /// <summary>Event reappeared in the feed — clear the schulnetzMissingSince stamp.</summary>
+    /// <summary>Back in the feed — clear the schulnetzMissingSince stamp.</summary>
     ClearMissing,
 
     /// <summary>
-    /// A second calendar entry carries a key that already exists — remove the
-    /// surplus copy. Kept apart from <see cref="Delete"/> because it cleans up
-    /// the app's own mistake rather than reacting to the feed, and must not
-    /// trip the mass-deletion safeguard.
+    /// Two calendar entries carry the same key, so drop the surplus copy. Separate from
+    /// <see cref="Delete"/> because it cleans up our own mistake instead of reacting to
+    /// the feed, and must not count towards the mass-deletion safeguard.
     /// </summary>
     DeleteDuplicate,
 }

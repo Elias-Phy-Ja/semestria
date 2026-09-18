@@ -3,6 +3,10 @@ using Xunit;
 
 namespace SchulnetzSync.Tests.Model;
 
+/// <summary>
+/// Real summaries out of the feed. The awkward ones are the point here: titles with a
+/// leading time, subjects without an underscore, and free text that has no code at all.
+/// </summary>
 public class SubjectCodeTests
 {
     [Theory]
@@ -22,7 +26,7 @@ public class SubjectCodeTests
                         SubjectCode.FromSummary("TEU_I26A Prüfung 1.1_GEO_TEU"));
 
     [Theory]
-    [InlineData("spm 1.1 IMS", "SPM 1.")]
+    [InlineData("spm 1.1 IMS", "SPM 1.")]   // ugly, but consistent — six characters is six characters
     [InlineData("Sport",       "SPORT")]
     public void WithoutUnderscore_TakesFirstSixCharacters(string summary, string expected)
         => Assert.Equal(expected, SubjectCode.FromSummary(summary));

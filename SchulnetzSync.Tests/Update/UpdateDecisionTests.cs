@@ -4,9 +4,8 @@ using Xunit;
 namespace SchulnetzSync.Tests.Update;
 
 /// <summary>
-/// Die Entscheidungslogik rund um Updates: ob gefragt wird, wie oft verschoben
-/// werden darf und was bei einer gescheiterten Prüfung passiert. Alles ohne
-/// Netzwerk und mit fester Uhrzeit.
+/// The decisions around updates: whether the user gets asked, what postponing does, and
+/// what happens when the check itself fails. No network, and the clock is a constant.
 /// </summary>
 public class UpdateDecisionTests
 {
@@ -15,7 +14,7 @@ public class UpdateDecisionTests
     private static UpdateInfo Update(string version = "2.1.0.0", bool mandatory = false)
         => new(version, mandatory);
 
-    // ── Quelle für die Gate-Tests ────────────────────────────────────────────
+    // ── Stand-in store for the gate tests ────────────────────────────────────
 
     private sealed class StubSource(
         Func<CancellationToken, Task<IReadOnlyList<UpdateInfo>>> check) : IUpdateSource
@@ -30,7 +29,7 @@ public class UpdateDecisionTests
         => new(new StubSource(_ => Task.FromResult<IReadOnlyList<UpdateInfo>>(updates)),
                TimeSpan.FromMilliseconds(2500));
 
-    // ── Kein Update ──────────────────────────────────────────────────────────
+    // ── Nothing on offer ─────────────────────────────────────────────────────
 
     [Fact]
     public async Task Kein_Update_vorhanden_startet_direkt()
@@ -43,7 +42,7 @@ public class UpdateDecisionTests
         Assert.Null(decision.FailureReason);
     }
 
-    // ── Fehlerfälle: Start darf nie hängen bleiben ───────────────────────────
+    // ── Failures: the start must never hang on this ──────────────────────────
 
     [Fact]
     public async Task Pruefung_wirft_Exception_startet_direkt()
@@ -61,8 +60,8 @@ public class UpdateDecisionTests
     [Fact]
     public async Task Pruefung_ueberschreitet_Timeout_startet_direkt()
     {
-        // Quelle, die ihren Token bewusst ignoriert: die harte Obergrenze muss
-        // auch dann greifen.
+        // A source that ignores its cancellation token on purpose — the hard limit
+        // has to bite even then.
         var gate = new UpdateGate(
             new StubSource(async _ =>
             {
@@ -80,7 +79,7 @@ public class UpdateDecisionTests
         Assert.True(elapsed < TimeSpan.FromSeconds(5), $"Prüfung dauerte {elapsed.TotalSeconds:0.0} s");
     }
 
-    // ── Neustart nach dem Update ─────────────────────────────────────────────
+    // ── Restart after an install ─────────────────────────────────────────────
 
     [Fact]
     public async Task Start_mit_restarted_prueft_nicht()
@@ -100,7 +99,7 @@ public class UpdateDecisionTests
         Assert.Equal(UpdatePrompt.None, decision.Prompt);
     }
 
-    // ── Auswahl anzeigen oder nicht ──────────────────────────────────────────
+    // ── Ask, or stay out of the way ──────────────────────────────────────────
 
     [Fact]
     public void Update_noch_nie_verschoben_zeigt_Auswahl()
@@ -144,7 +143,7 @@ public class UpdateDecisionTests
     [Fact]
     public void Neue_Version_waehrend_laufender_Snooze_fragt_wieder()
     {
-        // 2.1.0.0 wurde auf 30 Tage verschoben — 2.2.0.0 ist davon nicht gedeckt.
+        // 2.1.0.0 was pushed out 30 days; 2.2.0.0 is not covered by that.
         var prefs = new UpdatePreferences("2.1.0.0", Now.AddDays(30), 2);
 
         var decision = UpdatePolicy.Decide([Update("2.2.0.0")], prefs, Now);
@@ -165,7 +164,7 @@ public class UpdateDecisionTests
         Assert.Equal(Now.AddDays(1), next.RemindAfterUtc);
     }
 
-    // ── Verschiebe-Frist ─────────────────────────────────────────────────────
+    // ── How long a postponement lasts ────────────────────────────────────────
 
     [Fact]
     public void Verschieben_erinnert_am_naechsten_Tag()
@@ -179,7 +178,7 @@ public class UpdateDecisionTests
     [Fact]
     public void Jedes_weitere_Verschieben_kostet_ebenfalls_einen_Tag()
     {
-        // Die Frist waechst nicht mit der Zahl der Verschiebungen.
+        // The wait does not grow with the number of postponements.
         var prefs = new UpdatePreferences("2.1.0.0", Now.AddDays(-1), 4);
 
         var next = UpdatePolicy.Postpone(prefs, "2.1.0.0", Now);
@@ -193,22 +192,22 @@ public class UpdateDecisionTests
     {
         var postponed = UpdatePolicy.Postpone(new UpdatePreferences(), "2.1.0.0", Now);
 
-        // Kurz davor: noch Ruhe.
+        // Just before: still quiet.
         Assert.Equal(UpdatePrompt.None,
             UpdatePolicy.Decide([Update()], postponed, Now.AddHours(23)).Prompt);
 
-        // Kurz danach: wieder fragen.
+        // Just after: ask again.
         Assert.Equal(UpdatePrompt.Optional,
             UpdatePolicy.Decide([Update()], postponed, Now.AddHours(25)).Prompt);
     }
 
-    // ── Dringendes kommt immer durch ─────────────────────────────────────────
+    // ── Urgent always gets through ───────────────────────────────────────────
 
     [Fact]
     public async Task Waehrend_der_Snooze_wird_trotzdem_beim_Store_geprueft()
     {
-        // Die Frist darf nur die Rueckfrage unterdruecken, nicht die Abfrage:
-        // sonst bliebe ein dringendes Update unbemerkt liegen.
+        // A postponement may silence the question, never the check itself —
+        // otherwise a mandatory update would sit there unnoticed.
         bool asked = false;
         var gate = new UpdateGate(
             new StubSource(_ =>
@@ -237,13 +236,13 @@ public class UpdateDecisionTests
         Assert.Equal(UpdatePrompt.Mandatory, decision.Prompt);
     }
 
-    // ── Versionsvergleich für die Anzeige ───────────────────────────────────
+    // ── Comparing versions for the message ──────────────────────────────────
 
     [Theory]
     [InlineData("2.2.0.0", "2.1.0", true)]
     [InlineData("2.2.0",   "2.1.0", true)]
     [InlineData("3.0.0.0", "2.9.9", true)]
-    [InlineData("2.1.0.0", "2.1.0", false)]   // Store nennt die installierte Version
+    [InlineData("2.1.0.0", "2.1.0", false)]   // the store naming the version already installed
     [InlineData("2.0.0.0", "2.1.0", false)]
     [InlineData(null,      "2.1.0", false)]
     [InlineData("",        "2.1.0", false)]

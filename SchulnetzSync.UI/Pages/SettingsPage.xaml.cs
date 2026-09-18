@@ -12,15 +12,19 @@ using SchulnetzSync.UI.Services;
 
 namespace SchulnetzSync.UI.Pages;
 
+/// <summary>
+/// Settings: feed URL, Microsoft account, which types to sync, theme, target calendar,
+/// and the button that removes everything the app ever wrote to Outlook.
+/// </summary>
 public partial class SettingsPage : Page
 {
     private readonly Dictionary<string, string> _calendarMap = new();
-    // Startet als true, verhindert Theme_Changed während XAML-Init (IsChecked="True" feuert Checked)
+    // Starts true so Theme_Changed stays quiet during XAML init, where IsChecked="True" fires Checked
     private bool _loadingUi = true;
 
     public SettingsPage()
     {
-        InitializeComponent(); // Hier feuert RbSystem.Checked, _loadingUi=true blockt es
+        InitializeComponent(); // RbSystem.Checked fires in here; _loadingUi swallows it
         Loaded += async (_, _) =>
         {
             LoadUi();
@@ -28,9 +32,7 @@ public partial class SettingsPage : Page
         };
     }
 
-    // -----------------------------------------------------------------------
-    // Initialisierung
-    // -----------------------------------------------------------------------
+    // ── Filling the page from the config ────────────────────────────────
 
     private void LoadUi()
     {
@@ -38,12 +40,12 @@ public partial class SettingsPage : Page
         try
         {
             var config = AppState.Config;
-            // Feed-URL: NIEMALS Token anzeigen, nur Pfad
+            // Feed URL: show the path only, NEVER the token
             var raw = ConfigManager.GetFeedUrl(config);
             TxtFeedUrl.Text = raw ?? "";
 
-            // Im Feld steht nur eine selbst eingetragene ID; die mitgelieferte
-            // Registrierung bleibt unsichtbar, damit niemand daran herumschraubt.
+            // The field only ever shows an id the user typed in. The built-in registration
+            // stays out of sight so nobody starts fiddling with it.
             TxtClientId.Text = MicrosoftAccount.UsesCustomId(config)
                 ? config.ClientId!.Trim()
                 : "";
@@ -55,7 +57,7 @@ public partial class SettingsPage : Page
             ChkEnrich.IsChecked       = config.EnrichExamLocationFromLesson;
             ChkAutoRefresh.IsChecked  = config.AutoRefreshFeed;
 
-            // Theme-RadioButton setzen
+            // Tick the radio button for the stored theme.
             switch (config.ResolveTheme())
             {
                 case "Light": RbLight.IsChecked  = true; break;
@@ -66,9 +68,7 @@ public partial class SettingsPage : Page
         finally { _loadingUi = false; }
     }
 
-    // -----------------------------------------------------------------------
-    // Microsoft-Anmeldung
-    // -----------------------------------------------------------------------
+    // ── Signing in to Microsoft ─────────────────────────────────────────
 
     private async Task CheckSignInAsync()
     {
@@ -99,13 +99,11 @@ public partial class SettingsPage : Page
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Theme-Umschalter
-    // -----------------------------------------------------------------------
+    // ── Theme switch ────────────────────────────────────────────────────
 
     private void Theme_Changed(object sender, RoutedEventArgs e)
     {
-        if (_loadingUi) return; // Keine Aktion während Initialisierung
+        if (_loadingUi) return; // still filling the page, not a user action
         if (sender is not WpfRadioButton rb) return;
 
         var pref = rb.Tag as string;
@@ -116,7 +114,7 @@ public partial class SettingsPage : Page
             _       => null
         };
 
-        // "System" wird ausdrücklich gespeichert: null hiesse "nie gewählt" und damit dunkel
+        // "System" is stored explicitly: null would mean "never chosen" and land on dark
         AppState.Config.ThemePreference = pref;
         ConfigManager.Save(AppState.Config);
     }
@@ -148,7 +146,7 @@ public partial class SettingsPage : Page
 
         try
         {
-            // Frische Instanz, kein Retry-Block durch alten Zustand
+            // Fresh instance, so an earlier failure cannot block the retry.
             var auth = new MsalAuthProvider(clientId);
             await auth.AcquireTokenInteractiveAsync();
 
@@ -165,7 +163,7 @@ public partial class SettingsPage : Page
             TxtAuthError.Visibility = Visibility.Visible;
             SetAccountState(false, "Anmeldung fehlgeschlagen",
                 "Prüfe die App-ID und versuche es nochmals.");
-            // Button zurücksetzen → Retry möglich
+            // Put the button back so another attempt is possible.
             BtnSignIn.IsEnabled = true;
         }
     }
@@ -201,9 +199,7 @@ public partial class SettingsPage : Page
         });
     }
 
-    // -----------------------------------------------------------------------
-    // Kalender-Liste
-    // -----------------------------------------------------------------------
+    // ── The calendar picker ─────────────────────────────────────────────
 
     private async Task LoadCalendarsAsync(string clientId)
     {
@@ -212,7 +208,7 @@ public partial class SettingsPage : Page
             var auth = new MsalAuthProvider(clientId);
             string token;
             try   { token = await auth.AcquireTokenSilentAsync(); }
-            catch { return; } // Kein token → keine Kalender laden
+            catch { return; } // no token, so there is nothing to list
 
             var target = new GraphCalendarTarget(token);
             var cals   = await target.GetCalendarsAsync();
@@ -239,15 +235,13 @@ public partial class SettingsPage : Page
         }
         catch
         {
-            // Nicht-kritisch, Kalender kann leer gelassen werden
+            // Not important enough to complain about: the field may stay empty.
         }
     }
 
     private void CmbCalendar_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
 
-    // -----------------------------------------------------------------------
-    // Speichern
-    // -----------------------------------------------------------------------
+    // ── Saving ──────────────────────────────────────────────────────────
 
     private void BtnSave_Click(object sender, RoutedEventArgs e)
     {
@@ -255,24 +249,24 @@ public partial class SettingsPage : Page
         var feedUrl = TxtFeedUrl.Text.Trim();
         var clientId = TxtClientId.Text.Trim();
 
-        // Feed-URL speichern
+        // Feed URL, encrypted on the way in.
         if (!string.IsNullOrEmpty(feedUrl))
             ConfigManager.SetFeedUrl(config, feedUrl);
 
-        // Eigene Client-ID speichern; leeres Feld → mitgelieferte Registrierung
+        // Custom client id; an empty field falls back to the built-in registration.
         config.ClientId = MicrosoftAccount.IsUsable(clientId) ? clientId : null;
 
-        // Typen
+        // Which types go to Outlook.
         config.EnabledTypes.Clear();
         if (ChkPruefungen.IsChecked == true) config.EnabledTypes.Add(SchulnetzEventType.Pruefung);
         if (ChkTermine.IsChecked    == true) config.EnabledTypes.Add(SchulnetzEventType.Termin);
 
-        // Optionen
+        // The two behaviour switches.
         config.CancelInsteadOfDelete        = ChkCancel.IsChecked == true;
         config.EnrichExamLocationFromLesson = ChkEnrich.IsChecked == true;
         config.AutoRefreshFeed              = ChkAutoRefresh.IsChecked == true;
 
-        // Kalender
+        // Target calendar.
         if (CmbCalendar.SelectedIndex > 0 && CmbCalendar.SelectedItem is string calName)
             config.CalendarId = _calendarMap.FirstOrDefault(kv =>
                 kv.Value == calName && kv.Key != "").Key ?? null;
@@ -282,7 +276,7 @@ public partial class SettingsPage : Page
         ConfigManager.Save(config);
         AppState.Notify();
 
-        // Grünes Feedback, automatisch nach 3 s ausblenden
+        // Green confirmation that fades out by itself after 3 s.
         TxtSaveStatus.Foreground = new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E));
         TxtSaveStatus.Text       = "✅  Einstellungen gespeichert";
         _ = Task.Delay(3000).ContinueWith(
@@ -290,13 +284,9 @@ public partial class SettingsPage : Page
             System.Threading.Tasks.TaskScheduler.Default);
     }
 
-    // -----------------------------------------------------------------------
-    // Security-Helpers
-    // -----------------------------------------------------------------------
+    // ── Keeping secrets off the screen ──────────────────────────────────
 
-    // -----------------------------------------------------------------------
-    // Aufraeumen: alle von Semestria erstellten Outlook-Eintraege loeschen
-    // -----------------------------------------------------------------------
+    // ── Clean-up: remove every Outlook entry Semestria ever created ─────
 
     private async void BtnPurgeAll_Click(object sender, RoutedEventArgs e)
     {
@@ -314,7 +304,7 @@ public partial class SettingsPage : Page
             "Einträge aber wieder an.",
             "Wirklich alle Einträge löschen?",
             MessageBoxButton.YesNo, MessageBoxImage.Warning,
-            MessageBoxResult.No);   // Standard ist "Nein"
+            MessageBoxResult.No);   // default to No, this one cannot be undone
 
         if (confirm != MessageBoxResult.Yes) return;
 
@@ -356,8 +346,8 @@ public partial class SettingsPage : Page
     }
 
     /// <summary>
-    /// Die zu verwendende App-ID: eine im Feld eingetragene sticht die
-    /// mitgelieferte. Null wenn beides fehlt.
+    /// The app id to use: one typed into the field beats the built-in one.
+    /// Null when there is neither.
     /// </summary>
     private string? EffectiveClientId()
     {
@@ -366,7 +356,7 @@ public partial class SettingsPage : Page
         return MicrosoftAccount.HasBuiltInId ? AppConstants.ClientId : null;
     }
 
-    /// <summary>Speichert nur eine selbst eingetragene ID in der Konfiguration.</summary>
+    /// <summary>Only ever writes a custom id to the config, never the built-in one.</summary>
     private void PersistCustomClientId()
     {
         var custom = TxtClientId.Text.Trim();
@@ -380,10 +370,10 @@ public partial class SettingsPage : Page
         if (!string.IsNullOrEmpty(clientId))
             message = message.Replace(clientId, "[App-ID]", StringComparison.OrdinalIgnoreCase);
 
-        // URLs entfernen
+        // Take out any URL — it could be the feed URL with its token.
         message = Regex.Replace(message, @"https?://\S+", "[URL]");
 
-        // Bekannte AADSTS-Codes übersetzen
+        // Turn the AADSTS codes we know about into something a person can act on.
         if (message.Contains("AADSTS700016"))
             return "App-ID nicht gefunden. Überprüfe die Client-ID auf portal.azure.com.";
         if (message.Contains("AADSTS65004"))

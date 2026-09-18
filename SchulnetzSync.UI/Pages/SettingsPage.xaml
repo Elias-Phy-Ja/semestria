@@ -12,7 +12,7 @@
                        Style="{StaticResource TitleText}"
                        Margin="0,0,0,24"/>
 
-            <!-- ═══ DARSTELLUNG ═══ -->
+            <!-- ═══ APPEARANCE ═══ -->
             <TextBlock Text="DARSTELLUNG" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
@@ -37,7 +37,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- ═══ FEED-URL ═══ -->
+            <!-- ═══ FEED URL ═══ -->
             <TextBlock Text="SCHULNETZ" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
@@ -51,12 +51,12 @@
                 </StackPanel>
             </Border>
 
-            <!-- ═══ MICROSOFT ═══ -->
+            <!-- ═══ MICROSOFT ACCOUNT ═══ -->
             <TextBlock Text="OUTLOOK (OPTIONAL)" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
 
-                    <!-- Status-Indikator -->
+                    <!-- Connection status -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                         <Ellipse x:Name="AccountDot" Width="10" Height="10"
                                  Fill="#9CA3AF"
@@ -69,7 +69,7 @@
                                Style="{StaticResource NoteText}"
                                Margin="0,0,0,16"/>
 
-                    <!-- Wozu das Ganze -->
+                    <!-- What this is good for -->
                     <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,10"
                                Text="{x:Static local:OutlookSetupText.Benefit}"/>
                     <TextBlock Style="{StaticResource BodyText}" Margin="0,0,0,16"
@@ -84,9 +84,9 @@
                     </Border>
 
                     <!--
-                        Normalfall: Die App bringt ihre Registrierung mit, hier ist
-                        nichts einzutragen. Der Abschnitt ist nur f&#252;r Fortgeschrittene
-                        und f&#252;r Builds ohne mitgelieferte App-ID.
+                        Normally the app brings its own registration and there is nothing
+                        to fill in here. This section is for the advanced case and for
+                        builds that ship without an app id.
                     -->
                     <Expander x:Name="AdvancedIdSection"
                               Header="Erweitert: eigene App-ID verwenden"
@@ -135,7 +135,7 @@
                         </StackPanel>
                     </Expander>
 
-                    <!-- Anmelde-Buttons -->
+                    <!-- Sign in and out -->
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="BtnSignIn"
                                 Content="Mit Microsoft anmelden"
@@ -149,7 +149,7 @@
                                 Click="BtnSignOut_Click"/>
                     </StackPanel>
 
-                    <!-- Fehler -->
+                    <!-- Error line -->
                     <TextBlock x:Name="TxtAuthError"
                                Visibility="Collapsed"
                                TextWrapping="Wrap" FontSize="12"
@@ -158,7 +158,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- ═══ KALENDER ═══ -->
+            <!-- ═══ CALENDAR ═══ -->
             <TextBlock Text="KALENDER" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
@@ -173,7 +173,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- ═══ OPTIONEN ═══ -->
+            <!-- ═══ OPTIONS ═══ -->
             <TextBlock Text="SYNCHRONISATION" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
@@ -201,7 +201,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- ═══ AUFRÄUMEN ═══ -->
+            <!-- ═══ CLEAN-UP ═══ -->
             <TextBlock Text="AUFRÄUMEN" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
@@ -233,7 +233,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- Speichern -->
+            <!-- Save -->
             <StackPanel Orientation="Horizontal">
                 <Button Content="💾  Einstellungen speichern"
                         Style="{StaticResource PrimaryButton}"

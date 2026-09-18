@@ -5,7 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using SchulnetzSync.Core.Tasks;
 using SchulnetzSync.UI.Model;
-// WinForms ist wegen NotifyIcon aktiviert und kollidiert bei vielen Steuerelementnamen
+// WinForms is in the build for NotifyIcon and clashes with half the control names
 using Brushes        = System.Windows.Media.Brushes;
 using Button         = System.Windows.Controls.Button;
 using CheckBox       = System.Windows.Controls.CheckBox;
@@ -19,24 +19,30 @@ using RadioButton    = System.Windows.Controls.RadioButton;
 
 namespace SchulnetzSync.UI.Pages;
 
+/// <summary>
+/// Tasks: the list rail on the left, the tasks in the middle, the edit form on the right.
+///
+/// Nothing here ever reaches Outlook. Tasks live only in <see cref="AppState"/>, and the
+/// page rebuilds its rows from there after every change instead of keeping its own copy.
+/// </summary>
 public partial class TasksPage : Page
 {
     private static readonly CultureInfo DeCh = new("de-CH");
 
-    /// <summary>Pseudo-Listen in der Leiste, die keine echte Liste sind.</summary>
+    /// <summary>Entries in the rail that are not really lists.</summary>
     private const string ViewAll       = " ALL";
     private const string ViewImportant = " IMPORTANT";
 
-    /// <summary>Angebotene Uhrzeiten in den beiden Zeit-Feldern.</summary>
+    /// <summary>The times offered in the two time fields.</summary>
     private static readonly string[] TimeSuggestions =
         ["07:30", "08:00", "09:00", "10:00", "12:00", "13:30", "16:00", "18:00", "20:00", "23:59"];
 
-    /// <summary>Abgabe ohne Uhrzeit: Ende des Tages, sonst wäre sie ab 00:00 überfällig.</summary>
+    /// <summary>A due date without a time means end of day — at 00:00 it would be overdue immediately.</summary>
     private static readonly TimeSpan DefaultDueTime = new(23, 59, 0);
 
     /// <summary>
-    /// Erinnerung ohne Uhrzeit: früher Abend. Mitternacht wäre wertlos, dann
-    /// schläft man oder hat den Tag schon abgeschlossen.
+    /// A reminder without a time lands in the early evening. Midnight would be useless:
+    /// by then you are asleep or done with the day either way.
     /// </summary>
     private static readonly TimeSpan DefaultReminderTime = new(18, 0, 0);
 
@@ -44,18 +50,18 @@ public partial class TasksPage : Page
     private static readonly Color OverdueColor   = Color.FromRgb(0xEF, 0x44, 0x44);
     private static readonly Color NeutralColor   = Color.FromRgb(0x6B, 0x72, 0x80);
 
-    /// <summary>Aktuell bearbeitete Aufgabe; null = neue Aufgabe.</summary>
+    /// <summary>The task being edited; null means a new one.</summary>
     private TaskItem? _editing;
 
     /// <summary>"Open" | "Done" | "All"</summary>
     private string _filter = "Open";
 
-    /// <summary>Gewählte Liste, oder <see cref="ViewAll"/> / <see cref="ViewImportant"/>.</summary>
+    /// <summary>The selected list, or <see cref="ViewAll"/> / <see cref="ViewImportant"/>.</summary>
     private string _selectedList = ViewAll;
 
     /// <summary>
-    /// Ereignisse aus dem XAML feuern bereits während InitializeComponent(),
-    /// bis dahin existieren die weiter unten deklarierten Elemente nicht.
+    /// XAML events already fire during InitializeComponent(), and the elements declared
+    /// further down do not exist yet at that point. This flag keeps them quiet until they do.
     /// </summary>
     private bool _initialized;
 
@@ -75,13 +81,13 @@ public partial class TasksPage : Page
     private void OnStateChanged() => Dispatcher.Invoke(Refresh);
 
     // ══════════════════════════════════════════════════════════════════════
-    // Farben
+    // Colours
     // ══════════════════════════════════════════════════════════════════════
 
     private Color AccentColor
         => TryFindResource("AccentColor") is Color c ? c : Color.FromRgb(0x5C, 0x6E, 0xF7);
 
-    /// <summary>Farbe eines Eintrags der Leiste, echte Liste oder Pseudo-Liste.</summary>
+    /// <summary>Colour of a rail entry, real list or not.</summary>
     private Color ColorOf(string key) => key switch
     {
         ViewAll         => AccentColor,
@@ -102,7 +108,7 @@ public partial class TasksPage : Page
     private Brush Resource(string key) => (Brush)FindResource(key);
 
     // ══════════════════════════════════════════════════════════════════════
-    // Listen-Leiste
+    // The list rail
     // ══════════════════════════════════════════════════════════════════════
 
     private void BuildRail(IReadOnlyList<TaskItem> all)
@@ -123,13 +129,13 @@ public partial class TasksPage : Page
             ListRail.Children.Add(RailItem(name, name, null, open));
         }
 
-        // «Ohne Liste» nur zeigen, wenn es solche Aufgaben gibt
+        // Only show "Ohne Liste" when there actually are such tasks.
         int orphans = all.Count(t => !t.IsDone && string.IsNullOrWhiteSpace(t.ListName));
         if (orphans > 0 || _selectedList == TaskItem.NoList)
             ListRail.Children.Add(RailItem(TaskItem.NoList, TaskItem.NoList, null, orphans));
     }
 
-    /// <param name="glyph">Zeichen für Pseudo-Listen; null zeichnet ein Farbfeld.</param>
+    /// <param name="glyph">Icon for the pseudo lists; null draws a colour swatch instead.</param>
     private UIElement RailItem(string label, string key, string? glyph, int count)
     {
         bool selected = _selectedList == key;
@@ -228,7 +234,7 @@ public partial class TasksPage : Page
         TxtNewList.Focus();
     }
 
-    /// <summary>Bietet Fachkürzel aus dem Stundenplan als Listennamen an.</summary>
+    /// <summary>Offers subject codes from the timetable as list names.</summary>
     private void BuildListSuggestions()
     {
         var panel       = new StackPanel();
@@ -280,16 +286,16 @@ public partial class TasksPage : Page
         Refresh();
     }
 
-    // ── Listenoptionen ───────────────────────────────────────────────────────
+    // ── List options ─────────────────────────────────────────────────────────
 
     private void BtnListOptions_Click(object sender, RoutedEventArgs e)
     {
         if (IsPseudoList(_selectedList)) return;
         BuildColorSwatches();
 
-        // Erst nach dem Klick öffnen: Der Button hält die Maus noch, während
-        // Click läuft. Ein sofort geöffnetes Popup mit StaysOpen=False deutet
-        // das Loslassen als Klick daneben und schliesst sich gleich wieder.
+        // Open after the click, not during it. The button still has the mouse captured
+        // while Click runs, and a popup with StaysOpen=False reads the release as a click
+        // outside itself and shuts again straight away.
         Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input,
             () => ListOptionsPopup.IsOpen = true);
     }
@@ -361,7 +367,7 @@ public partial class TasksPage : Page
         => key is ViewAll or ViewImportant or TaskItem.NoList;
 
     // ══════════════════════════════════════════════════════════════════════
-    // Schnelleingabe
+    // Quick add
     // ══════════════════════════════════════════════════════════════════════
 
     private void TxtQuickAdd_KeyDown(object sender, KeyEventArgs e)
@@ -372,7 +378,7 @@ public partial class TasksPage : Page
         var title = TxtQuickAdd.Text.Trim();
         if (title.Length == 0) return;
 
-        // Wer in «Erledigt» tippt, soll die neue Aufgabe trotzdem sehen.
+        // Typing while "Erledigt" is showing should still put the new task in front of you.
         if (_filter == "Done") RbOpen.IsChecked = true;
 
         AppState.AddTask(new TaskItem(
@@ -400,7 +406,7 @@ public partial class TasksPage : Page
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // Formular
+    // The edit form
     // ══════════════════════════════════════════════════════════════════════
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e) => CloseEditor();
@@ -417,7 +423,7 @@ public partial class TasksPage : Page
         TxtNotes.Text            = task?.Notes ?? "";
         ChkImportant.IsChecked   = task?.IsImportant ?? (_selectedList == ViewImportant);
 
-        // Neue Aufgaben landen in der Liste, die gerade offen ist.
+        // A new task lands in whichever list is open right now.
         CmbList.Text = task?.ListName
             ?? (IsPseudoList(_selectedList) ? "" : _selectedList);
 
@@ -478,8 +484,8 @@ public partial class TasksPage : Page
             return;
         }
 
-        // Eine neu gesetzte Erinnerung in der Vergangenheit würde sofort auslösen.
-        // Eine unveränderte, bereits gezeigte beim Bearbeiten ist dagegen in Ordnung.
+        // A reminder newly set in the past would fire immediately. One that was already
+        // shown and is left untouched while editing is fine, though.
         bool reminderChanged = _editing is null || remind != _editing.RemindAt;
         if (reminderChanged && remind.HasValue && remind.Value < DateTimeOffset.Now)
         {
@@ -491,7 +497,7 @@ public partial class TasksPage : Page
         var notes     = TxtNotes.Text.Trim();
         var important = ChkImportant.IsChecked == true;
 
-        // Ein frei eingetippter Listenname wird zur echten Liste.
+        // A list name typed by hand becomes a real list.
         if (listName.Length > 0) AppState.AddTaskList(listName);
 
         if (_editing is null)
@@ -519,7 +525,7 @@ public partial class TasksPage : Page
                 DueAt         = due,
                 RemindAt      = remind,
                 IsImportant   = important,
-                // Verschobene Erinnerung soll erneut ausgelöst werden
+                // A reminder that was moved should be allowed to fire again.
                 ReminderShown = reminderChanged ? false : _editing.ReminderShown,
             });
         }
@@ -527,7 +533,7 @@ public partial class TasksPage : Page
         CloseEditor();
     }
 
-    /// <summary>Setzt die Erinnerung relativ zur Abgabe (Tage im Tag-Attribut, 0 = keine).</summary>
+    /// <summary>Sets the reminder relative to the due date; days come from the Tag attribute, 0 means none.</summary>
     private void BtnRemindPreset_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string tag) return;
@@ -553,14 +559,14 @@ public partial class TasksPage : Page
 
         TxtEditorError.Text = "";
 
-        // Tag vom Abgabetermin zurückrechnen, Uhrzeit aber auf den frühen Abend,
-        // «am Vortag» einer Abgabe um 23:59 hiesse sonst: kurz vor Mitternacht.
+        // Count the days back from the due date, but put the time in the early evening:
+        // "the day before" something due at 23:59 would otherwise mean just before midnight.
         var day   = due.Value.Date.AddDays(-daysBefore) + DefaultReminderTime;
         var local = new DateTimeOffset(day, TimeZoneInfo.Local.GetUtcOffset(day));
         SetDateTime(DateRemind, CmbRemindTime, local);
     }
 
-    /// <summary>Ohne Uhrzeit ist die Abgabe das Tagesende, sonst wäre sie um 00:00 sofort überfällig.</summary>
+    /// <summary>With no time given the due date is the end of the day; at 00:00 it would already be late.</summary>
     private void DateDue_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (!_initialized) return;
@@ -580,15 +586,13 @@ public partial class TasksPage : Page
         time.Text         = value.Value.ToString("HH:mm", DeCh);
     }
 
-    /// <summary>
-    /// Reads a date and time pair from the form.
-    /// </summary>
+    /// <summary>Reads a date and time pair out of the form.</summary>
     /// <param name="fallbackTime">Used when the time field is empty.</param>
     /// <param name="field">Name for the error message, e.g. "Abgabe".</param>
     /// <param name="value">Null when no date is set; that is allowed.</param>
     /// <returns>
-    /// False only for unreadable input. Früher wurde eine unlesbare Uhrzeit still
-    /// durch 23:59 ersetzt; jetzt erfährt man, dass etwas nicht stimmt.
+    /// False only for input that cannot be read. This used to swallow an unreadable time
+    /// and quietly substitute 23:59; now you get told that something is off.
     /// </returns>
     private static bool TryReadDateTime(
         DatePicker date, ComboBox time, TimeSpan fallbackTime, string field,
@@ -599,7 +603,7 @@ public partial class TasksPage : Page
 
         if (date.SelectedDate is not { } day)
         {
-            // Etwas getippt, das kein Datum ist? Nicht stillschweigend verwerfen.
+            // Something typed that is not a date — say so rather than dropping it.
             if (!string.IsNullOrWhiteSpace(date.Text))
             {
                 error = $"{field}: «{date.Text.Trim()}» ist kein gültiges Datum.";
@@ -624,7 +628,7 @@ public partial class TasksPage : Page
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // Liste
+    // The task list itself
     // ══════════════════════════════════════════════════════════════════════
 
     private void Filter_Changed(object sender, RoutedEventArgs e)
@@ -634,7 +638,7 @@ public partial class TasksPage : Page
         Refresh();
     }
 
-    /// <summary>Entfernt erledigte Aufgaben, nur im gerade gezeigten Bereich.</summary>
+    /// <summary>Clears finished tasks, but only within the view that is open.</summary>
     private void BtnClearDone_Click(object sender, RoutedEventArgs e)
     {
         var inScope = InScope();
@@ -653,7 +657,7 @@ public partial class TasksPage : Page
         if (confirm == MessageBoxResult.Yes) AppState.ClearCompletedTasks(inScope);
     }
 
-    /// <summary>Welche Aufgaben zur Auswahl in der Leiste gehören.</summary>
+    /// <summary>Which tasks belong to the current selection in the rail.</summary>
     private Func<TaskItem, bool> InScope()
     {
         var list = _selectedList;
@@ -703,7 +707,7 @@ public partial class TasksPage : Page
         }
         EmptyState.Visibility = Visibility.Collapsed;
 
-        // In einer einzelnen Liste braucht es keine Gruppenköpfe.
+        // Inside a single list there is nothing to group by.
         if (_selectedList is not (ViewAll or ViewImportant))
         {
             var color = ColorOf(_selectedList);
@@ -755,7 +759,7 @@ public partial class TasksPage : Page
         };
     }
 
-    /// <summary>Wichtiges zuerst, dann nach Abgabe, Erledigtes nach unten.</summary>
+    /// <summary>Starred first, then by due date, finished ones at the bottom.</summary>
     private static IEnumerable<TaskItem> Sort(IEnumerable<TaskItem> tasks)
         => tasks
             .OrderBy(t => t.IsDone)
@@ -811,12 +815,12 @@ public partial class TasksPage : Page
             BorderBrush     = overdue ? Tint(OverdueColor, 0x70) : Brushes.Transparent,
         };
 
-        // Theme-Brushes von ModernWpf lassen sich nicht statisch auflösen,
-        // FindResource wirft dort. Die Referenz folgt zudem einem Themewechsel.
+        // ModernWpf theme brushes cannot be resolved statically — FindResource throws on
+        // them. A dynamic reference also follows along when the theme changes.
         card.SetResourceReference(Border.BackgroundProperty,
             "SystemControlBackgroundChromeMediumLowBrush");
 
-        // Innere Fläche für den Hover-Effekt über dem Theme-Hintergrund
+        // Inner surface, so the hover effect sits on top of the theme background
         var surface = new Border
         {
             CornerRadius = new CornerRadius(10),
@@ -833,7 +837,7 @@ public partial class TasksPage : Page
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         surface.Child = grid;
 
-        // ── Abhakkreis ──
+        // ── Tick circle ──
         var check = new CheckBox
         {
             Style             = (Style)FindResource("RoundCheck"),
@@ -849,7 +853,7 @@ public partial class TasksPage : Page
         Grid.SetColumn(check, 0);
         grid.Children.Add(check);
 
-        // ── Inhalt ──
+        // ── Content ──
         var body = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
 
         body.Children.Add(new TextBlock
@@ -879,7 +883,7 @@ public partial class TasksPage : Page
         Grid.SetColumn(body, 1);
         grid.Children.Add(body);
 
-        // ── Aktionen, erst beim Überfahren sichtbar ──
+        // ── Actions, only visible on hover ──
         var actions = new StackPanel
         {
             Orientation       = Orientation.Horizontal,
@@ -892,7 +896,7 @@ public partial class TasksPage : Page
         Grid.SetColumn(actions, 2);
         grid.Children.Add(actions);
 
-        // ── Stern ──
+        // ── Star ──
         var star = IconButton(
             task.IsImportant ? "★" : "☆",
             task.IsImportant ? "Nicht mehr wichtig" : "Als wichtig markieren",
@@ -915,8 +919,8 @@ public partial class TasksPage : Page
             actions.Visibility = Visibility.Hidden;
         };
 
-        // Klick auf die Zeile öffnet sie. Kreis und Knöpfe fangen ihre Klicks
-        // selbst ab, lösen das hier also nicht aus.
+        // Clicking the row opens it. The circle and the buttons handle their own clicks,
+        // so they never get this far.
         surface.MouseLeftButtonUp += (_, _) => OpenEditor(task);
 
         return card;
@@ -936,7 +940,7 @@ public partial class TasksPage : Page
         return button;
     }
 
-    /// <summary>Kleine Etiketten für Abgabe und Erinnerung.</summary>
+    /// <summary>The small badges for due date and reminder.</summary>
     private WrapPanel BuildChips(TaskItem task, DateTimeOffset now)
     {
         var panel = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
@@ -962,7 +966,7 @@ public partial class TasksPage : Page
         return panel;
     }
 
-    /// <param name="tint">Farbe für Hervorhebung; null für ein neutrales Etikett.</param>
+    /// <param name="tint">Colour for emphasis; null gives a neutral badge.</param>
     private UIElement Chip(string text, Color? tint)
     {
         var label = new TextBlock { Text = text, FontSize = 11.5 };
@@ -1012,7 +1016,7 @@ public partial class TasksPage : Page
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // Darstellung
+    // Formatting
     // ══════════════════════════════════════════════════════════════════════
 
     private static string FormatDay(DateTimeOffset value)

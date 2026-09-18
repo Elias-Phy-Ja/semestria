@@ -11,7 +11,7 @@
             <TextBlock Text="Über Semestria"
                        Style="{StaticResource TitleText}" Margin="0,0,0,24"/>
 
-            <!-- ── App-Info ── -->
+            <!-- ── App info ── -->
             <Border Style="{StaticResource Card}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
@@ -43,7 +43,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- ── Entwickler ── -->
+            <!-- ── Developer ── -->
             <TextBlock Text="ENTWICKLER" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
@@ -54,7 +54,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- ── Rechtliches ── -->
+            <!-- ── Legal ── -->
             <TextBlock Text="RECHTLICHES" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
@@ -74,7 +74,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- ── Daten & Reset ── -->
+            <!-- ── Data and reset ── -->
             <TextBlock Text="DATEN &amp; RESET" Style="{StaticResource SectionLabel}"/>
             <Border Style="{StaticResource Card}">
                 <StackPanel>
@@ -100,7 +100,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- Rechtsdokument-Viewer (hidden by default) -->
+            <!-- Viewer for the legal texts, hidden until one is opened -->
             <Border x:Name="LegalViewer" Visibility="Collapsed"
                     Style="{StaticResource Card}">
                 <StackPanel>

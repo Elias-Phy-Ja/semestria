@@ -7,6 +7,12 @@ using SchulnetzSync.UI.Update;
 
 namespace SchulnetzSync.UI;
 
+/// <summary>
+/// The window frame: loading view, the update prompt that sits in front of it, the sidebar
+/// navigation, and the handling of a Windows session that is about to end.
+///
+/// The pages themselves know nothing about any of this. They only get navigated to.
+/// </summary>
 public partial class MainWindow : Window
 {
     /// <summary>Windows asks whether the session may end.</summary>
@@ -34,12 +40,10 @@ public partial class MainWindow : Window
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Ladephase
+    // Loading phase
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Runs the loading view: config, update check, initialisation.
-    /// </summary>
+    /// <summary>Runs the loading view: config, update check, initialisation.</summary>
     /// <param name="restarted">True when Windows restarted us after an update.</param>
     public async Task RunStartupAsync(bool restarted, IUpdateSourceFactory sourceFactory)
     {
@@ -61,7 +65,7 @@ public partial class MainWindow : Window
         }
         catch (OperationCanceledException)
         {
-            return;   // Fenster wird geschlossen
+            return;   // the window is closing
         }
 
         if (_startup.FailureReason is { } reason)
@@ -90,7 +94,7 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Kurze Bestätigung nach einem Neustart, dann weiter.</summary>
+    /// <summary>A short confirmation after a restart, then on into the app.</summary>
     private async Task ShowRestartedAsync()
     {
         LoadingProgressArea.Visibility = Visibility.Collapsed;
@@ -109,8 +113,8 @@ public partial class MainWindow : Window
         UpdateFailureArea.Visibility   = Visibility.Collapsed;
         UpdatePromptArea.Visibility    = Visibility.Visible;
 
-        // Der Store nennt als Version des Updates gelegentlich die bereits
-        // installierte. Eine Zahl, die nicht höher ist, wird darum verschwiegen.
+        // The store sometimes reports the version that is already installed. A number that
+        // is not actually higher is therefore left out of the message entirely.
         bool nameVersion = UpdatePolicy.IsNewerThan(version, AppConstants.Version);
 
         TxtUpdateHeadline.Text = nameVersion
@@ -122,7 +126,7 @@ public partial class MainWindow : Window
               + "Semestria kann ohne es nicht fortfahren."
             : $"Du hast {AppConstants.Version}. Das Update kommt aus dem Microsoft Store.";
 
-        // Bei einem zwingenden Update gibt es keinen Weg in die App.
+        // A mandatory update leaves no way into the app.
         BtnUpdateLater.Visibility = mandatory ? Visibility.Collapsed : Visibility.Visible;
     }
 
@@ -133,7 +137,7 @@ public partial class MainWindow : Window
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Update-Knöpfe
+    // Update buttons
     // ═══════════════════════════════════════════════════════════════════════
 
     private async void BtnUpdateNow_Click(object sender, RoutedEventArgs e)
@@ -167,23 +171,23 @@ public partial class MainWindow : Window
 
             await _startup.DownloadAsync(ct);
 
-            // Ein laufender Kalender-Sync darf nicht mitten im Schreiben
-            // abgewürgt werden, sonst bleiben halbe Einträge in Outlook zurück.
+            // A running calendar sync must not be cut off mid-write, or Outlook is left
+            // with half-finished entries.
             await WaitForSyncToFinishAsync(ct);
 
-            // Muss vor der Installation stehen: danach beendet Windows die App.
+            // Has to happen before the install: after it Windows ends the process.
             if (!ApplicationRestart.Register())
                 App.LogLine("Automatischer Neustart konnte nicht registriert werden.");
 
             await _startup.InstallAsync(ct);
 
-            // Hierhin gelangt man, wenn Windows die App nicht beendet hat. Das
-            // Paket ist dann ersetzt, im Speicher läuft aber der alte Code.
+            // We only get here when Windows did not close the app. The package has been
+            // replaced, but the old code is still the one running.
             await FinishInstalledUpdateAsync();
         }
         catch (OperationCanceledException)
         {
-            // Fenster wird geschlossen — nichts weiter zu tun.
+            // The window is closing, so there is nothing left to do.
         }
         catch (Exception ex)
         {
@@ -193,8 +197,8 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Schliesst ein Update ab, das eingespielt wurde, während die App lief:
-    /// kurz Bescheid geben und neu starten.
+    /// Finishes an update that was applied while the app was running: say so briefly,
+    /// then restart.
     /// </summary>
     private async Task FinishInstalledUpdateAsync()
     {
@@ -218,9 +222,8 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Wartet, bis ein laufender Sync fertig ist. Nach dem Zeitlimit wird
-    /// trotzdem fortgefahren — ein hängender Sync darf das Update nicht
-    /// dauerhaft blockieren.
+    /// Waits for a running sync to finish, but carries on once the time limit is up —
+    /// a stuck sync must not block the update for good.
     /// </summary>
     private static async Task WaitForSyncToFinishAsync(CancellationToken ct)
     {
@@ -240,14 +243,14 @@ public partial class MainWindow : Window
         UpdateFailureArea.Visibility   = Visibility.Visible;
         TxtUpdateError.Text            = message;
 
-        // Nach einem Fehlschlag ist "Später erinnern" auch bei einem zwingenden
-        // Update kein Ausweg — dafür gibt es "Semestria beenden".
+        // After a failure "Später erinnern" is no escape from a mandatory update either;
+        // "Semestria beenden" is the way out.
         BtnUpdateNow.Visibility   = Visibility.Collapsed;
         BtnUpdateLater.Visibility = _updateIsMandatory ? Visibility.Collapsed : Visibility.Visible;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Sitzungsende
+    // End of the Windows session
     // ═══════════════════════════════════════════════════════════════════════
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -257,9 +260,8 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Beim Einspielen eines Updates fordert Windows die App zum Beenden auf.
-    /// Hängt sie hier, bricht die Installation ab — darum sofort zustimmen und
-    /// den Zustand sichern.
+    /// While installing an update Windows asks the app to close. Hesitating here aborts
+    /// the install, so agree immediately and save whatever still needs saving.
     /// </summary>
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
@@ -267,7 +269,7 @@ public partial class MainWindow : Window
         {
             case WmQueryEndSession:
                 handled = true;
-                return new IntPtr(1);   // ja, wir können beendet werden
+                return new IntPtr(1);   // yes, go ahead and close us
 
             case WmEndSession:
                 if (wParam != IntPtr.Zero)
@@ -283,9 +285,8 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Alles, was der Nutzer eingegeben hat, liegt bereits auf der Platte:
-    /// AppState schreibt bei jeder Änderung. Hier bleibt das Speichern der
-    /// Konfiguration, die nur im Speicher verändert worden sein könnte.
+    /// Everything the user typed is on disk already, because AppState writes on every
+    /// change. What is left here is the config, which may only have been changed in memory.
     /// </summary>
     private void SaveStateBeforeShutdown()
     {
@@ -301,13 +302,13 @@ public partial class MainWindow : Window
 
     private void NavView_Loaded(object sender, RoutedEventArgs e)
     {
-        // Dashboard beim Start auswählen
+        // Start on the dashboard.
         NavView.SelectedItem = NavDashboard;
     }
 
     /// <summary>
-    /// Handles items that do not open a page. Synapkey lebt im Browser —
-    /// das Element wählt sich darum nicht selbst aus (SelectsOnInvoked=False).
+    /// Handles the items that do not open a page. Synapkey lives in the browser, so that
+    /// entry does not select itself (SelectsOnInvoked=False) and the sidebar stays put.
     /// </summary>
     private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
@@ -343,7 +344,7 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Navigiert von aussen auf eine bestimmte Seite (z.B. aus Settings heraus).</summary>
+    /// <summary>Lets another page navigate here, e.g. the settings jumping to the dashboard.</summary>
     public void NavigateTo(string tag)
     {
         switch (tag)

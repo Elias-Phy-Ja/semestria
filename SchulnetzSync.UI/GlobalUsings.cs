@@ -1,5 +1,6 @@
-// Resolve WPF-vs-WinForms ambiguities (both UseWPF + UseWindowsForms enabled).
-// WinForms is only used for NotifyIcon (fully qualified in TrayService.cs).
+// The project has UseWPF and UseWindowsForms on at the same time, so half a dozen type
+// names exist twice. Pinning them here once keeps every other file free of the noise.
+// WinForms is only in the build for NotifyIcon, which TrayService.cs spells out in full.
 
 global using Application      = System.Windows.Application;
 global using MessageBox       = System.Windows.MessageBox;
@@ -10,8 +11,8 @@ global using Color            = System.Windows.Media.Color;
 global using Brush            = System.Windows.Media.Brush;
 global using SolidColorBrush  = System.Windows.Media.SolidColorBrush;
 
-// Convenience: HttpClient without explicit using in every file.
+// HttpClient shows up all over the place, so it gets a global using.
 global using System.Net.Http;
 
-// LegalTexts namespace shortcut used in AboutPage and OnboardingWindow.
+// LegalTexts is needed on the about page and in the onboarding wizard.
 global using SchulnetzSync.UI.Legal;

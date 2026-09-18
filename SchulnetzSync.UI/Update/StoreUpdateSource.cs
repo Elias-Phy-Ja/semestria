@@ -5,20 +5,20 @@ using Windows.Services.Store;
 namespace SchulnetzSync.UI.Update;
 
 /// <summary>
-/// Talks to the Microsoft Store. A thin adapter — every rule about when to ask
+/// Talks to the Microsoft Store. A thin adapter on purpose — every rule about when to ask
 /// lives in <see cref="UpdatePolicy"/>, which knows nothing about WinRT.
 ///
-/// Funktioniert nur in einer aus dem Store installierten Version. Beim
-/// Sideload oder unter «dotnet run» wirft schon GetDefault() oder die Abfrage
-/// liefert nichts; beides fängt <see cref="UpdateGate"/> ab.
+/// Only works in a build installed from the Store. Sideloaded or under "dotnet run" either
+/// GetDefault() throws outright or the query comes back empty; <see cref="UpdateGate"/>
+/// catches both and lets the app start regardless.
 /// </summary>
 public sealed class StoreUpdateSource(IntPtr windowHandle) : IUpdateSource
 {
     private readonly IntPtr _windowHandle = windowHandle;
 
     /// <summary>
-    /// Packages found by the last check. Download und Install brauchen genau
-    /// diese Objekte — eine erneute Abfrage würde andere Instanzen liefern.
+    /// What the last check found. Download and install need exactly these objects;
+    /// asking again would hand back different instances and they would not match.
     /// </summary>
     private IReadOnlyList<StorePackageUpdate>? _pending;
 
@@ -48,7 +48,7 @@ public sealed class StoreUpdateSource(IntPtr windowHandle) : IUpdateSource
         var context   = GetContext();
         var operation = context.RequestDownloadStorePackageUpdatesAsync(_pending);
 
-        // In dieser Phase wird nur geladen, nicht ersetzt — die App läuft weiter.
+        // This stage only downloads, it does not replace anything — the app keeps running.
         operation.Progress = (_, status) =>
             progress?.Report(Math.Clamp(status.PackageDownloadProgress, 0.0, 1.0));
 
@@ -69,16 +69,16 @@ public sealed class StoreUpdateSource(IntPtr windowHandle) : IUpdateSource
 
         var context = GetContext();
 
-        // Die Pakete liegen bereits lokal, dieser Aufruf spielt sie ein.
-        // Beendet Windows die App dabei, kehrt der Aufruf nicht zurück.
+        // The packages are already on disk; this call puts them in place. If Windows
+        // closes the app to do it, this call never returns at all.
         var result = await context
             .RequestDownloadAndInstallStorePackageUpdatesAsync(_pending)
             .AsTask(ct)
             .ConfigureAwait(false);
 
-        // Completed heisst: Das Paket ist ersetzt, aber dieser Prozess läuft
-        // weiter mit dem alten Code. Deploying schliesst Windows im Hintergrund
-        // ab. Beides braucht einen Neustart, keine Fehlermeldung.
+        // Completed means the package was replaced while this process kept running on the
+        // old code. Deploying means Windows finishes up in the background. Both of them
+        // call for a restart, not for an error message.
         if (result.OverallState is StorePackageUpdateState.Completed
                                or StorePackageUpdateState.Deploying)
             return InstallOutcome.NeedsRestart;
@@ -87,10 +87,7 @@ public sealed class StoreUpdateSource(IntPtr windowHandle) : IUpdateSource
             $"Installation nicht durchgeführt, Status {result.OverallState}.");
     }
 
-    /// <summary>
-    /// Der StoreContext einer Desktop-App muss ein Fenster kennen, sonst
-    /// scheitert jeder Aufruf, der eine Oberfläche zeigen könnte.
-    /// </summary>
+    /// <summary>Creates the context once and keeps it, because it is tied to the window.</summary>
     private StoreContext GetContext()
     {
         if (_context is not null) return _context;
@@ -98,8 +95,8 @@ public sealed class StoreUpdateSource(IntPtr windowHandle) : IUpdateSource
         var context = StoreContext.GetDefault()
             ?? throw new InvalidOperationException("Kein Store-Kontext verfügbar.");
 
-        // Bei einer Desktop-App muss der Kontext sein Fenster kennen, sonst
-        // scheitert jeder Aufruf, der eine Oberfläche zeigen könnte.
+        // A desktop app has to tell the context which window it belongs to, otherwise
+        // every call that might show UI of its own fails.
         WinRT.Interop.InitializeWithWindow.Initialize(context, _windowHandle);
 
         return _context = context;

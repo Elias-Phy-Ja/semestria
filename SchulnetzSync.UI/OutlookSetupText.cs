@@ -1,10 +1,11 @@
 namespace SchulnetzSync.UI;
 
 /// <summary>
-/// Plain-language instructions for linking a Microsoft account.
-/// Shared by the onboarding wizard and the settings page so both explain the
-/// same procedure with the same words; the setup is the hardest part of the
-/// app and users should not meet two different descriptions of it.
+/// The wording for linking a Microsoft account, in plain language.
+///
+/// Shared by the onboarding wizard and the settings page on purpose: this setup is the
+/// hardest thing the app asks of anyone, and meeting two different descriptions of it
+/// would be worse than meeting none.
 /// </summary>
 public static class OutlookSetupText
 {
@@ -13,30 +14,29 @@ public static class OutlookSetupText
         "Semestria trägt deine Prüfungen und Termine zusätzlich in deinen Outlook-Kalender ein. " +
         "So siehst du sie auch auf dem Handy, in Teams und überall, wo du Outlook nutzt.";
 
-    /// <summary>What the user actually has to do, which is very little.</summary>
+    /// <summary>What they actually have to do, which is very little.</summary>
     public const string HowItWorks =
         "Du meldest dich einmal mit deinem Microsoft-Konto an und bestätigst, dass Semestria " +
         "deinen Kalender bearbeiten darf. Danach läuft alles automatisch, du musst nichts " +
         "einrichten und nichts eintragen.";
 
-    /// <summary>What happens if the user says no.</summary>
+    /// <summary>What happens on a no — and it has to sound like a real option, because it is.</summary>
     public const string SkipConsequence =
         "Ohne Outlook funktioniert Semestria vollständig: Prüfungen und Termine erscheinen " +
         "im Kalender in der App. Du kannst Outlook jederzeit später in den Einstellungen verknüpfen.";
 
     /// <summary>
-    /// Only relevant on the advanced path, where the user registers their own
-    /// app. Normal users never see this.
+    /// Only on the advanced path, where someone registers an app of their own.
+    /// Normal users never get here.
     /// </summary>
     public const string AccountWarning =
         "Nimm dafür ein privates Microsoft-Konto (@outlook.com, @hotmail.com oder @live.com). " +
         "Mit dem Schulkonto klappt es meistens nicht, weil Schulen das Registrieren von Apps meist sperren.";
 
     /// <summary>
-    /// The click-by-click walkthrough for the advanced path only. Every entry
-    /// names exactly what to click, with the portal labels in quotes so they can
-    /// be found on screen. App registration is free: no Azure subscription and
-    /// no credit card are involved.
+    /// The click-by-click walkthrough, advanced path only. Every step names exactly what
+    /// to click and quotes the portal labels so they can be found on screen. Registering
+    /// an app is free — no Azure subscription, no credit card.
     /// </summary>
     public static string[] Steps { get; } =
     [

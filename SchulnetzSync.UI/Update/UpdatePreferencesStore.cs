@@ -7,9 +7,9 @@ namespace SchulnetzSync.UI.Update;
 /// <summary>
 /// Loads and saves the snooze state.
 ///
-/// Liegt unter %LOCALAPPDATA%\Semestria wie Config, Aufgaben und Cache — nicht
-/// in ApplicationData.Current.LocalFolder, denn das wirft bei unverpackten
-/// Starts und damit bei jedem «dotnet run» während der Entwicklung.
+/// Sits under %LOCALAPPDATA%\Semestria next to the config, the tasks and the cache —
+/// deliberately not in ApplicationData.Current.LocalFolder, which throws for unpackaged
+/// starts and therefore on every "dotnet run" during development.
 /// </summary>
 public static class UpdatePreferencesStore
 {
@@ -18,8 +18,8 @@ public static class UpdatePreferencesStore
         "Semestria", "update-prefs.json");
 
     /// <summary>
-    /// Reads the state. Fehlt die Datei oder ist sie beschädigt, gilt der
-    /// Standardzustand — eine kaputte Datei darf den Start nicht aufhalten.
+    /// Reads the state. A missing or damaged file falls back to the default,
+    /// because nothing here is worth holding up the start for.
     /// </summary>
     public static UpdatePreferences Load()
     {
@@ -29,7 +29,7 @@ public static class UpdatePreferencesStore
                 return JsonSerializer.Deserialize<UpdatePreferences>(File.ReadAllText(Path))
                        ?? new UpdatePreferences();
         }
-        catch { /* Standardzustand */ }
+        catch { /* fall back to the default */ }
 
         return new UpdatePreferences();
     }
@@ -41,6 +41,6 @@ public static class UpdatePreferencesStore
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
             File.WriteAllText(Path, JsonSerializer.Serialize(prefs));
         }
-        catch { /* Verschieben ist eine Bequemlichkeit, kein Muss */ }
+        catch { /* postponing is a convenience, not something worth failing over */ }
     }
 }

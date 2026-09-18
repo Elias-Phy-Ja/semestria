@@ -7,13 +7,13 @@ using SchulnetzSync.Core.Sync;
 namespace SchulnetzSync.UI.Services;
 
 /// <summary>
-/// Kapselt die vollständige Sync-Logik für alle UI-Seiten.
-/// Läuft auf dem Thread-Pool; meldet Fortschritt via Events.
+/// The whole sync, in one place, for every page that needs it. Runs on the thread pool
+/// and reports progress through events.
 ///
-/// «Feed laden» (dryRun=true):  Liest den Feed, befüllt den In-App-Kalender.
-///                              Kein Microsoft-Konto nötig.
-/// «Synchronisieren» (dryRun=false): Liest Feed + schreibt in Outlook.
-///                              Erfordert gültiges Microsoft-Konto (Client-ID).
+/// "Feed laden" (dryRun = true):       reads the feed and fills the in-app calendar.
+///                                     No Microsoft account involved at all.
+/// "Synchronisieren" (dryRun = false): reads the feed and writes to Outlook, which needs
+///                                     a working account and client id.
 /// </summary>
 public sealed class SyncService
 {
@@ -59,7 +59,7 @@ public sealed class SyncService
         }
     }
 
-    // -----------------------------------------------------------------------
+    // ── The run itself ──────────────────────────────────────────────────
 
     private async Task<SyncResult> CoreSyncAsync(bool dryRun, CancellationToken ct)
     {
@@ -69,7 +69,7 @@ public sealed class SyncService
             ?? throw new InvalidOperationException(
                 "Keine Feed-URL konfiguriert. Bitte Einstellungen öffnen.");
 
-        // ── Feed laden (immer, auch ohne Microsoft-Konto) ──────────────────
+        // ── The feed, always, account or not ──────────────────────────────
         Report("⏳ Feed wird geladen…");
         using var http  = new HttpClient();
         var source      = new HttpFeedSource(http, plainUrl);
@@ -77,7 +77,7 @@ public sealed class SyncService
         var feedHealth  = FeedParser.CheckPlausibility(icsContent);
         var feedEvents  = FeedParser.Parse(icsContent);
 
-        // Cache befüllen → EventsPage zeigt Kalender sofort
+        // Fill the cache right away, so the calendar page has something to show.
         AppState.CachedFeedEvents = feedEvents;
         AppState.MarkFeedRefreshed(DateTimeOffset.Now);
 
@@ -85,15 +85,14 @@ public sealed class SyncService
         var terminCount = feedEvents.Count(e => e.Type == SchulnetzEventType.Termin);
         Report($"✅ {pruefCount} Prüfungen + {terminCount} Termine geladen.");
 
-        // Selbst erstellte Einträge werden immer mitsynchronisiert. Sie gehören
-        // NICHT in CachedFeedEvents — Kalender und Dashboard holen sie separat,
-        // sonst erschienen sie doppelt.
+        // Hand-made entries always come along. They must NOT go into CachedFeedEvents:
+        // the calendar and the dashboard fetch them separately, so they would show twice.
         var manual   = AppState.ManualAsEvents().ToList();
         var toSync   = feedEvents.Concat(manual).ToList();
         if (manual.Count > 0)
             Report($"✏️  {manual.Count} eigene Einträge kommen dazu.");
 
-        // ── Nur Feed laden (kein Outlook nötig) ────────────────────────────
+        // ── Feed only: done here, nothing to write ────────────────────────
         if (dryRun)
         {
             var summary = $"{pruefCount} Prüfungen, {terminCount} Termine im Feed.";
@@ -110,7 +109,7 @@ public sealed class SyncService
                     config.ToSyncOptions(), feedHealth, DateTimeOffset.Now));
         }
 
-        // ── Outlook-Sync: Microsoft-Konto prüfen ───────────────────────────
+        // ── Outlook sync: from here on an account is required ─────────────
         var clientId = MicrosoftAccount.Resolve(config)
             ?? throw new InvalidOperationException(
                 "Outlook-Sync ist in dieser Version nicht verfügbar.\n" +
@@ -125,8 +124,8 @@ public sealed class SyncService
 
         var calendar = new GraphCalendarTarget(token);
         var options  = config.ToSyncOptions();
-        // Das Lesefenster muss auch die eigenen Einträge abdecken, sonst findet
-        // der Sync sie im Kalender nicht wieder.
+        // The read window has to cover the hand-made entries too, otherwise the sync
+        // cannot find them again in the calendar and would create them a second time.
         var from     = toSync.Count > 0 ? toSync.Min(e => e.Start).AddDays(-1) : DateTimeOffset.UtcNow;
         var to       = toSync.Count > 0 ? toSync.Max(e => e.Start).AddDays(1)  : DateTimeOffset.UtcNow.AddYears(1);
         var tracked  = await calendar.GetTrackedEventsAsync(
@@ -169,6 +168,10 @@ public sealed class SyncService
         ProgressReceived?.Invoke(msg);
     }
 
+    /// <summary>
+    /// Trims an exception down to one short line and strips any URL out of it. The feed URL
+    /// carries a personal token, and error messages have a habit of quoting the request.
+    /// </summary>
     private static string SanitizeException(Exception ex)
     {
         var msg = ex.InnerException?.Message ?? ex.Message;
@@ -180,7 +183,7 @@ public sealed class SyncService
 
 }
 
-/// <summary>Ergebnis eines abgeschlossenen Sync-Laufs.</summary>
+/// <summary>What a finished run produced, for the dashboard and the log.</summary>
 public sealed record SyncResult(
     DateTimeOffset Timestamp,
     string         Summary,

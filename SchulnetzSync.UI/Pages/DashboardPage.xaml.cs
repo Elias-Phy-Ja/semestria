@@ -12,17 +12,25 @@ using Orientation         = System.Windows.Controls.Orientation;
 
 namespace SchulnetzSync.UI.Pages;
 
+/// <summary>
+/// The landing page: status of the last run, a few numbers, what is coming up, today's
+/// timetable and the open tasks.
+///
+/// The page owns no data of its own. It reads everything from <see cref="AppState"/> and
+/// rebuilds itself whenever that fires Changed, which keeps it honest but means every
+/// build has to be cheap.
+/// </summary>
 public partial class DashboardPage : Page
 {
     private static readonly CultureInfo DeCh = new("de-CH");
 
-    /// <summary>Zeitfenster der Vorschau «Als Nächstes».</summary>
+    /// <summary>How far ahead the "Als Nächstes" preview looks.</summary>
     private const int UpcomingDays = 7;
 
-    /// <summary>So viele offene Aufgaben zeigt die Seitenspalte höchstens.</summary>
+    /// <summary>Most open tasks the side column will show.</summary>
     private const int MaxTasksShown = 5;
 
-    /// <summary>Unter dieser Breite rutscht die Seitenspalte unter die Hauptspalte.</summary>
+    /// <summary>Below this width the side column drops underneath the main one.</summary>
     private const double TwoColumnMinWidth = 1000;
 
     private static readonly Color Green  = Color.FromRgb(0x22, 0xC5, 0x5E);
@@ -34,7 +42,7 @@ public partial class DashboardPage : Page
     private readonly SyncService _sync = new();
     private CancellationTokenSource? _cts;
 
-    /// <summary>Merkt den letzten Ladezustand, damit der Start-Refresh nur einmal geloggt wird.</summary>
+    /// <summary>Remembers the last loading state, so the start refresh is logged once and not on every tick.</summary>
     private bool _wasRefreshingFeed;
 
     public DashboardPage()
@@ -48,7 +56,7 @@ public partial class DashboardPage : Page
             RefreshStatus();
         });
 
-        // AppState.Changed feuert vom Hintergrund-Thread → immer dispatchen
+        // AppState.Changed comes off a background thread, so always go through the dispatcher.
         Loaded      += (_, _) => { AppState.Changed += OnStateChanged; RefreshStatus(); };
         Unloaded    += (_, _) => AppState.Changed -= OnStateChanged;
         SizeChanged += (_, _) => ApplyLayout();
@@ -56,9 +64,7 @@ public partial class DashboardPage : Page
 
     private void OnStateChanged() => Dispatcher.Invoke(RefreshStatus);
 
-    // -----------------------------------------------------------------------
-    // Buttons
-    // -----------------------------------------------------------------------
+    // ── Buttons ─────────────────────────────────────────────────────────
 
     private async void BtnSync_Click(object sender, RoutedEventArgs e)
         => await StartSyncAsync(dryRun: false);
@@ -86,9 +92,7 @@ public partial class DashboardPage : Page
         if (expanded) LogScroll.ScrollToBottom();
     }
 
-    // -----------------------------------------------------------------------
-    // Sync
-    // -----------------------------------------------------------------------
+    // ── Sync ────────────────────────────────────────────────────────────
 
     private async Task StartSyncAsync(bool dryRun)
     {
@@ -101,9 +105,7 @@ public partial class DashboardPage : Page
 
     private void OnSyncCompleted(SyncResult result) => RefreshStatus();
 
-    // -----------------------------------------------------------------------
-    // Gesamtaufbau
-    // -----------------------------------------------------------------------
+    // ── Building the page ───────────────────────────────────────────────
 
     private void RefreshStatus()
     {
@@ -117,7 +119,7 @@ public partial class DashboardPage : Page
 
         SetupHint.Visibility = hasFeed ? Visibility.Collapsed : Visibility.Visible;
 
-        // Outlook-Sync-Button nur zeigen wenn Microsoft-Konto konfiguriert
+        // The Outlook button only makes sense with an account behind it.
         BtnSync.Visibility     = hasOutlook ? Visibility.Visible : Visibility.Collapsed;
         OutlookChip.Visibility = hasOutlook ? Visibility.Visible : Visibility.Collapsed;
         BtnSync.IsEnabled      = hasFeed && hasOutlook && !busy;
@@ -145,7 +147,7 @@ public partial class DashboardPage : Page
         TxtHeaderSub.Text = hasFeed ? date : date + " · Fast fertig, es fehlt nur noch die Feed-URL.";
     }
 
-    /// <summary>Zweispaltig bei genug Breite, sonst alles untereinander.</summary>
+    /// <summary>Two columns when there is room, otherwise everything stacked.</summary>
     private void ApplyLayout()
     {
         bool wide = ActualWidth <= 0 || ActualWidth >= TwoColumnMinWidth;
@@ -157,13 +159,11 @@ public partial class DashboardPage : Page
         StatGrid.Columns = ActualWidth is > 0 and < 760 ? 2 : 4;
     }
 
-    // -----------------------------------------------------------------------
-    // Statuskarte
-    // -----------------------------------------------------------------------
+    // ── Status card ─────────────────────────────────────────────────────
 
     /// <summary>
-    /// Der Auto-Refresh beim Start läuft still im Hintergrund. Damit der Benutzer
-    /// sieht, dass überhaupt etwas passiert, wird der Zustandswechsel protokolliert.
+    /// The refresh at start runs quietly in the background, so the state change is written
+    /// to the log on screen — otherwise nothing at all seems to be happening.
     /// </summary>
     private void LogAutoRefreshTransition(SyncConfig config)
     {
@@ -202,7 +202,7 @@ public partial class DashboardPage : Page
             return;
         }
 
-        // Der Feed-Zeitstempel ist der aussagekräftigere: er wird bei jedem Start erneuert
+        // The feed timestamp says more: it is refreshed on every start, the sync one is not.
         var reference = config.LastFeedRefreshAt ?? config.LastRunAt;
         if (reference is null)
         {
@@ -223,9 +223,7 @@ public partial class DashboardPage : Page
         TxtStatusLabel.Text    = label;
     }
 
-    // -----------------------------------------------------------------------
-    // Kennzahlen
-    // -----------------------------------------------------------------------
+    // ── The numbers at the top ──────────────────────────────────────────
 
     private void RefreshStats(DateTimeOffset now)
     {
@@ -234,7 +232,7 @@ public partial class DashboardPage : Page
         FillCountTile(visible, SchulnetzEventType.Pruefung, now, TxtStatPruefung, TxtStatPruefungSub);
         FillCountTile(visible, SchulnetzEventType.Termin,   now, TxtStatTermin,   TxtStatTerminSub);
 
-        // Stunden heute
+        // Lessons today
         var today = Lessons().Where(l => l.Start.Date == DateTime.Today).OrderBy(l => l.Start).ToList();
         TxtStatLessons.Text = today.Count.ToString();
         TxtStatLessonsSub.Text = today.Count switch
@@ -245,7 +243,7 @@ public partial class DashboardPage : Page
             _                                   => "Schluss " + today[^1].End.ToString("HH:mm"),
         };
 
-        // Aufgaben
+        // Tasks
         var open    = AppState.Tasks.Where(t => !t.IsDone).ToList();
         int overdue = open.Count(t => t.IsOverdue(now));
         int dueToday = open.Count(t => !t.IsOverdue(now) && t.DueAt?.Date == DateTime.Today);
@@ -276,13 +274,11 @@ public partial class DashboardPage : Page
         sub.Text    = coming.Count == 0 ? "Keine anstehend" : "Nächste " + FormatCountdown(coming[0].Start);
     }
 
-    // -----------------------------------------------------------------------
-    // Als Nächstes
-    // -----------------------------------------------------------------------
+    // ── "Als Nächstes" ──────────────────────────────────────────────────
 
     /// <summary>
-    /// Zeigt, was auch synchronisiert wird: Prüfungen und/oder Termine gemäss
-    /// <see cref="SyncConfig.EnabledTypes"/>, gruppiert nach Tag.
+    /// Shows the same thing that gets synced — exams and appointments according to
+    /// <see cref="SyncConfig.EnabledTypes"/> — grouped by day.
     /// </summary>
     private void BuildUpcoming(SyncConfig config, DateTimeOffset now)
     {
@@ -297,8 +293,8 @@ public partial class DashboardPage : Page
             _             => "Prüfungen und Termine sind in den Einstellungen ausgeschaltet",
         };
 
-        // Offset des Zieltags selbst nehmen: Mit dem heutigen stürzt es ab,
-        // sobald das Fenster über die Zeitumstellung reicht.
+        // Take the offset of the target day itself. Using today's falls apart the moment
+        // the window reaches across the daylight-saving switch.
         var windowEnd = new DateTimeOffset(DateTime.Today.AddDays(UpcomingDays + 1));
         var items = VisibleEvents()
             .Where(e => (e.Type == SchulnetzEventType.Pruefung && showPruefungen)
@@ -411,13 +407,11 @@ public partial class DashboardPage : Page
         };
     }
 
-    // -----------------------------------------------------------------------
-    // Stundenplan
-    // -----------------------------------------------------------------------
+    // ── Timetable ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// Zeigt heute, solange noch Unterricht kommt. Danach (oder an freien Tagen)
-    /// den nächsten Schultag, damit man abends schon sieht, was morgen ansteht.
+    /// Shows today for as long as there are lessons left. After that, and on days off,
+    /// it shows the next school day — so in the evening you already see tomorrow.
     /// </summary>
     private void BuildSchedule(DateTimeOffset now)
     {
@@ -522,9 +516,7 @@ public partial class DashboardPage : Page
         };
     }
 
-    // -----------------------------------------------------------------------
-    // Aufgaben
-    // -----------------------------------------------------------------------
+    // ── Tasks column ────────────────────────────────────────────────────
 
     private void BuildTasks(DateTimeOffset now)
     {
@@ -610,11 +602,9 @@ public partial class DashboardPage : Page
         return grid;
     }
 
-    // -----------------------------------------------------------------------
-    // Daten
-    // -----------------------------------------------------------------------
+    // ── Getting at the data ─────────────────────────────────────────────
 
-    /// <summary>Kurzform wie im Kalender: «TEU» oder «FRA · Examen de grammaire».</summary>
+    /// <summary>Short form, same as in the calendar: "TEU" or "FRA · Examen de grammaire".</summary>
     private static string ShortTitle(SchulnetzEvent ev)
     {
         var (code, rest) = SubjectCode.Split(ev.Summary);
@@ -622,7 +612,7 @@ public partial class DashboardPage : Page
         return rest.Length == 0 ? code : $"{code} · {rest}";
     }
 
-    /// <summary>Feed- und manuelle Einträge ohne die ausgeblendeten.</summary>
+    /// <summary>Feed entries plus hand-made ones, minus everything the user hid.</summary>
     private static IEnumerable<SchulnetzEvent> VisibleEvents()
     {
         var suppressed = AppState.SuppressedKeys;
@@ -633,7 +623,7 @@ public partial class DashboardPage : Page
     private static IEnumerable<SchulnetzEvent> Lessons()
         => VisibleEvents().Where(e => e.Type == SchulnetzEventType.Lektion && !e.IsAllDay);
 
-    /// <summary>Farbe aus den Benutzereinstellungen; fällt auf die Standardfarbe zurück.</summary>
+    /// <summary>Colour from the user settings, falling back to the default.</summary>
     private static Color ResolveColor(SchulnetzEvent ev)
     {
         var key      = ev.Type == SchulnetzEventType.Pruefung ? "Pruefung" : "Termin";
@@ -643,7 +633,7 @@ public partial class DashboardPage : Page
         return ParseColor(AppState.GetEventColor(ev.Key, key), fallback);
     }
 
-    /// <summary>Gleiche Farbe wie im Kalender: Einzelfarbe → Fach → Standard.</summary>
+    /// <summary>The same colour the calendar uses: individual, then subject, then default.</summary>
     private static Color LessonColor(SchulnetzEvent lesson)
         => ParseColor(AppState.GetEventColor(lesson.Key, SubjectCode.FromSummary(lesson.Summary)),
                       Color.FromRgb(0x25, 0x63, 0xEB));
@@ -654,9 +644,7 @@ public partial class DashboardPage : Page
         catch (Exception ex) when (ex is FormatException or NotSupportedException) { return fallback; }
     }
 
-    // -----------------------------------------------------------------------
-    // Bausteine
-    // -----------------------------------------------------------------------
+    // ── Building blocks ─────────────────────────────────────────────────
 
     private static Border Pill(string text, Color color) => new()
     {
@@ -672,7 +660,7 @@ public partial class DashboardPage : Page
         },
     };
 
-    /// <summary>Etwas heller, damit farbiger Text auf dunklem Grund lesbar bleibt.</summary>
+    /// <summary>A little lighter, so coloured text stays readable on a dark background.</summary>
     private static Color Lighten(Color c)
         => Color.FromRgb((byte)(c.R + (255 - c.R) * 0.25), (byte)(c.G + (255 - c.G) * 0.25), (byte)(c.B + (255 - c.B) * 0.25));
 
@@ -696,9 +684,7 @@ public partial class DashboardPage : Page
         return line;
     }
 
-    // -----------------------------------------------------------------------
-    // Texte
-    // -----------------------------------------------------------------------
+    // ── Wording ─────────────────────────────────────────────────────────
 
     private static string FormatDayLong(DateTime day)
     {
@@ -743,9 +729,7 @@ public partial class DashboardPage : Page
         return $"vor {(int)ts.TotalDays} Tagen";
     }
 
-    // -----------------------------------------------------------------------
-    // Protokoll
-    // -----------------------------------------------------------------------
+    // ── The log panel ───────────────────────────────────────────────────
 
     private void AppendLog(string line)
     {

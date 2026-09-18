@@ -3,33 +3,32 @@ using SchulnetzSync.Core.Update;
 namespace SchulnetzSync.UI.Update;
 
 /// <summary>
-/// Creates the update source once the main window has a handle.
+/// Builds the update source once the main window has a handle.
 ///
-/// Der StoreContext braucht ein Fensterhandle, das es beim Erzeugen des
-/// Fensters noch nicht gibt. Über diese Fabrik wählt der Start ausserdem die
-/// Attrappe aus, ohne dass das Fenster von beiden Varianten wissen muss.
+/// StoreContext insists on a window handle, which does not exist yet while the window is
+/// being constructed. The factory also lets startup swap in the fake source without the
+/// window having to know that two variants exist.
 /// </summary>
 public interface IUpdateSourceFactory
 {
     IUpdateSource Create(IntPtr windowHandle);
 
     /// <summary>
-    /// True when the snooze should be ignored.
+    /// True when the postpone window should be ignored.
     ///
-    /// Für die Attrappe zwingend: Sie bietet immer dieselbe Version an, ein
-    /// einziges «Später erinnern» würde den Schalter sonst für Tage
-    /// unbrauchbar machen.
+    /// The fake source needs this: it always offers the same version, so a single
+    /// "Später erinnern" would make the whole switch useless for a day.
     /// </summary>
     bool BypassSnooze => false;
 }
 
-/// <summary>Uses the Microsoft Store.</summary>
+/// <summary>The real thing: asks the Microsoft Store.</summary>
 public sealed class StoreUpdateSourceFactory : IUpdateSourceFactory
 {
     public IUpdateSource Create(IntPtr windowHandle) => new StoreUpdateSource(windowHandle);
 }
 
-/// <summary>Pretends there is an update; selected by --fake-update.</summary>
+/// <summary>Invents an update; picked by --fake-update.</summary>
 public sealed class FakeUpdateSourceFactory(string version, bool mandatory) : IUpdateSourceFactory
 {
     public IUpdateSource Create(IntPtr windowHandle) => new FakeUpdateSource(version, mandatory);

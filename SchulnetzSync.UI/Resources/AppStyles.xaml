@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- ================================================================
-         FARBEN — Accent-Palette
+         COLOURS — the accent palette
          ================================================================ -->
     <Color x:Key="AccentColor">#5C6EF7</Color>
     <Color x:Key="AccentDarkColor">#3D50D9</Color>
@@ -22,7 +22,7 @@
     <SolidColorBrush x:Key="TerminBrush"     Color="{StaticResource TerminColor}"/>
 
     <!-- ================================================================
-         KARTEN — leicht höherer Kontrast gegenüber Hintergrund
+         CARDS — a touch more contrast than the background
          ================================================================ -->
     <Style x:Key="Card" TargetType="Border">
         <Setter Property="Background"      Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"/>
@@ -33,22 +33,21 @@
         <Setter Property="BorderThickness" Value="1"/>
     </Style>
 
-    <!-- Karte mit farbigem linkem Rand (Prüfungen-Statistik) -->
+    <!-- Card with a coloured left edge, used for the exam stats -->
     <Style x:Key="CardPruefung" TargetType="Border" BasedOn="{StaticResource Card}">
         <Setter Property="BorderBrush"     Value="{StaticResource PruefungBrush}"/>
         <Setter Property="BorderThickness" Value="3,1,1,1"/>
     </Style>
 
-    <!-- Karte mit farbigem linkem Rand (Termine-Statistik) -->
+    <!-- Same, for the appointment stats -->
     <Style x:Key="CardTermin" TargetType="Border" BasedOn="{StaticResource Card}">
         <Setter Property="BorderBrush"     Value="{StaticResource TerminBrush}"/>
         <Setter Property="BorderThickness" Value="3,1,1,1"/>
     </Style>
 
     <!--
-        InfoBox / WarningBox / SuccessBox:
-        Neutraler Hintergrund + farbiger linker Rand.
-        Funktioniert in Dark- und Light-Mode.
+        InfoBox / WarningBox / SuccessBox: neutral background, coloured left edge.
+        Works in both the dark and the light theme without a second set of brushes.
     -->
     <Style x:Key="InfoBox" TargetType="Border">
         <Setter Property="Background"      Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"/>
@@ -68,7 +67,7 @@
     </Style>
 
     <!-- ================================================================
-         TYPOGRAFIE — höherer Kontrast (keine zu niedrige Opacity)
+         TYPOGRAPHY — keep the contrast up, no faint opacity tricks
          ================================================================ -->
     <Style x:Key="TitleText" TargetType="TextBlock">
         <Setter Property="FontSize"   Value="22"/>
@@ -87,14 +86,14 @@
         <Setter Property="Margin"     Value="0,0,0,4"/>
     </Style>
 
-    <!-- BodyText: lesbar auf dunklem Hintergrund -->
+    <!-- BodyText: readable on a dark background -->
     <Style x:Key="BodyText" TargetType="TextBlock">
         <Setter Property="FontSize"     Value="13"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="Opacity"      Value="0.88"/>
     </Style>
 
-    <!-- NoteText: Hinweis-Zeile, etwas dezenter aber noch gut lesbar -->
+    <!-- NoteText: a hint line, quieter but still perfectly legible -->
     <Style x:Key="NoteText" TargetType="TextBlock">
         <Setter Property="FontSize"     Value="12"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
@@ -106,7 +105,7 @@
          BUTTONS
          ================================================================ -->
 
-    <!-- Primär (Accent-gefüllt) -->
+    <!-- Primary, filled with the accent colour -->
     <Style x:Key="PrimaryButton" TargetType="Button">
         <Setter Property="Background"      Value="{StaticResource AccentBrush}"/>
         <Setter Property="Foreground"      Value="White"/>
@@ -161,7 +160,7 @@
         </Setter>
     </Style>
 
-    <!-- Sekundär (Ghost / Outlined) -->
+    <!-- Secondary, outlined only -->
     <Style x:Key="SecondaryButton" TargetType="Button">
         <Setter Property="Background"      Value="Transparent"/>
         <Setter Property="Foreground"      Value="{StaticResource AccentBrush}"/>
@@ -215,7 +214,7 @@
     </Style>
 
     <!-- ================================================================
-         TRENNLINIE
+         DIVIDER
          ================================================================ -->
     <Style x:Key="Divider" TargetType="Separator">
         <Setter Property="Margin"          Value="0,8"/>
@@ -225,7 +224,7 @@
     </Style>
 
     <!-- ================================================================
-         ABSCHNITTS-LABEL
+         SECTION LABEL
          ================================================================ -->
     <Style x:Key="SectionLabel" TargetType="TextBlock">
         <Setter Property="FontSize"   Value="11"/>

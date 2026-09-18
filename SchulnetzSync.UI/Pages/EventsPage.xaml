@@ -6,14 +6,14 @@
 
     <Page.Resources>
 
-        <!-- Halbtransparentes Grau wirkt im hellen wie im dunklen Theme -->
+        <!-- Half-transparent grey works in both the light and the dark theme -->
         <SolidColorBrush x:Key="HoverOverlay"   Color="#1A808080"/>
         <SolidColorBrush x:Key="PressedOverlay" Color="#2A808080"/>
         <SolidColorBrush x:Key="SubtleFill"     Color="#14808080"/>
         <SolidColorBrush x:Key="SubtleBorder"   Color="#26808080"/>
         <SolidColorBrush x:Key="AccentTint"     Color="{StaticResource AccentColor}" Opacity="0.18"/>
 
-        <!-- Kleiner Knopf mit dezentem Rahmen, beim Überfahren eine Fläche -->
+        <!-- Small button with a quiet border and a fill on hover -->
         <Style x:Key="ToolbarGhost" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -46,12 +46,12 @@
             </Setter>
         </Style>
 
-        <!-- Breiterer Textknopf, z. B. «Heute» -->
+        <!-- Wider text button, e.g. "Heute" -->
         <Style x:Key="ToolbarOutline" TargetType="Button" BasedOn="{StaticResource ToolbarGhost}">
             <Setter Property="Padding" Value="14,0"/>
         </Style>
 
-        <!-- Gefüllter Hauptknopf der Leiste -->
+        <!-- The filled primary button in the toolbar -->
         <Style x:Key="ToolbarAccent" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
@@ -82,7 +82,7 @@
             </Setter>
         </Style>
 
-        <!-- Segment im Monat/Woche-Umschalter -->
+        <!-- One segment of the month/week switch -->
         <Style x:Key="SegmentRadio" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
             <Setter Property="FontSize" Value="13"/>
@@ -109,7 +109,7 @@
             </Setter>
         </Style>
 
-        <!-- Filter-Chip: gewählt = Akzent-Tönung mit Akzent-Rahmen -->
+        <!-- Filter chip; selected means accent tint plus accent border -->
         <Style x:Key="FilterChip" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
             <Setter Property="FontSize" Value="12"/>
@@ -143,25 +143,25 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>  <!-- Toolbar -->
-            <RowDefinition Height="*"/>     <!-- Kalender + Panel -->
+            <RowDefinition Height="Auto"/>  <!-- toolbar -->
+            <RowDefinition Height="*"/>     <!-- calendar and side panel -->
         </Grid.RowDefinitions>
 
         <!-- ══════════════════════════════════════════════════════════════
-             TOOLBAR  (2 Zeilen: Hauptleiste + kompakte Filter-Leiste)
+             TOOLBAR — two rows: the main bar and a compact filter bar
              ══════════════════════════════════════════════════════════════ -->
         <Grid Grid.Row="0" Margin="20,10,20,0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>   <!-- Hauptleiste -->
-                <RowDefinition Height="Auto"/>   <!-- Filter-Leiste -->
+                <RowDefinition Height="Auto"/>   <!-- main bar -->
+                <RowDefinition Height="Auto"/>   <!-- filter bar -->
             </Grid.RowDefinitions>
 
-            <!-- ── Hauptleiste ───────────────────────────────────────────── -->
+            <!-- ── Main bar ──────────────────────────────────────────────── -->
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>  <!-- Titel -->
-                    <ColumnDefinition Width="*"/>     <!-- Navigation (zentriert) -->
-                    <ColumnDefinition Width="Auto"/>  <!-- Ansicht + Aktionen -->
+                    <ColumnDefinition Width="Auto"/>  <!-- title -->
+                    <ColumnDefinition Width="*"/>     <!-- navigation, centred -->
+                    <ColumnDefinition Width="Auto"/>  <!-- view switch and actions -->
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0"
@@ -169,7 +169,7 @@
                            Style="{StaticResource TitleText}"
                            VerticalAlignment="Center"/>
 
-                <!-- Navigation: ‹ Monat › und «Heute» -->
+                <!-- Navigation: ‹ month › and "Heute" -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal"
                             HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Button x:Name="BtnPrevMonth" Style="{StaticResource ToolbarGhost}"
@@ -190,7 +190,7 @@
                             Margin="10,0,0,0" Click="BtnToday_Click"/>
                 </StackPanel>
 
-                <!-- Rechts: Ansicht, Einstellungen, Neuer Eintrag -->
+                <!-- Right-hand side: view, settings, new entry -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Background="{StaticResource SubtleFill}"
                             BorderBrush="{StaticResource SubtleBorder}" BorderThickness="1"
@@ -223,7 +223,7 @@
                 </StackPanel>
             </Grid>
 
-            <!-- ── Filter-Leiste ─────────────────────────────────────────── -->
+            <!-- ── Filter bar ────────────────────────────────────────────── -->
             <StackPanel Grid.Row="1" Orientation="Horizontal"
                         Margin="0,10,0,0" VerticalAlignment="Center">
                 <RadioButton x:Name="BtnFilterAll" Content="Alle" GroupName="CalFilter"
@@ -262,7 +262,7 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════════════════════
-             HAUPT-LAYOUT: Kalender + rechtes Panel
+             MAIN LAYOUT: the calendar and the panel on the right
              ══════════════════════════════════════════════════════════════ -->
         <Grid x:Name="MainLayout" Grid.Row="1" Margin="20,8,20,20" Visibility="Collapsed">
             <Grid.ColumnDefinitions>
@@ -270,14 +270,14 @@
                 <ColumnDefinition x:Name="DetailColumnDef" Width="0"/>
             </Grid.ColumnDefinitions>
 
-            <!-- ── Kalender-Bereich ── -->
+            <!-- ── Calendar area ── -->
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="26"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Wochentag-Köpfe (Monatsansicht) -->
+                <!-- Weekday headers, month view only -->
                 <Grid Grid.Row="0" x:Name="MonthDayHeaders">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -311,7 +311,7 @@
                     </Border>
                 </Grid>
 
-                <!-- Monatsansicht: 6×7 Zellen -->
+                <!-- Month view: 6 by 7 cells -->
                 <Grid Grid.Row="1" x:Name="CalendarGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -332,11 +332,11 @@
                     </Grid.ColumnDefinitions>
                 </Grid>
 
-                <!-- Wochenansicht (Struktur wird vollständig in Code aufgebaut) -->
+                <!-- Week view; the whole structure is built in code -->
                 <Grid Grid.Row="0" Grid.RowSpan="2" x:Name="WeekGrid" Visibility="Collapsed"/>
             </Grid>
 
-            <!-- ── Rechtes Panel (Detail / Einstellungen / Neuer Eintrag) ── -->
+            <!-- ── Right panel: detail, settings or new entry ── -->
             <Border x:Name="DetailPanel"
                     Grid.Column="1"
                     Margin="10,0,0,0"
@@ -347,12 +347,12 @@
                     BorderThickness="1">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>  <!-- Header -->
-                        <RowDefinition Height="*"/>     <!-- Scrollbarer Inhalt -->
-                        <RowDefinition Height="Auto"/>  <!-- Footer mit Aktionen -->
+                        <RowDefinition Height="Auto"/>  <!-- header -->
+                        <RowDefinition Height="*"/>     <!-- scrollable content -->
+                        <RowDefinition Height="Auto"/>  <!-- footer with the actions -->
                     </Grid.RowDefinitions>
 
-                    <!-- Panel-Header -->
+                    <!-- Panel header -->
                     <Grid Grid.Row="0" Margin="16,12,16,12">
                         <TextBlock x:Name="TxtPanelTitle"
                                    FontSize="11" FontWeight="Bold"
@@ -366,16 +366,16 @@
                     <Separator Grid.Row="0" VerticalAlignment="Bottom"
                                Margin="0" Style="{StaticResource Divider}"/>
 
-                    <!-- Scrollbarer Inhalt -->
+                    <!-- Scrollable content -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="16,14,16,8">
-                            <!-- Detail-Inhalt (per Code befüllt) -->
+                            <!-- Detail content, filled in code -->
                             <StackPanel x:Name="DetailContent"/>
 
-                            <!-- Einstellungs-Inhalt (per Code befüllt) -->
+                            <!-- Settings content, filled in code -->
                             <StackPanel x:Name="SettingsContent" Visibility="Collapsed"/>
 
-                            <!-- Neuer-Eintrag-Formular (statisch in XAML) -->
+                            <!-- New-entry form, static XAML for once -->
                             <StackPanel x:Name="AddEventSection" Visibility="Collapsed">
 
                                 <TextBlock Text="Titel *"
@@ -442,12 +442,12 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                    <!-- Panel-Footer -->
+                    <!-- Panel footer -->
                     <Border Grid.Row="2"
                             BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
                             BorderThickness="0,1,0,0" Padding="16,12">
                         <Grid>
-                            <!-- Detail-Footer: Ausblenden -->
+                            <!-- Detail footer: hide the entry -->
                             <StackPanel x:Name="DetailFooter">
                                 <Button x:Name="BtnDeleteFromApp"
                                         Content="🚫  Aus App ausblenden"
@@ -460,7 +460,7 @@
                                            Text="Bleibt im Schulnetz-Feed. Hier dauerhaft ausgeblendet."/>
                             </StackPanel>
 
-                            <!-- AddEvent-Footer: Speichern -->
+                            <!-- New-entry footer: save -->
                             <Button x:Name="BtnSaveManualEvent"
                                     Visibility="Collapsed"
                                     Content="✓  Eintrag hinzufügen"

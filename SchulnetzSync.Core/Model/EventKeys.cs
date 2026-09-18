@@ -1,16 +1,14 @@
 namespace SchulnetzSync.Core.Model;
 
 /// <summary>
-/// Conventions for the correlation keys used throughout the app.
-///
-/// Feed events carry the inner Schulnetz id ("P_65100", "T_7409"). Events the
-/// user created by hand in the app get a generated key with a fixed prefix, so
-/// the sync engine can tell them apart: they come from the local store rather
-/// than the feed and are therefore not subject to the feed safety rules.
+/// Correlation keys used across the app. Feed events carry the inner Schulnetz id
+/// ("P_65100", "T_7409"); events the user typed in by hand get a prefixed key instead
+/// so the sync engine can tell them apart. They never came from the feed, so the feed
+/// safety rules must not apply to them.
 /// </summary>
 public static class EventKeys
 {
-    /// <summary>Prefix of keys belonging to hand-made events.</summary>
+    /// <summary>Prefix that marks a hand-made event.</summary>
     public const string ManualPrefix = "MANUAL_";
 
     /// <summary>True when the key belongs to an event the user created in the app.</summary>

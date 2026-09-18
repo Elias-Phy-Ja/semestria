@@ -5,6 +5,9 @@ using System.Windows.Controls;
 
 namespace SchulnetzSync.UI.Pages;
 
+/// <summary>
+/// About page: version, links, the legal texts and the reset button.
+/// </summary>
 public partial class AboutPage : Page
 {
     public AboutPage() => InitializeComponent();
@@ -31,9 +34,7 @@ public partial class AboutPage : Page
         LegalViewer.Visibility = Visibility.Visible;
     }
 
-    // -----------------------------------------------------------------------
-    // App zurücksetzen
-    // -----------------------------------------------------------------------
+    // ── Reset the app ───────────────────────────────────────────────────
 
     private void BtnReset_Click(object sender, RoutedEventArgs e)
     {
@@ -55,7 +56,7 @@ public partial class AboutPage : Page
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);
 
-            // App neu starten
+            // Restart so the app comes up clean and runs the onboarding again.
             var exe = Process.GetCurrentProcess().MainModule?.FileName;
             if (!string.IsNullOrEmpty(exe))
                 Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
@@ -75,6 +76,6 @@ public partial class AboutPage : Page
     private static void OpenUrl(string url)
     {
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch { /* Browser nicht verfügbar */ }
+        catch { /* no browser available — not worth an error dialog */ }
     }
 }

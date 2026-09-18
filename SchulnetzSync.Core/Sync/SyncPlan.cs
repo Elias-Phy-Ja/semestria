@@ -1,23 +1,20 @@
 namespace SchulnetzSync.Core.Sync;
 
 /// <summary>
-/// The complete output of the diff engine for one sync run.
-/// If <see cref="Blockers"/> is non-empty the plan must NOT be executed.
+/// Everything the diff engine worked out for one run. With a non-empty
+/// <see cref="Blockers"/> list the plan must not be executed.
 /// </summary>
 public sealed record SyncPlan(
-    /// <summary>All actions, computed even when blockers are present (for display).</summary>
+    /// <summary>All actions. Still computed when there are blockers, so we can show them.</summary>
     IReadOnlyList<SyncAction> Actions,
 
-    /// <summary>
-    /// Reasons why this plan must not be executed.
-    /// Empty = safe to execute.
-    /// </summary>
+    /// <summary>Why this plan must not run. Empty means it is safe.</summary>
     IReadOnlyList<string> Blockers)
 {
-    /// <summary>True when the plan may be safely executed.</summary>
+    /// <summary>True when the plan may be executed.</summary>
     public bool CanExecute => Blockers.Count == 0;
 
-    /// <summary>Shortcut counts for the dry-run summary.</summary>
+    // Counters for the dry-run summary.
     public int CreateCount    => Actions.Count(a => a.Kind == SyncActionKind.Create);
     public int UpdateCount    => Actions.Count(a => a.Kind == SyncActionKind.Update);
     public int DeleteCount    => Actions.Count(a => a.Kind is SyncActionKind.Delete or SyncActionKind.MarkCancelled);

@@ -10,8 +10,8 @@ using SchulnetzSync.UI.Services;
 namespace SchulnetzSync.UI;
 
 /// <summary>
-/// Manages the system-tray icon and handles the --silent background sync.
-/// The tray icon lets the user open the main window and quit the app.
+/// The tray icon and everything that hangs off it: opening the window, quitting, the
+/// --silent background sync and the balloon tips for due task reminders.
 /// </summary>
 public sealed class TrayService : IDisposable
 {
@@ -22,35 +22,33 @@ public sealed class TrayService : IDisposable
         _trayIcon = new NotifyIcon
         {
             Text    = "Semestria",
-            Icon    = SystemIcons.Application, // replaced by real icon in production
+            Icon    = SystemIcons.Application, // swapped for the real icon in the packaged build
             Visible = true,
         };
 
-        // Right-click context menu
+        // Right-click menu: open and quit, nothing more.
         var menu = new ContextMenuStrip();
         menu.Items.Add("Öffnen",  null, (_, _) => ShowMainWindow());
         menu.Items.Add("-");
         menu.Items.Add("Beenden", null, (_, _) => Shutdown());
         _trayIcon.ContextMenuStrip = menu;
 
-        // Double-click opens the window
+        // Double-click does the obvious thing.
         _trayIcon.DoubleClick += (_, _) => ShowMainWindow();
     }
 
-    // -----------------------------------------------------------------------
-    // Public API
-    // -----------------------------------------------------------------------
+    // ── What the rest of the app calls ──────────────────────────────────
 
     /// <summary>
-    /// Called when the app starts with --silent.
-    /// Runs a sync in the background; does not open the main window.
+    /// Entry point for a start with --silent: sync in the background and never
+    /// put a window on screen.
     /// </summary>
     public void RunSilentSync()
     {
         _trayIcon.ShowBalloonTip(2000, "Semestria",
             "Synchronisation wird gestartet…", ToolTipIcon.Info);
 
-        // Fire-and-forget on the thread-pool; result shown as balloon tip.
+        // Fire and forget on the thread pool; whatever comes back turns into a balloon tip.
         Task.Run(async () =>
         {
             try
@@ -71,8 +69,8 @@ public sealed class TrayService : IDisposable
     }
 
     /// <summary>
-    /// Zeigt faellige Aufgaben-Erinnerungen als Sprechblase und merkt sie als
-    /// gezeigt. Wird von einem Timer im Hauptfenster aufgerufen.
+    /// Shows due task reminders as balloon tips and marks them as shown, so they do not
+    /// come back on the next tick. Driven by a timer in the main window.
     /// </summary>
     public void ShowDueTaskReminders()
     {
@@ -110,9 +108,7 @@ public sealed class TrayService : IDisposable
 
     public void Dispose() => _trayIcon.Dispose();
 
-    // -----------------------------------------------------------------------
-    // Internals
-    // -----------------------------------------------------------------------
+    // ── Internals ───────────────────────────────────────────────────────
 
     private static void ShowMainWindow()
     {
@@ -130,13 +126,13 @@ public sealed class TrayService : IDisposable
 
     private void ShowBalloon(string title, string text, ToolTipIcon icon)
     {
-        // Must be called on the UI thread
+        // Has to run on the UI thread.
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
             _trayIcon.ShowBalloonTip(4000, title, text, icon));
     }
 
     /// <summary>
-    /// Runs a full sync using the stored config; returns a human-readable result string.
+    /// A full sync from the stored config, returning the line that goes into the balloon tip.
     /// </summary>
     private static async Task<string> SilentSyncCoreAsync()
     {
@@ -149,14 +145,14 @@ public sealed class TrayService : IDisposable
         if (plainUrl is null)
             throw new InvalidOperationException("Keine Feed-URL konfiguriert.");
 
-        // Fetch and parse
+        // Feed first — no point asking Microsoft for a token if this fails.
         using var http   = new HttpClient();
         var source       = new HttpFeedSource(http, plainUrl);
         var icsContent   = await source.FetchAsync();
         var feedHealth   = FeedParser.CheckPlausibility(icsContent);
         var feedEvents   = FeedParser.Parse(icsContent);
 
-        // Acquire token silently (throws InteractiveLoginRequiredException if expired)
+        // Silent only: if the token is gone this throws, and the caller turns it into a hint.
         var auth  = new MsalAuthProvider(clientId);
         var token = await auth.AcquireTokenSilentAsync();
 

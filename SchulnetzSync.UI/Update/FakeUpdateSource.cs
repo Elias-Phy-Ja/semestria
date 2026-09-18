@@ -3,13 +3,13 @@ using SchulnetzSync.Core.Update;
 namespace SchulnetzSync.UI.Update;
 
 /// <summary>
-/// Pretends an update is available, for walking through the loading view
-/// without a store.
+/// Claims an update is waiting, so the loading view can be walked through without a store.
 ///
-/// Nötig, weil StoreContext erst in einer aus dem Store installierten Version
-/// echte Antworten gibt: Unter «dotnet run» und beim selbstsignierten MSIX
-/// läuft sonst immer nur der Pfad «kein Update».
-/// Aktiviert mit <c>--fake-update</c>, zwingend mit <c>--fake-update-mandatory</c>.
+/// Needed because StoreContext only answers for real in a build actually installed from the
+/// Store: under "dotnet run" and with a self-signed MSIX you always end up on the "nothing
+/// to do" path and never see the rest.
+/// Switched on with <c>--fake-update</c>, or <c>--fake-update-mandatory</c> for the
+/// version without a way out.
 /// </summary>
 public sealed class FakeUpdateSource(string version, bool mandatory) : IUpdateSource
 {
@@ -18,7 +18,7 @@ public sealed class FakeUpdateSource(string version, bool mandatory) : IUpdateSo
 
     public async Task DownloadAsync(IProgress<double>? progress, CancellationToken ct)
     {
-        // Ein Download, der lange genug dauert, um den Balken zu beurteilen.
+        // Slow enough on purpose that the progress bar can actually be judged.
         for (int percent = 0; percent <= 100; percent += 4)
         {
             ct.ThrowIfCancellationRequested();
@@ -28,9 +28,9 @@ public sealed class FakeUpdateSource(string version, bool mandatory) : IUpdateSo
     }
 
     /// <summary>
-    /// Installiert nichts, meldet aber den Ausgang, den der Store in der Praxis
-    /// liefert: Paket ersetzt, App muss sich selbst neu starten. So lässt sich
-    /// der Abschluss der Ladeansicht ohne Store durchspielen.
+    /// Installs nothing, but reports the ending the Store gives in practice: package
+    /// swapped, app has to restart itself. That way the last step of the loading view
+    /// can be rehearsed without a store.
     /// </summary>
     public Task<InstallOutcome> InstallAsync(CancellationToken ct)
         => Task.FromResult(InstallOutcome.NeedsRestart);

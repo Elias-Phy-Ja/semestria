@@ -4,16 +4,16 @@ using Microsoft.Identity.Client.Extensions.Msal;
 namespace SchulnetzSync.Core.Calendar;
 
 /// <summary>
-/// MSAL-based authentication provider for Microsoft Graph.
-/// Token cache is persisted under %LOCALAPPDATA%\Semestria via DPAPI.
+/// Sign-in against Microsoft Graph through MSAL. The token cache lives under
+/// %LOCALAPPDATA%\Semestria and is protected by DPAPI.
 /// </summary>
 public sealed class MsalAuthProvider
 {
-    // Muss zur "signInAudience" der App-Registrierung passen:
-    //   PersonalMicrosoftAccount        -> /consumers
+    // Has to match the "signInAudience" of the app registration:
+    //   PersonalMicrosoftAccount           -> /consumers
     //   AzureADandPersonalMicrosoftAccount -> /common
-    // Die ausgelieferte Registrierung ist PersonalMicrosoftAccount, daher
-    // /consumers. Mit /common lehnt Microsoft die Anfrage ab (userAudience).
+    // The registration we ship is PersonalMicrosoftAccount, hence /consumers.
+    // With /common Microsoft rejects the request outright (userAudience).
     private const string Authority = "https://login.microsoftonline.com/consumers";
     private static readonly string[] Scopes = ["Calendars.ReadWrite"];
 
@@ -24,20 +24,16 @@ public sealed class MsalAuthProvider
         _app = PublicClientApplicationBuilder
             .Create(clientId)
             .WithAuthority(Authority)
-            .WithDefaultRedirectUri()   // uses http://localhost for desktop apps
+            .WithDefaultRedirectUri()   // http://localhost, the desktop default
             .Build();
 
         RegisterTokenCache(_app.UserTokenCache);
     }
 
-    // -----------------------------------------------------------------------
-    // Public methods
-    // -----------------------------------------------------------------------
-
     /// <summary>
-    /// Attempts a silent token acquisition using the cached credentials.
-    /// Throws <see cref="InteractiveLoginRequiredException"/> when no valid
-    /// token exists — the caller must then decide whether to open a browser.
+    /// Tries to get a token from the cache alone. Throws
+    /// <see cref="InteractiveLoginRequiredException"/> when that is not possible, so
+    /// the caller can decide whether opening a browser is appropriate right now.
     /// </summary>
     public async Task<string> AcquireTokenSilentAsync(CancellationToken ct = default)
     {
@@ -57,10 +53,7 @@ public sealed class MsalAuthProvider
         }
     }
 
-    /// <summary>
-    /// Opens the system browser for interactive sign-in.
-    /// Returns the access token on success.
-    /// </summary>
+    /// <summary>Opens the system browser for sign-in and returns the token.</summary>
     public async Task<string> AcquireTokenInteractiveAsync(CancellationToken ct = default)
     {
         var result = await _app
@@ -69,9 +62,7 @@ public sealed class MsalAuthProvider
         return result.AccessToken;
     }
 
-    /// <summary>
-    /// Signs out all cached accounts and clears the token cache.
-    /// </summary>
+    /// <summary>Removes every cached account, which empties the token cache.</summary>
     public async Task SignOutAsync(CancellationToken ct = default)
     {
         var accounts = (await _app.GetAccountsAsync()).ToList();
@@ -79,13 +70,11 @@ public sealed class MsalAuthProvider
             await _app.RemoveAsync(account);
     }
 
-    /// <summary>True when at least one account is cached (user is signed in).</summary>
+    /// <summary>True when an account is cached, i.e. the user is signed in.</summary>
     public async Task<bool> IsSignedInAsync()
         => (await _app.GetAccountsAsync()).Any();
 
-    // -----------------------------------------------------------------------
-    // Token cache persistence
-    // -----------------------------------------------------------------------
+    // ── Token cache ─────────────────────────────────────────────────────────
 
     private static void RegisterTokenCache(ITokenCache tokenCache)
     {
@@ -97,10 +86,11 @@ public sealed class MsalAuthProvider
 
         var storageProps = new StorageCreationPropertiesBuilder(
                 "token_cache.bin", cacheDir)
-            .WithUnprotectedFile()   // DPAPI protection added below
+            .WithUnprotectedFile()   // protection is added by the cache helper below
             .Build();
 
-        // MsalCacheHelper handles DPAPI on Windows automatically.
+        // MsalCacheHelper wires up DPAPI on Windows by itself. Blocking here is fine:
+        // it happens once while the provider is being constructed.
         var helper = MsalCacheHelper.CreateAsync(storageProps)
             .GetAwaiter().GetResult();
 

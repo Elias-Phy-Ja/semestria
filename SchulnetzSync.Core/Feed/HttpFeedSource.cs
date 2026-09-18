@@ -1,9 +1,8 @@
 namespace SchulnetzSync.Core.Feed;
 
 /// <summary>
-/// Downloads the iCal feed over HTTPS.
-/// The feed URL is treated as a secret: the query string is never included
-/// in log messages or exception texts.
+/// Downloads the iCal feed over HTTPS. The URL is a secret because it carries a personal
+/// token, so the query string never makes it into a log line or an exception message.
 /// </summary>
 public sealed class HttpFeedSource : IFeedSource
 {
@@ -12,23 +11,17 @@ public sealed class HttpFeedSource : IFeedSource
     private readonly HttpClient _httpClient;
     private readonly Uri _feedUri;
 
-    /// <summary>
-    /// Path-only representation of the URL, safe to include in logs
-    /// (query string with personal token stripped).
-    /// </summary>
+    /// <summary>URL without its query string — the only form that may show up anywhere.</summary>
     private readonly string _safeUriForLogging;
 
-    /// <param name="httpClient">Caller-owned HttpClient (manage lifetime externally).</param>
-    /// <param name="feedUrl">
-    /// Full feed URL including token. May use the <c>webcal://</c> scheme —
-    /// it is silently rewritten to <c>https://</c>.
-    /// </param>
+    /// <param name="httpClient">Owned by the caller, lifetime managed outside.</param>
+    /// <param name="feedUrl">Full feed URL including the token. <c>webcal://</c> is accepted.</param>
     public HttpFeedSource(HttpClient httpClient, string feedUrl)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
         ArgumentException.ThrowIfNullOrWhiteSpace(feedUrl);
 
-        // webcal:// is the same as https:// but used by calendar apps for subscription links.
+        // webcal:// is plain https underneath; calendar apps only use it for subscribe links.
         var normalised = feedUrl.StartsWith("webcal://", StringComparison.OrdinalIgnoreCase)
             ? string.Concat("https://", feedUrl.AsSpan(9))
             : feedUrl;
@@ -36,7 +29,6 @@ public sealed class HttpFeedSource : IFeedSource
         _feedUri = new Uri(normalised, UriKind.Absolute);
         _httpClient = httpClient;
 
-        // Strip query string so the token never leaks into logs or exceptions.
         _safeUriForLogging = _feedUri.GetLeftPart(UriPartial.Path);
     }
 
@@ -52,7 +44,7 @@ public sealed class HttpFeedSource : IFeedSource
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            // The linked CTS fired (our timeout), not the caller's token.
+            // Our own timeout fired, not the caller's token — say so instead of reporting a cancel.
             throw new TimeoutException(
                 $"Feed request timed out after {TimeoutSeconds} s. " +
                 $"URL (path, token omitted): {_safeUriForLogging}");

@@ -3,16 +3,15 @@ using SchulnetzSync.Core.Configuration;
 namespace SchulnetzSync.UI.Services;
 
 /// <summary>
-/// Resolves which Entra application ID to sign in with.
+/// Works out which Entra application id to sign in with.
 ///
-/// Normalfall: Die App bringt ihre eigene Registrierung mit
-/// (<see cref="AppConstants.ClientId"/>) — der Benutzer meldet sich nur an und
-/// sieht nie ein Azure-Portal. Das Feld in den Einstellungen ist nur für
-/// Fortgeschrittene, die eine eigene Registrierung verwenden wollen.
+/// Normally the app brings its own registration (<see cref="AppConstants.ClientId"/>), so
+/// the user just signs in and never sees an Azure portal. The field in the settings is
+/// there for the rare person who wants to point the app at their own registration.
 /// </summary>
 public static class MicrosoftAccount
 {
-    /// <summary>True when the string looks like a real GUID and not a placeholder.</summary>
+    /// <summary>True when the string looks like a real GUID rather than a leftover placeholder.</summary>
     public static bool IsUsable(string? id)
     {
         if (string.IsNullOrWhiteSpace(id)) return false;
@@ -25,8 +24,8 @@ public static class MicrosoftAccount
     public static bool HasBuiltInId => IsUsable(AppConstants.ClientId);
 
     /// <summary>
-    /// The application ID to use: a user-supplied one wins over the built-in one.
-    /// Null when neither is usable — then Outlook sync is unavailable.
+    /// The id to sign in with. A user-supplied one wins over the built-in one; null when
+    /// neither is usable, which is the case where Outlook sync simply is not on offer.
     /// </summary>
     public static string? Resolve(SyncConfig config)
     {

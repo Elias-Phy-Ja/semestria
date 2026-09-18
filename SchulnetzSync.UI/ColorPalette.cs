@@ -7,15 +7,14 @@ namespace SchulnetzSync.UI;
 public static class ColorPalette
 {
     /// <summary>
-    /// All colours offered in the pickers, in display order.
+    /// All colours the pickers offer, in display order.
     ///
-    /// Vier Reihen zu je sieben, damit die Farbkreise in den schmalen Panels
-    /// sauber umbrechen: kräftig warm, kräftig kühl, hell, gedeckt. Wem das
-    /// nicht reicht, der mischt sich eine eigene Farbe.
+    /// Four rows of seven, so the circles wrap cleanly in the narrow panels: strong warm,
+    /// strong cool, light, muted. Anyone who needs something else mixes their own.
     /// </summary>
     public static readonly (string Hex, string Name)[] All =
     [
-        // kräftig, warm → grün
+        // strong, warm through to green
         ("#DC2626", "Rot"),
         ("#EA580C", "Orange"),
         ("#D97706", "Amber"),
@@ -24,7 +23,7 @@ public static class ColorPalette
         ("#16A34A", "Grün"),
         ("#059669", "Smaragd"),
 
-        // kräftig, kühl
+        // strong, cool
         ("#0D9488", "Türkis"),
         ("#0891B2", "Cyan"),
         ("#0EA5E9", "Himmelblau"),
@@ -33,7 +32,7 @@ public static class ColorPalette
         ("#7C3AED", "Violett"),
         ("#A21CAF", "Lila"),
 
-        // hell
+        // light
         ("#DB2777", "Pink"),
         ("#E11D48", "Himbeere"),
         ("#FB7185", "Koralle"),
@@ -42,7 +41,7 @@ public static class ColorPalette
         ("#34D399", "Mint"),
         ("#60A5FA", "Eisblau"),
 
-        // gedeckt
+        // muted
         ("#A78BFA", "Flieder"),
         ("#92400E", "Braun"),
         ("#4D7C0F", "Oliv"),
@@ -53,11 +52,11 @@ public static class ColorPalette
     ];
 
     /// <summary>
-    /// Order for automatically assigned colours.
+    /// The order in which colours are handed out automatically.
     ///
-    /// Abwechselnd warm und kalt, damit benachbarte Listen sich unterscheiden.
-    /// Grau und Dunkel fehlen bewusst: Grau wirkt wie «keine Farbe», Dunkel
-    /// geht im dunklen Theme unter. Wählen kann man beide trotzdem.
+    /// Warm and cool alternate so that neighbouring lists stay apart. Grey and dark are
+    /// left out on purpose: grey reads as "no colour" and dark disappears in the dark
+    /// theme. Both can still be picked by hand.
     /// </summary>
     private static readonly string[] AutoOrder =
     [
@@ -66,8 +65,8 @@ public static class ColorPalette
     ];
 
     /// <summary>
-    /// Picks the least used colour, so new lists spread across the palette
-    /// instead of all turning blue.
+    /// Picks the least used colour, so new lists spread out over the palette instead of
+    /// all ending up blue.
     /// </summary>
     public static string NextAutoColor(IEnumerable<string> used)
     {
@@ -75,7 +74,7 @@ public static class ColorPalette
             .GroupBy(h => h, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
 
-        // OrderBy ist stabil: bei Gleichstand gewinnt die Reihenfolge in AutoOrder.
+        // OrderBy is stable, so on a tie the AutoOrder sequence decides.
         return AutoOrder.OrderBy(h => counts.GetValueOrDefault(h)).First();
     }
 }

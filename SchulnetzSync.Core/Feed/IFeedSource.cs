@@ -1,8 +1,8 @@
 namespace SchulnetzSync.Core.Feed;
 
 /// <summary>
-/// Abstraction over any source that delivers raw iCal content.
-/// Implementations: <see cref="HttpFeedSource"/> (production), in-memory fakes (tests).
+/// Anything that can hand us raw iCal text: <see cref="HttpFeedSource"/> in production,
+/// in-memory fakes in the tests. That separation is the whole point of the interface.
 /// </summary>
 public interface IFeedSource
 {

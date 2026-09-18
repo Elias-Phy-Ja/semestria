@@ -11,7 +11,7 @@ using SchulnetzSync.UI.Model;
 using ModernWpf.Controls.Primitives;
 using Point          = System.Windows.Point;
 
-// WPF/WinForms-Ambiguität auflösen
+// Pin down the WPF versions of names WinForms also uses
 using WpfBorder      = System.Windows.Controls.Border;
 using WpfBrushes     = System.Windows.Media.Brushes;
 using WpfButton      = System.Windows.Controls.Button;
@@ -25,9 +25,17 @@ using WpfWrapPanel   = System.Windows.Controls.WrapPanel;
 
 namespace SchulnetzSync.UI.Pages;
 
+/// <summary>
+/// The calendar: a month grid, a week timetable, and a side panel that shows the selected
+/// entry, the settings or the form for a new hand-made event.
+///
+/// Everything is drawn in code rather than bound in XAML. The layout depends on overlaps,
+/// colours and the time grid in ways that would be worse to express as bindings, and the
+/// page rebuilds itself from <see cref="AppState"/> after every change anyway.
+/// </summary>
 public partial class EventsPage : WpfPage
 {
-    // ── Zustand ─────────────────────────────────────────────────────────────
+    // ── State ───────────────────────────────────────────────────────────────
     private int       _year;
     private int       _month;
     private DateTime? _selectedDate;
@@ -36,22 +44,22 @@ public partial class EventsPage : WpfPage
     private string    _viewMode  = "Week";     // "Month" | "Week"
     private string    _panelMode = "None";     // "None" | "Detail" | "Settings" | "AddEvent"
 
-    // Zeit-Raster Konstanten
+    // Geometry of the week grid
     private const int    _weekStartH = 7;      // 07:00
     private const int    _weekEndH   = 22;     // 22:00
-    private const int    _slotMin    = 15;     // Minuten pro Zeile
-    private const double _slotPx     = 15.0;  // Pixel pro Zeile (1h = 60px)
-    private const double _gutterW    = 48.0;  // Breite der Zeit-Spalte
+    private const int    _slotMin    = 15;     // minutes per row
+    private const double _slotPx     = 15.0;  // pixels per row, so an hour is 60 px
+    private const double _gutterW    = 48.0;  // width of the time column on the left
 
     private static readonly CultureInfo _deCH = CultureInfo.GetCultureInfo("de-CH");
 
-    // Standardfarben (über CategoryColors überschreibbar)
-    private static readonly Color _pruefungColor = Color.FromRgb(0xDC, 0x26, 0x26); // Rot
-    private static readonly Color _terminColor   = Color.FromRgb(0xD9, 0x77, 0x06); // Amber/Gelb
-    private static readonly Color _lektionColor  = Color.FromRgb(0x25, 0x63, 0xEB); // Blau
+    // Defaults; CategoryColors overrides them
+    private static readonly Color _pruefungColor = Color.FromRgb(0xDC, 0x26, 0x26); // red
+    private static readonly Color _terminColor   = Color.FromRgb(0xD9, 0x77, 0x06); // amber
+    private static readonly Color _lektionColor  = Color.FromRgb(0x25, 0x63, 0xEB); // blue
     private static readonly Color _accentColor   = Color.FromRgb(0x5C, 0x6E, 0xF7);
 
-    // Dieselben Farben wie bei den Aufgabenlisten
+    // The same palette the task lists use
     private static readonly (string Hex, string Name)[] _palette = ColorPalette.All;
 
     // ── Init ─────────────────────────────────────────────────────────────────
@@ -73,9 +81,9 @@ public partial class EventsPage : WpfPage
 
     private void OnStateChanged() => Dispatcher.Invoke(Refresh);
 
-    // ── Farb-Helpers ─────────────────────────────────────────────────────────
+    // ── Colour helpers ───────────────────────────────────────────────────────
 
-    /// <summary>Leitet den Farb-Schlüssel für ein Event ab.</summary>
+    /// <summary>Works out which colour key an event belongs to.</summary>
     private static string GetColorKey(SchulnetzEvent ev)
     {
         if (EventKeys.IsManual(ev.Key))
@@ -89,8 +97,8 @@ public partial class EventsPage : WpfPage
     }
 
     /// <summary>
-    /// Fach, zu dem ein Eintrag Kommentare zeigt: Lektionen und Prüfungen aus dem
-    /// Feed. Termine und selbst erstellte Einträge gehören zu keinem Fach.
+    /// The subject whose comments an entry shows: lessons and exams out of the feed.
+    /// Appointments and hand-made entries belong to no subject at all.
     /// </summary>
     private static string? CommentSubjectOf(SchulnetzEvent ev)
     {
@@ -101,9 +109,9 @@ public partial class EventsPage : WpfPage
     }
 
     /// <summary>
-    /// Kurzform für die Kalenderkacheln: «TEU» statt «TEU_I26A_SmiJa». Klasse und
-    /// Lehrkraft stehen in jedem Eintrag gleich und kosten nur Platz; den vollen
-    /// Titel zeigt das Detailpanel.
+    /// Short form for the calendar tiles: "TEU" instead of "TEU_I26A_SmiJa". Class and
+    /// teacher are the same on every entry and only eat space; the detail panel still
+    /// shows the full title.
     /// </summary>
     private static (string Title, string Detail) ShortTitle(SchulnetzEvent ev)
     {
@@ -111,7 +119,7 @@ public partial class EventsPage : WpfPage
         return code.Length == 0 ? (ev.Summary, "") : (code, rest);
     }
 
-    /// <summary>Effektive Farbe eines Events: Einzelfarbe → Fach/Kategorie → Standard.</summary>
+    /// <summary>The colour an event actually gets: individual, then subject or category, then default.</summary>
     private Color GetEventColor(SchulnetzEvent ev)
     {
         var key = GetColorKey(ev);
@@ -128,7 +136,7 @@ public partial class EventsPage : WpfPage
         }
     }
 
-    /// <summary>Gibt die Farbe für einen Schlüssel direkt zurück.</summary>
+    /// <summary>The colour behind a key, without the fallback chain.</summary>
     private static Color GetColorForKey(string key)
     {
         var hex = AppState.GetEventColor(key);
@@ -139,7 +147,7 @@ public partial class EventsPage : WpfPage
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // Haupt-Refresh
+    // Rebuilding the view
     // ══════════════════════════════════════════════════════════════════════
     private void Refresh()
     {
@@ -174,7 +182,7 @@ public partial class EventsPage : WpfPage
     };
 
     // ══════════════════════════════════════════════════════════════════════
-    // MONATSANSICHT
+    // MONTH VIEW
     // ══════════════════════════════════════════════════════════════════════
     private void BuildMonthView()
     {
@@ -188,7 +196,7 @@ public partial class EventsPage : WpfPage
         var events      = FilteredEvents();
         var firstDay    = new DateTime(_year, _month, 1);
         int daysInMonth = DateTime.DaysInMonth(_year, _month);
-        int startCol    = ((int)firstDay.DayOfWeek + 6) % 7; // Mo=0
+        int startCol    = ((int)firstDay.DayOfWeek + 6) % 7; // shift so Monday is 0
         var today       = DateTime.Today;
         var prevFirst   = firstDay.AddMonths(-1);
         int prevDays    = DateTime.DaysInMonth(prevFirst.Year, prevFirst.Month);
@@ -254,7 +262,7 @@ public partial class EventsPage : WpfPage
 
         var cellPanel = new StackPanel { Margin = new Thickness(4, 3, 4, 3) };
 
-        // ── Tagesnummer (adaptive Opacity statt hard-coded Farbe) ──
+        // ── Day number, dimmed by opacity rather than a fixed colour ──
         if (isToday && isCurMonth)
         {
             var circle = new WpfBorder
@@ -279,7 +287,7 @@ public partial class EventsPage : WpfPage
         }
         else
         {
-            // Opacity statt fixer Farbe → passt sich automatisch an Light/Dark an
+            // Opacity instead of a colour, so it follows the light and dark theme by itself
             cellPanel.Children.Add(new WpfTextBlock
             {
                 Text                = date.Day.ToString(),
@@ -291,7 +299,7 @@ public partial class EventsPage : WpfPage
             });
         }
 
-        // ── Event-Pills (max. 3, dann "+N mehr") ──
+        // ── Event pills, three at most, then "+N mehr" ──
         const int maxPills = 3;
         for (int i = 0; i < Math.Min(dayEvents.Count, maxPills); i++)
             cellPanel.Children.Add(MakeMonthPill(dayEvents[i]));
@@ -347,7 +355,7 @@ public partial class EventsPage : WpfPage
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // WOCHENANSICHT — Zeit-Raster (Stundenplan-Ansicht)
+    // WEEK VIEW — the timetable grid
     // ══════════════════════════════════════════════════════════════════════
     private void BuildWeekView()
     {
@@ -355,7 +363,7 @@ public partial class EventsPage : WpfPage
         CalendarGrid.Visibility    = Visibility.Collapsed;
         WeekGrid.Visibility        = Visibility.Visible;
 
-        // Alle vorherigen Children + Definitionen löschen
+        // Wipe the previous children and definitions
         WeekGrid.Children.Clear();
         WeekGrid.ColumnDefinitions.Clear();
         WeekGrid.RowDefinitions.Clear();
@@ -371,18 +379,18 @@ public partial class EventsPage : WpfPage
         int kw = System.Globalization.ISOWeek.GetWeekOfYear(weekStart);
         TxtMonthYear.Text = $"KW {kw}  ·  {weekStart.ToString("d. MMM", _deCH)} – {weekEnd.ToString("d. MMM yyyy", _deCH)}";
 
-        // Haupt-Layout: 2 Zeilen (Header + Zeitraster)
+        // Two rows: the day header on top, the scrolling grid below
         WeekGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         WeekGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         WeekGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        // ── Kopfzeile (Wochentag-Nummern) ────────────────────────────────────
+        // ── Header row with the weekday numbers ──────────────────────────────
         var headerGrid = new Grid();
         headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(_gutterW) });
         for (int d = 0; d < 7; d++)
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        // Gutter-Spacer
+        // Spacer above the time column
         var gutterSpacer = new WpfBorder { BorderBrush = gridLine, BorderThickness = new Thickness(0, 0, 1, 1) };
         Grid.SetColumn(gutterSpacer, 0);
         headerGrid.Children.Add(gutterSpacer);
@@ -458,8 +466,8 @@ public partial class EventsPage : WpfPage
         Grid.SetColumn(headerGrid, 0);
         WeekGrid.Children.Add(headerGrid);
 
-        // ── Zeitraster (scrollbar) ───────────────────────────────────────────
-        int totalSlots = (_weekEndH - _weekStartH) * (60 / _slotMin); // 60 Slots bei 15-min / 900px
+        // ── The scrollable time grid ─────────────────────────────────────────
+        int totalSlots = (_weekEndH - _weekStartH) * (60 / _slotMin); // 60 rows at 15 min each, 900 px tall
 
         var tGrid = new Grid();
         tGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(_gutterW) });
@@ -468,14 +476,14 @@ public partial class EventsPage : WpfPage
         for (int i = 0; i <= totalSlots; i++)
             tGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(_slotPx) });
 
-        // Stunden-Linien und Zeitbeschriftung
+        // Hour lines and the labels down the left
         int hourCount = _weekEndH - _weekStartH;
         for (int h = 0; h <= hourCount; h++)
         {
             int slotRow = h * (60 / _slotMin);
             int hour    = _weekStartH + h;
 
-            // Linie über alle Tagesspalten
+            // Line across every day column
             var hline = new WpfBorder
             {
                 Height            = 1,
@@ -488,7 +496,7 @@ public partial class EventsPage : WpfPage
             Grid.SetColumnSpan(hline, 7);
             tGrid.Children.Add(hline);
 
-            // Halbe-Stunden-Linie (schwächer)
+            // Half-hour line, fainter
             if (h < hourCount)
             {
                 int halfSlot = slotRow + (30 / _slotMin);
@@ -505,8 +513,8 @@ public partial class EventsPage : WpfPage
                 tGrid.Children.Add(hHalf);
             }
 
-            // Zeitbeschriftung links
-            // Erste Stunde (07:00) nicht mit negativem Margin abschneiden lassen
+            // Time label on the left. The first hour (07:00) must not be pulled up by the
+            // negative margin, or it gets clipped at the top edge.
             if (h < hourCount)
             {
                 var lbl = new WpfTextBlock
@@ -525,7 +533,7 @@ public partial class EventsPage : WpfPage
             }
         }
 
-        // Vertikale Spalten-Trennlinien
+        // Vertical dividers between the days
         for (int d = 0; d < 7; d++)
         {
             var vline = new WpfBorder
@@ -539,7 +547,7 @@ public partial class EventsPage : WpfPage
             Grid.SetColumn(vline, d + 1);
             tGrid.Children.Add(vline);
 
-            // Wochenende / Heute Hintergrundtönung
+            // Tint the background for weekends and for today
             var date      = weekStart.AddDays(d);
             bool isToday  = date == today;
             bool isWe     = d >= 5;
@@ -559,15 +567,15 @@ public partial class EventsPage : WpfPage
             }
         }
 
-        // Events in die Spalten zeichnen
-        double containerH = (totalSlots + 1) * _slotPx; // Gesamthöhe des Zeitrasters in Pixeln
+        // Draw the events into the day columns
+        double containerH = (totalSlots + 1) * _slotPx; // full height of the grid in pixels
 
         for (int d = 0; d < 7; d++)
         {
             var date      = weekStart.AddDays(d);
             var dayEvents = events.Where(e => e.Start.Date == date).OrderBy(e => e.Start).ToList();
 
-            // Ganztägige Events werden als kompakte Streifen am Tagesstart gezeigt
+            // All-day entries become a compact strip at the top of the day
             int allDayRow = 0;
             foreach (var ev in dayEvents.Where(e => e.IsAllDay))
             {
@@ -578,15 +586,15 @@ public partial class EventsPage : WpfPage
                 allDayRow = Math.Min(allDayRow + 1, totalSlots - 1);
             }
 
-            // Zeitgebundene Events mit Überschneidungs-Erkennung
+            // Timed entries, with overlap detection
             var timedEvents = dayEvents.Where(e => !e.IsAllDay).ToList();
             if (timedEvents.Count == 0) continue;
 
-            // Spalten-Zuweisung berechnen (col, span, maxCols pro Event)
+            // Work out column, span and maxCols per event
             var colMap  = AssignEventColumns(timedEvents);
             int maxCols = colMap.Values.Any() ? colMap.Values.Max(v => v.TotalCols) : 1;
 
-            // Pro Tag: ein Grid, das alle Zeilen überspannt, mit sub-Spalten für Überschneidungen
+            // One grid per day spanning every row, with sub-columns for the overlaps
             var dayGrid = new Grid { IsHitTestVisible = true };
             for (int c = 0; c < maxCols; c++)
                 dayGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -598,18 +606,18 @@ public partial class EventsPage : WpfPage
                 double startH = local.Hour   + local.Minute   / 60.0;
                 double endH   = localEnd.Hour + localEnd.Minute / 60.0;
 
-                // Ausserhalb des sichtbaren Rasters → überspringen
+                // Outside the visible grid, so skip it
                 if (endH <= _weekStartH || startH >= _weekEndH) continue;
                 startH = Math.Max(startH, _weekStartH);
                 endH   = Math.Min(endH,   _weekEndH);
 
-                // Pixelposition innerhalb des dayGrid-Containers
+                // Position in pixels inside the day grid
                 double topPx   = (startH - _weekStartH) * (60.0 / _slotMin) * _slotPx;
                 double cardH   = Math.Max(4.0, (endH - startH) * (60.0 / _slotMin) * _slotPx - 2.0);
 
                 var (col, span, _) = colMap.TryGetValue(ev, out var t) ? t : (0, maxCols, maxCols);
 
-                // Horizontaler Abstand: aussen 2px, zwischen Spalten 1px
+                // Gaps: 2 px at the outer edges, 1 px between columns
                 double mLeft  = col == 0         ? 2.0 : 1.0;
                 double mRight = col + span == maxCols ? 2.0 : 1.0;
 
@@ -623,14 +631,14 @@ public partial class EventsPage : WpfPage
                 dayGrid.Children.Add(card);
             }
 
-            // dayGrid über alle Zeitraster-Zeilen spannen
+            // Let the day grid span every row of the time grid
             Grid.SetRow(dayGrid, 0);
             Grid.SetRowSpan(dayGrid, totalSlots + 1);
             Grid.SetColumn(dayGrid, d + 1);
             tGrid.Children.Add(dayGrid);
         }
 
-        // Aktueller Zeitindikator — roter Punkt in der Heute-Spalte, Linie über alle 7 Tage
+        // The now marker: a red dot in today's column and a line across all seven days
         var now = DateTime.Now;
         if (now.Date >= weekStart && now.Date <= weekEnd)
         {
@@ -643,7 +651,7 @@ public partial class EventsPage : WpfPage
                 int    nowSlot = (int)slotDbl;
                 double mTop    = (slotDbl - nowSlot) * _slotPx;
 
-                // Punkt am linken Rand der Heute-Spalte
+                // Dot on the left edge of today's column
                 var dot = new WpfBorder
                 {
                     Width             = 8,
@@ -659,7 +667,7 @@ public partial class EventsPage : WpfPage
                 Grid.SetColumn(dot, todayCol);
                 tGrid.Children.Add(dot);
 
-                // Linie über alle 7 Tagesspalten (wie Google Calendar)
+                // Line across all seven columns, the way Google Calendar does it
                 var nowLine = new WpfBorder
                 {
                     Height            = 2,
@@ -669,20 +677,20 @@ public partial class EventsPage : WpfPage
                     IsHitTestVisible  = false
                 };
                 Grid.SetRow(nowLine, nowSlot);
-                Grid.SetColumn(nowLine, 1);          // ab erster Tagesspalte
-                Grid.SetColumnSpan(nowLine, 7);      // über alle 7 Tage
+                Grid.SetColumn(nowLine, 1);          // start at the first day column
+                Grid.SetColumnSpan(nowLine, 7);      // and reach across the whole week
                 tGrid.Children.Add(nowLine);
             }
         }
 
-        // ScrollViewer — scrollt automatisch zur aktuellen Uhrzeit
+        // ScrollViewer that jumps to the current time on its own
         var scroll = new ScrollViewer
         {
             VerticalScrollBarVisibility   = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             Content                       = tGrid
         };
-        // Immer ganz oben bei 07:00 starten
+        // Always start at the top, 07:00
         scroll.Loaded += (_, _) => scroll.ScrollToTop();
 
         Grid.SetRow(scroll, 1);
@@ -714,7 +722,7 @@ public partial class EventsPage : WpfPage
         return strip;
     }
 
-    // Rückgabetyp WpfBorder, damit der Aufrufer Margin/Height direkt setzen kann
+    // Returns WpfBorder so the caller can set margin and height on it directly
     private WpfBorder MakeWeekEventCard(SchulnetzEvent ev)
     {
         var  color = GetEventColor(ev);
@@ -726,7 +734,7 @@ public partial class EventsPage : WpfPage
                                Color.FromArgb(isSel ? (byte)220 : (byte)190,
                                               color.R, color.G, color.B)),
             CornerRadius = new CornerRadius(4),
-            Margin       = new Thickness(2, 1, 2, 1), // wird vom Aufrufer überschrieben
+            Margin       = new Thickness(2, 1, 2, 1), // the caller overwrites this
             Padding      = new Thickness(5, 3, 5, 3),
             Cursor       = WpfCursors.Hand,
             Tag          = ev,
@@ -775,7 +783,7 @@ public partial class EventsPage : WpfPage
         var subject = CommentSubjectOf(ev);
         if (subject is not null && AppState.CommentCount(subject) > 0)
         {
-            // Kleines Sprechblasen-Symbol oben rechts: zu diesem Fach gibt es Notizen
+            // Small speech bubble in the corner: there are notes on this subject
             var layered = new Grid();
             layered.Children.Add(inner);
             layered.Children.Add(new WpfTextBlock
@@ -799,7 +807,7 @@ public partial class EventsPage : WpfPage
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // Panel-Steuerung
+    // The side panel
     // ══════════════════════════════════════════════════════════════════════
 
     private void OpenPanel(string mode, int width = 340)
@@ -808,12 +816,12 @@ public partial class EventsPage : WpfPage
         DetailPanel.Visibility     = Visibility.Visible;
         DetailColumnDef.Width      = new GridLength(width);
 
-        // Inhalt-Sektionen
+        // Content sections
         DetailContent.Visibility   = mode == "Detail"   ? Visibility.Visible : Visibility.Collapsed;
         SettingsContent.Visibility = mode == "Settings" ? Visibility.Visible : Visibility.Collapsed;
         AddEventSection.Visibility = mode == "AddEvent" ? Visibility.Visible : Visibility.Collapsed;
 
-        // Footer-Sektionen
+        // Footer sections
         DetailFooter.Visibility        = mode == "Detail"   ? Visibility.Visible : Visibility.Collapsed;
         BtnSaveManualEvent.Visibility   = mode == "AddEvent" ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -827,7 +835,7 @@ public partial class EventsPage : WpfPage
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // DETAIL-PANEL
+    // DETAIL PANEL
     // ══════════════════════════════════════════════════════════════════════
     private void ShowDetailPanel(SchulnetzEvent ev)
     {
@@ -837,14 +845,14 @@ public partial class EventsPage : WpfPage
         bool isLektion  = ev.Type == SchulnetzEventType.Lektion;
         bool isManual   = EventKeys.IsManual(ev.Key);
 
-        // Panel-Titel
+        // Panel heading
         TxtPanelTitle.Text       = isPruefung ? "⚠  PRÜFUNG" : isLektion ? "📘  STUNDE" : "📌  TERMIN";
         TxtPanelTitle.Foreground = new SolidColorBrush(color);
         BtnDeleteFromApp.Tag     = ev;
 
         DetailContent.Children.Clear();
 
-        // Farbstreifen
+        // Colour stripe
         DetailContent.Children.Add(new WpfBorder
         {
             Height              = 4,
@@ -855,7 +863,7 @@ public partial class EventsPage : WpfPage
             Width               = 48
         });
 
-        // Titel
+        // Title
         DetailContent.Children.Add(new WpfTextBlock
         {
             Text         = ev.Summary,
@@ -865,20 +873,20 @@ public partial class EventsPage : WpfPage
             Margin       = new Thickness(0, 0, 0, 16)
         });
 
-        // Datum
+        // Date
         DetailContent.Children.Add(MakeDetailRow("📅",
             ev.Start.LocalDateTime.ToString("dddd, d. MMMM yyyy", _deCH)));
 
-        // Zeit
+        // Time
         var timeStr = ev.IsAllDay ? "Ganztägig"
             : $"{ev.Start.LocalDateTime:HH:mm} – {ev.End.LocalDateTime:HH:mm} Uhr";
         DetailContent.Children.Add(MakeDetailRow("🕐", timeStr));
 
-        // Ort
+        // Room
         if (!string.IsNullOrWhiteSpace(ev.Location))
             DetailContent.Children.Add(MakeDetailRow("📍", ev.Location!));
 
-        // Typ-Hinweis
+        // What kind of entry this is
         var typeHint = isPruefung ? "Als Prüfung klassifiziert."
                      : isLektion  ? $"Fach: {colorKey}"
                      : isManual   ? "Manuell erstellter Eintrag."
@@ -892,13 +900,13 @@ public partial class EventsPage : WpfPage
             Margin       = new Thickness(0, 10, 0, 20)
         });
 
-        // ── Kommentare zum Fach ──
+        // ── Notes on the subject ──
         if (CommentSubjectOf(ev) is { } subject)
             DetailContent.Children.Add(BuildCommentSection(ev, subject));
 
-        // ── Farbe ──
-        // Beim Wechsel auf einen anderen Eintrag: Ebene danach wählen, ob er
-        // schon eine eigene Farbe hat, und den Mischer schliessen.
+        // ── Colour ──
+        // When another entry is selected, pick the level based on whether it already has
+        // its own colour, and close the mixer.
         if (_colorScopeEventKey != ev.Key)
         {
             _colorScopeEventKey = ev.Key;
@@ -907,7 +915,7 @@ public partial class EventsPage : WpfPage
         }
         DetailContent.Children.Add(BuildColorSection(ev, colorKey, isLektion, isPruefung));
 
-        // Löschen für manuelle Events
+        // Delete, for hand-made entries only
         if (isManual)
         {
             DetailContent.Children.Add(new WpfTextBlock
@@ -932,15 +940,15 @@ public partial class EventsPage : WpfPage
         OpenPanel("Detail");
     }
 
-    // ── Fachkommentare im Detail-Panel ───────────────────────────────────────
+    // ── Subject comments inside the detail panel ─────────────────────────────
 
-    /// <summary>Entwurf im Eingabefeld; überlebt das Neuaufbauen des Panels.</summary>
+    /// <summary>Draft text in the input box; survives the panel being rebuilt.</summary>
     private string _commentDraft = "";
 
-    /// <summary>Fach, zu dem <see cref="_commentDraft"/> gehört.</summary>
+    /// <summary>The subject <see cref="_commentDraft"/> belongs to.</summary>
     private string? _commentDraftSubject;
 
-    /// <summary>Kommentar, der gerade bearbeitet wird, und sein Zwischenstand.</summary>
+    /// <summary>The comment being edited right now, and what has been typed so far.</summary>
     private Guid?  _editingCommentId;
     private string _editingText = "";
 
@@ -956,7 +964,7 @@ public partial class EventsPage : WpfPage
         var comments = AppState.CommentsFor(subject);
         var section  = new StackPanel { Margin = new Thickness(0, 0, 0, 22) };
 
-        // Kopf: Titel und Anzahl
+        // Header: title and count
         var head = new StackPanel { Orientation = WpfOrientation.Horizontal, Margin = new Thickness(0, 0, 0, 4) };
         head.Children.Add(new WpfTextBlock
         {
@@ -986,7 +994,7 @@ public partial class EventsPage : WpfPage
             Margin       = new Thickness(0, 0, 0, 10),
         });
 
-        // Eingabe
+        // Input box
         var input = new TextBox
         {
             Text                          = _commentDraft,
@@ -1047,7 +1055,7 @@ public partial class EventsPage : WpfPage
         });
         section.Children.Add(actions);
 
-        // Liste
+        // The notes themselves
         foreach (var comment in comments)
             section.Children.Add(CommentCard(ev, comment));
 
@@ -1191,12 +1199,12 @@ public partial class EventsPage : WpfPage
         return tool;
     }
 
-    // ── Farbwahl im Detail-Panel ─────────────────────────────────────────────
+    // ── Picking a colour in the detail panel ─────────────────────────────────
 
-    /// <summary>True: Farbe gilt nur für diesen Eintrag. False: für das ganze Fach bzw. die Kategorie.</summary>
+    /// <summary>True colours this one entry, false colours the whole subject or category.</summary>
     private bool _colorScopeSingle;
 
-    /// <summary>Eintrag, für den <see cref="_colorScopeSingle"/> zuletzt bestimmt wurde.</summary>
+    /// <summary>The entry <see cref="_colorScopeSingle"/> was last decided for.</summary>
     private string? _colorScopeEventKey;
 
     private bool _mixerOpen;
@@ -1220,7 +1228,7 @@ public partial class EventsPage : WpfPage
             Margin     = new Thickness(0, 0, 0, 8),
         });
 
-        // ── Umschalter: welche Ebene wird gefärbt ──
+        // ── Switch: which level gets coloured ──
         var scope = new StackPanel { Orientation = WpfOrientation.Horizontal };
         scope.Children.Add(ScopeButton(singleLabel, _colorScopeSingle, () =>
         {
@@ -1242,9 +1250,9 @@ public partial class EventsPage : WpfPage
             Margin              = new Thickness(0, 0, 0, 8),
         });
 
-        // Was die Wahl bewirkt — besonders wichtig, wenn eine Einzelfarbe die
-        // Fachfarbe überdeckt und eine Änderung am Fach hier nichts zeigt.
-        // Eigene Formulierung statt ToLower(): das Fachkürzel bleibt gross
+        // Spell out what the choice does. It matters most when an individual colour hides
+        // the subject colour, because then changing the subject shows nothing here.
+        // Worded by hand rather than via ToLower(), so the subject code stays upper case.
         var groupPhrase = isLektion  ? $"alle {colorKey}-Stunden"
                         : isPruefung ? "alle Prüfungen"
                         :              "alle Termine";
@@ -1267,7 +1275,7 @@ public partial class EventsPage : WpfPage
             : AppState.GetEventColor(colorKey);
         bool inPalette = _palette.Any(p => string.Equals(p.Hex, currentHex, StringComparison.OrdinalIgnoreCase));
 
-        // Sieben pro Reihe, damit die Farbfamilien aus ColorPalette zusammenbleiben
+        // Seven per row, which keeps the colour families from ColorPalette together
         var paletteWrap = new WpfWrapPanel
         {
             Orientation         = WpfOrientation.Horizontal,
@@ -1283,15 +1291,15 @@ public partial class EventsPage : WpfPage
             paletteWrap.Children.Add(dot);
         }
 
-        // Eigene Farbe: Regenbogenkreis, markiert, wenn die aktuelle Farbe gemischt ist
+        // Custom colour: the rainbow circle, marked when the current colour was mixed
         var rainbow = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
         foreach (var (stop, c) in new[] { (0.0, "#FF0000"), (0.33, "#FFD400"), (0.55, "#00D26A"), (0.78, "#0A84FF"), (1.0, "#BF5AF2") })
             rainbow.GradientStops.Add(new GradientStop((Color)System.Windows.Media.ColorConverter.ConvertFromString(c), stop));
 
         section.Children.Add(paletteWrap);
 
-        // Eigene Zeile mit Beschriftung — ein Kreis allein am Ende der Palette
-        // wird leicht übersehen.
+        // On its own labelled row: a lone circle at the end of the palette is far too
+        // easy to miss.
         var mixDot = ColorDot(rainbow, "Eigene Farbe mischen", _mixerOpen || !inPalette, "+");
         mixDot.Margin = new Thickness(0, 0, 10, 0);
         var customRow = new StackPanel { Orientation = WpfOrientation.Horizontal };
@@ -1305,7 +1313,7 @@ public partial class EventsPage : WpfPage
         var custom = new WpfBorder
         {
             Child               = customRow,
-            Background          = WpfBrushes.Transparent,   // ganze Zeile klickbar
+            Background          = WpfBrushes.Transparent,   // makes the whole row clickable
             Cursor              = WpfCursors.Hand,
             HorizontalAlignment = WpfHA.Left,
             Margin              = new Thickness(0, 4, 0, 4),
@@ -1318,7 +1326,7 @@ public partial class EventsPage : WpfPage
         };
         section.Children.Add(custom);
 
-        // ── Mischer ──
+        // ── Mixer ──
         if (_mixerOpen)
         {
             var mixer = new ColorMixer { Margin = new Thickness(0, 8, 0, 10) };
@@ -1347,7 +1355,7 @@ public partial class EventsPage : WpfPage
             section.Children.Add(buttons);
         }
 
-        // ── Einzelfarbe entfernen ──
+        // ── Remove the individual colour ──
         if (_colorScopeSingle && hasOwn)
         {
             var reset = new WpfButton
@@ -1370,7 +1378,7 @@ public partial class EventsPage : WpfPage
         return section;
     }
 
-    /// <summary>Speichert die Farbe auf der gewählten Ebene und baut das Panel neu.</summary>
+    /// <summary>Saves the colour at the chosen level and rebuilds the panel.</summary>
     private void ApplyColor(SchulnetzEvent ev, string colorKey, string hex)
     {
         _mixerOpen = false;
@@ -1378,7 +1386,7 @@ public partial class EventsPage : WpfPage
         if (_colorScopeSingle)
             AppState.SetOwnEventColor(ev.Key, hex);
         else
-            AppState.SetCategoryColor(colorKey, hex);   // löst Notify → Refresh aus
+            AppState.SetCategoryColor(colorKey, hex);   // fires Notify, which refreshes us
 
         ShowDetailPanel(ev);
     }
@@ -1427,7 +1435,7 @@ public partial class EventsPage : WpfPage
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // EINSTELLUNGS-PANEL
+    // SETTINGS PANEL
     // ══════════════════════════════════════════════════════════════════════
     private void ShowSettingsPanel()
     {
@@ -1437,7 +1445,7 @@ public partial class EventsPage : WpfPage
 
         SettingsContent.Children.Clear();
 
-        // ─ Kategoriefarben ──────────────────────────────────────────────
+        // ─ Category colours ─────────────────────────────────────────────
         SettingsContent.Children.Add(new WpfTextBlock
         {
             Text       = "Kategoriefarben",
@@ -1451,7 +1459,7 @@ public partial class EventsPage : WpfPage
             SettingsContent.Children.Add(MakeCategoryColorRow(key, label));
         }
 
-        // Zeige individuelle Fach-Farben
+        // Subjects that have a colour of their own
         var customKeys = AppState.CategoryColors.Keys
             .Where(k => k != "Pruefung" && k != "Termin" && k != "Lektion")
             .OrderBy(k => k)
@@ -1471,14 +1479,14 @@ public partial class EventsPage : WpfPage
                 SettingsContent.Children.Add(MakeCategoryColorRow(key, key));
         }
 
-        // Separator
+        // Divider
         SettingsContent.Children.Add(new Separator
         {
             Margin = new Thickness(0, 20, 0, 16),
             Style  = (Style)FindResource("Divider")
         });
 
-        // ─ Kalender-Aktionen ─────────────────────────────────────────────
+        // ─ Calendar actions ──────────────────────────────────────────────
         SettingsContent.Children.Add(new WpfTextBlock
         {
             Text       = "Kalender verwalten",
@@ -1516,7 +1524,7 @@ public partial class EventsPage : WpfPage
 
     private void BuildSettingsContent()
     {
-        // Settings-Panel neu aufbauen (nach Reset)
+        // Rebuild the panel after a reset
         ShowSettingsPanel();
     }
 
@@ -1524,7 +1532,7 @@ public partial class EventsPage : WpfPage
     {
         var hex = AppState.GetEventColor(key);
 
-        // Vertikales Layout: Label oben, Palette darunter — kein Abschneiden
+        // Label on top, palette below: side by side the palette gets clipped
         var container = new StackPanel { Margin = new Thickness(0, 0, 0, 14) };
 
         container.Children.Add(new WpfTextBlock
@@ -1588,7 +1596,7 @@ public partial class EventsPage : WpfPage
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // ADD-EVENT-PANEL
+    // ADD-EVENT PANEL
     // ══════════════════════════════════════════════════════════════════════
     private void ShowAddEventPanel()
     {
@@ -1596,7 +1604,7 @@ public partial class EventsPage : WpfPage
         TxtPanelTitle.SetResourceReference(WpfTextBlock.ForegroundProperty, "SystemControlForegroundBaseHighBrush");
         _selectedEvent           = null;
 
-        // Formular zurücksetzen
+        // Clear the form
         TxtNewTitle.Text      = "";
         DpNewDate.SelectedDate = _selectedDate ?? DateTime.Today;
         ChkNewAllDay.IsChecked = false;
@@ -1609,7 +1617,7 @@ public partial class EventsPage : WpfPage
         OpenPanel("AddEvent", 320);
     }
 
-    // ── Event-Handler ────────────────────────────────────────────────────────
+    // ── Handlers ─────────────────────────────────────────────────────────────
 
     private void ChkNewAllDay_Changed(object sender, RoutedEventArgs e)
     {
@@ -1619,7 +1627,7 @@ public partial class EventsPage : WpfPage
 
     private void BtnSaveManualEvent_Click(object sender, RoutedEventArgs e)
     {
-        // Validierung
+        // Validation
         var title = TxtNewTitle.Text.Trim();
         if (string.IsNullOrEmpty(title))
         {
@@ -1669,7 +1677,7 @@ public partial class EventsPage : WpfPage
             Location: location,
             TypeKey:  typeKey);
 
-        AppState.AddManualEvent(manualEvent); // löst Notify → Refresh aus
+        AppState.AddManualEvent(manualEvent); // fires Notify, which refreshes us
         ClosePanel();
     }
 
@@ -1686,16 +1694,16 @@ public partial class EventsPage : WpfPage
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // Farb-Klick Handler
+    // Colour clicks
     // ══════════════════════════════════════════════════════════════════════
     private void ColorDot_Click(object sender, MouseButtonEventArgs e)
     {
         if (sender is not WpfBorder dot) return;
         if (dot.Tag is not (string key, string hex)) return;
 
-        AppState.SetCategoryColor(key, hex); // löst Notify → Refresh aus
+        AppState.SetCategoryColor(key, hex); // fires Notify, which refreshes us
 
-        // Panel neu aufbauen
+        // Rebuild the panel
         if (_panelMode == "Settings")
             ShowSettingsPanel();
         else if (_selectedEvent != null)
@@ -1705,7 +1713,7 @@ public partial class EventsPage : WpfPage
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // Event-Handler (Navigation, Filter, Buttons)
+    // Navigation, filters, buttons
     // ══════════════════════════════════════════════════════════════════════
 
     private void EventPill_MouseUp(object sender, MouseButtonEventArgs e)
@@ -1794,7 +1802,7 @@ public partial class EventsPage : WpfPage
         Refresh();
     }
 
-    // ── Navigation ──────────────────────────────────────────────────────────
+    // ── Moving through the months and weeks ─────────────────────────────────
 
     private void BtnPrevMonth_Click(object sender, RoutedEventArgs e)
     {
@@ -1846,11 +1854,11 @@ public partial class EventsPage : WpfPage
         Refresh();
     }
 
-    // ── Ansicht (Monat / Woche) ──────────────────────────────────────────────
+    // ── View switch: month or week ───────────────────────────────────────────
 
     private void BtnViewMonth_Click(object sender, RoutedEventArgs e)
     {
-        // Checked feuert schon während InitializeComponent()
+        // Checked already fires during InitializeComponent()
         if (!IsLoaded) return;
         _viewMode = "Month";
         Refresh();
@@ -1876,7 +1884,7 @@ public partial class EventsPage : WpfPage
         Refresh();
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // ── Small helpers ────────────────────────────────────────────────────────
 
     private static UIElement MakeDetailRow(string icon, string text)
     {
@@ -1908,13 +1916,13 @@ public partial class EventsPage : WpfPage
                MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
     // ══════════════════════════════════════════════════════════════════════
-    // Spalten-Zuweisung für überschneidende Events (Google-Calendar-Stil)
+    // Laying out overlapping events, the way Google Calendar does it
     // ══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Weist jedem zeitgebundenen Event eine Spalte innerhalb seines Tages zu.
-    /// Überschneidende Events teilen sich die verfügbare Breite gleichmässig.
-    /// Nicht überschneidende Events erhalten die volle Spaltenbreite (span = maxCols).
+    /// Gives every timed event a column within its day. Events that overlap share the
+    /// available width evenly; an event with nothing beside it spans the lot
+    /// (span = maxCols), so a lonely lesson does not end up as a thin strip.
     /// </summary>
     private static Dictionary<SchulnetzEvent, (int Col, int Span, int TotalCols)>
         AssignEventColumns(List<SchulnetzEvent> events)
@@ -1922,9 +1930,9 @@ public partial class EventsPage : WpfPage
         if (events.Count == 0)
             return new Dictionary<SchulnetzEvent, (int, int, int)>();
 
-        // Greedy-Algorithmus: Event in früheste freie Spalte einordnen
+        // Greedy: put each event in the earliest column that is free
         var sorted   = events.OrderBy(e => e.Start).ToList();
-        var colEnds  = new List<DateTimeOffset>(); // Ende-Zeit der letzten Belegung pro Spalte
+        var colEnds  = new List<DateTimeOffset>(); // when each column last became free
         var colIndex = new Dictionary<SchulnetzEvent, int>();
 
         foreach (var ev in sorted)
@@ -1938,20 +1946,20 @@ public partial class EventsPage : WpfPage
             colIndex[ev] = col;
         }
 
-        int maxCols = colEnds.Count; // Maximale Anzahl gleichzeitig überschneidender Events
+        int maxCols = colEnds.Count; // how many events overlap at the busiest moment
 
         var result = new Dictionary<SchulnetzEvent, (int, int, int)>();
         foreach (var ev in events)
         {
             int col = colIndex[ev];
 
-            // Gibt es zur Laufzeit des Events gleichzeitig andere Events?
+            // Is anything else running while this event runs?
             bool hasConcurrent = events.Any(other =>
                 !ReferenceEquals(other, ev) &&
                 ev.Start  < other.End &&
                 other.Start < ev.End);
 
-            // Allein stehende Events füllen die gesamte Tagesbreite
+            // An event on its own fills the whole day column
             int span = hasConcurrent ? 1 : maxCols;
             result[ev] = (col, span, maxCols);
         }

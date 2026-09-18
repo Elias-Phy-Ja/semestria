@@ -5,14 +5,12 @@ using SchulnetzSync.Core.Sync;
 namespace SchulnetzSync.Tests.Sync;
 
 /// <summary>
-/// Tests for <see cref="SyncEngine.Build"/>.
-/// All tests use synthetic data — no network, no files, no clock.
+/// <see cref="SyncEngine.Build"/> end to end, on made-up data only: no network, no files,
+/// and the time handed in as a parameter, so every rule can be pinned down exactly.
 /// </summary>
 public class SyncEngineTests
 {
-    // -----------------------------------------------------------------------
-    // Helpers
-    // -----------------------------------------------------------------------
+    // ── Helpers ─────────────────────────────────────────────────────────
     private static readonly DateTimeOffset T0 =
         new(2026, 9, 1, 10, 0, 0, TimeSpan.FromHours(2));
 
@@ -24,7 +22,7 @@ public class SyncEngineTests
         DateTimeOffset? end   = null)
     {
         var s = start ?? T0;
-        // Ende relativ zum Start, sonst liegt es bei abweichendem start davor
+        // End relative to the start, otherwise a shifted start ends up behind its end
         var e = end   ?? s.AddMinutes(45);
         return new SchulnetzEvent(key, $"uid-{key}", SchulnetzEventType.Pruefung,
             s, e, false, summary, location);
@@ -79,9 +77,7 @@ public class SyncEngineTests
         => SyncEngine.Build(feed, tracked, options ?? DefaultOptions,
             FeedHealth.Healthy, now ?? T0);
 
-    // -----------------------------------------------------------------------
-    // Create
-    // -----------------------------------------------------------------------
+    // ── Create ──────────────────────────────────────────────────────────
 
     [Fact]
     public void NewFeedEvent_ProducesCreate()
@@ -90,9 +86,7 @@ public class SyncEngineTests
         Assert.Single(plan.Actions, a => a.Kind == SyncActionKind.Create);
     }
 
-    // -----------------------------------------------------------------------
-    // Update
-    // -----------------------------------------------------------------------
+    // ── Update ──────────────────────────────────────────────────────────
 
     [Fact]
     public void ChangedContent_ProducesUpdate_NotDeletePlusCreate()
@@ -111,7 +105,7 @@ public class SyncEngineTests
     [Fact]
     public void RescheduledExam_ProducesExactlyOneUpdate()
     {
-        // Shift start time → hash changes → Update (not Delete+Create)
+        // Moving the start changes the hash, which has to become an Update — not a delete plus create.
         var original = MakePruefung(start: T0);
         var shifted  = original with { Start = T0.AddDays(1), End = T0.AddDays(1).AddMinutes(45) };
         var tracked  = Track(original);
@@ -122,9 +116,7 @@ public class SyncEngineTests
         Assert.Equal(SyncActionKind.Update, plan.Actions[0].Kind);
     }
 
-    // -----------------------------------------------------------------------
-    // No-op (idempotence)
-    // -----------------------------------------------------------------------
+    // ── Nothing to do: a second run must stay quiet ─────────────────────
 
     [Fact]
     public void UnchangedFeed_SecondRun_ProducesZeroActions()
@@ -137,16 +129,14 @@ public class SyncEngineTests
         Assert.Empty(plan.Actions);
     }
 
-    // -----------------------------------------------------------------------
-    // FlagMissing / ClearMissing / Delete
-    // -----------------------------------------------------------------------
+    // ── Disappearing and coming back ────────────────────────────────────
 
     [Fact]
     public void MissingExam_FirstRun_ProducesFlagMissing()
     {
         var tracked = Track(MakePruefung(), missingSince: null);
 
-        // Feed is empty for this exam's key — but start is in the future.
+        // Nothing in the feed for this key, and the exam is still ahead of us.
         var plan = Run([], [tracked], now: T0.AddMinutes(-60));
 
         Assert.Single(plan.Actions, a => a.Kind == SyncActionKind.FlagMissing);
@@ -158,7 +148,7 @@ public class SyncEngineTests
         var ev      = MakePruefung();
         var tracked = Track(ev, missingSince: T0.AddHours(-25));
 
-        // Feed is empty for this key; event is still in the future.
+        // Same situation, but the grace period has run out by now.
         var plan = Run([], [tracked], now: T0.AddMinutes(-60));
 
         Assert.Single(plan.Actions, a => a.Kind == SyncActionKind.MarkCancelled);
@@ -167,7 +157,7 @@ public class SyncEngineTests
     [Fact]
     public void MissingTermin_After24h_ProducesDelete()
     {
-        // CancelInsteadOfDelete only applies to Pruefung.
+        // CancelInsteadOfDelete is for exams only, so a Termin really goes.
         var ev      = MakeTermin();
         var tracked = Track(ev, missingSince: T0.AddHours(-25));
 
@@ -187,15 +177,13 @@ public class SyncEngineTests
         Assert.Single(plan.Actions, a => a.Kind == SyncActionKind.ClearMissing);
     }
 
-    // -----------------------------------------------------------------------
-    // Disabled types
-    // -----------------------------------------------------------------------
+    // ── Switched-off types ──────────────────────────────────────────────
 
     [Fact]
     public void DisabledType_ProducesZeroActions_EvenWithTrackedEntries()
     {
         var opts    = new SyncOptions { EnabledTypes = new HashSet<SchulnetzEventType>
-            { SchulnetzEventType.Pruefung } }; // Termin disabled
+            { SchulnetzEventType.Pruefung } }; // Termine off
 
         var termin  = MakeTermin();
         var tracked = Track(termin, missingSince: T0.AddHours(-48));
@@ -205,9 +193,7 @@ public class SyncEngineTests
         Assert.Empty(plan.Actions);
     }
 
-    // -----------------------------------------------------------------------
-    // Past events are never deleted
-    // -----------------------------------------------------------------------
+    // ── What has happened stays ─────────────────────────────────────────
 
     [Fact]
     public void PastEvent_MissingFromFeed_ProducesNoAction()
@@ -216,15 +202,13 @@ public class SyncEngineTests
         var ev       = MakePruefung(start: pastTime, end: pastTime.AddMinutes(45));
         var tracked  = Track(ev, missingSince: T0.AddHours(-48));
 
-        // now > ev.Start → past event
+        // now is past the start, so the exam already took place
         var plan = Run([], [tracked], now: T0);
 
         Assert.Empty(plan.Actions);
     }
 
-    // -----------------------------------------------------------------------
-    // Lektionen are always ignored
-    // -----------------------------------------------------------------------
+    // ── Lektionen never reach the calendar ──────────────────────────────
 
     [Fact]
     public void Lektion_IsNeverCreatedOrTracked()
@@ -235,9 +219,7 @@ public class SyncEngineTests
         Assert.Empty(plan.Actions);
     }
 
-    // -----------------------------------------------------------------------
-    // Exam location enrichment from lesson
-    // -----------------------------------------------------------------------
+    // ── Borrowing the exam room from the lesson ─────────────────────────
 
     [Fact]
     public void ExamWithNoRoom_EnrichedFromConcurrentLesson_HashIncludesRoom()
@@ -248,7 +230,7 @@ public class SyncEngineTests
         var planWith    = SyncEngine.Build([exam, lesson], [], DefaultOptions, FeedHealth.Healthy, T0.AddMinutes(-1));
         var createAction = planWith.Actions.Single(a => a.Kind == SyncActionKind.Create);
 
-        // The action's Source should now have the room filled in.
+        // The room has to be on the event that goes into the plan, not just somewhere.
         Assert.Equal("039", createAction.Source!.Location);
     }
 
@@ -265,9 +247,7 @@ public class SyncEngineTests
         Assert.Null(action.Source!.Location);
     }
 
-    // -----------------------------------------------------------------------
-    // Blockers
-    // -----------------------------------------------------------------------
+    // ── Safeguards ──────────────────────────────────────────────────────
 
     [Fact]
     public void UnhealthyFeed_ProducesBlocker()
@@ -282,7 +262,7 @@ public class SyncEngineTests
     public void EmptyFeedWithTrackedEvents_ProducesBlocker()
     {
         var tracked = Track(MakePruefung());
-        // Feed completely empty → blocker B triggers.
+        // Feed has nothing at all, which is blocker B.
         var plan = SyncEngine.Build([], [tracked], DefaultOptions, FeedHealth.Healthy,
             T0.AddMinutes(-1));
         Assert.False(plan.CanExecute);
@@ -291,7 +271,7 @@ public class SyncEngineTests
     [Fact]
     public void MassDelete_ExceedsThreshold_ProducesBlocker()
     {
-        // Create 10 tracked Pruefungen, feed has none → 10 deletes > 5 AND > 20%.
+        // Ten tracked exams against an empty feed: over 5 and over 20 %, so both limits fall.
         var tracked = Enumerable.Range(1, 10)
             .Select(i => Track(MakePruefung($"P_{i}"), missingSince: T0.AddHours(-48)))
             .ToList();
@@ -309,15 +289,13 @@ public class SyncEngineTests
         var plan    = SyncEngine.Build([], [tracked], DefaultOptions, FeedHealth.Healthy,
             T0.AddMinutes(-1));
 
-        // Blocked, but actions are still populated for dry-run display.
+        // Blocked, but the actions stay in the plan so the dry run can show them.
         Assert.False(plan.CanExecute);
         Assert.NotEmpty(plan.Actions);
     }
 
-    // -----------------------------------------------------------------------
-    // Duplikate — entstehen, wenn ein früherer Lauf bestehende Einträge
-    // nicht erkannt und deshalb neu angelegt hat.
-    // -----------------------------------------------------------------------
+    // ── Duplicates: what an earlier run left behind when it failed to
+    //    recognise its own entries and created them a second time.
 
     /// <summary>Same key twice in the calendar: keep one, remove the surplus.</summary>
     [Fact]
@@ -336,7 +314,7 @@ public class SyncEngineTests
         Assert.Single(dupes);
         Assert.Equal("cal-2", dupes[0].Existing!.CalendarEventId);
 
-        // Der verbleibende Eintrag ist unverändert — kein Create, kein Update.
+        // The surviving entry is untouched: no create, no update.
         Assert.DoesNotContain(plan.Actions, a => a.Kind == SyncActionKind.Create);
         Assert.DoesNotContain(plan.Actions, a => a.Kind == SyncActionKind.Update);
     }
@@ -391,8 +369,8 @@ public class SyncEngineTests
             Track(gone) with { CalendarEventId = "cal-2" },
         };
 
-        // Der Feed umspannt den verschwundenen Termin (Regel 5a greift sonst
-        // und überspringt alles ausserhalb des Feed-Fensters).
+        // The feed has to span the vanished event, otherwise rule 5a skips it for
+        // being outside the window and the test proves nothing.
         var feed = new[]
         {
             MakePruefung("P_before", start: T0.AddDays(1)),
@@ -405,10 +383,8 @@ public class SyncEngineTests
         Assert.Single(plan.Actions, a => a.Kind == SyncActionKind.FlagMissing);
     }
 
-    // -----------------------------------------------------------------------
-    // Manuelle Einträge — kommen aus der lokalen Liste, nicht aus dem Feed,
-    // und werden darum unabhängig von den Typ-Schaltern synchronisiert.
-    // -----------------------------------------------------------------------
+    // ── Hand-made entries: they come from the local list rather than the feed,
+    //    so the type switches do not apply to them.
 
     /// <summary>A hand-made event syncs even when its type is switched off.</summary>
     [Fact]
@@ -443,7 +419,7 @@ public class SyncEngineTests
         var manual  = MakeManual(start: T0.AddDays(2));
         var tracked = Track(manual);
 
-        // Der Benutzer hat ihn gelöscht → er ist nicht mehr in der Eingabe.
+        // The user deleted it, so it simply is not in the input any more.
         var plan = Run([], [tracked]);
 
         var action = Assert.Single(plan.Actions);

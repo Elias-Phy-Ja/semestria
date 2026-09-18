@@ -1,8 +1,8 @@
 namespace SchulnetzSync.UI.Legal;
 
 /// <summary>
-/// Rechtsdokumente als eingebettete Strings.
-/// Schweizer Rechtschreibung: ss statt ß.
+/// The legal texts, embedded as plain strings so they work offline and cannot go missing.
+/// German text in Swiss spelling: ss, never ß.
 /// </summary>
 public static class LegalTexts
 {

@@ -3,8 +3,8 @@ using SchulnetzSync.Core.Model;
 namespace SchulnetzSync.Tests.Model;
 
 /// <summary>
-/// Basic sanity tests for the model types introduced in Phase 1.
-/// Parser tests live in FeedParserTests (Phase 2).
+/// Guards the shape of the model types and the defaults of <see cref="SyncOptions"/>.
+/// Anything about reading the feed belongs in FeedParserTests instead.
 /// </summary>
 public class SchulnetzEventTypeTests
 {
@@ -28,7 +28,7 @@ public class SchulnetzEventTypeTests
             Summary: "Mathematik",
             Location: null);
 
-        var b = a with { };   // structural copy
+        var b = a with { };   // same values, different instance
 
         Assert.Equal(a, b);
         Assert.NotSame(a, b);

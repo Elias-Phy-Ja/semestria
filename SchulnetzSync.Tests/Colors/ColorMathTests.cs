@@ -3,6 +3,7 @@ using Xunit;
 
 namespace SchulnetzSync.Tests.Colors;
 
+/// <summary>Colour conversions the mixer relies on, including the awkward corners.</summary>
 public class ColorMathTests
 {
     [Theory]
@@ -12,16 +13,16 @@ public class ColorMathTests
     [InlineData(60,  1, 1, "#FFFF00")]
     [InlineData(0,   0, 1, "#FFFFFF")]
     [InlineData(0,   0, 0, "#000000")]
-    [InlineData(200, 0, 0.5, "#808080")]   // ohne Sättigung ist der Farbton egal
-    [InlineData(360, 1, 1, "#FF0000")]     // 360° ist wieder Rot
-    [InlineData(-120, 1, 1, "#0000FF")]    // negative Winkel laufen rückwärts
+    [InlineData(200, 0, 0.5, "#808080")]   // without saturation the hue is irrelevant
+    [InlineData(360, 1, 1, "#FF0000")]     // 360° wraps back to red
+    [InlineData(-120, 1, 1, "#0000FF")]    // negative angles run backwards
     public void Hsv_nach_Rgb(double h, double s, double v, string expected)
     {
         Assert.Equal(expected, new HsvColor(h, s, v).ToRgb().ToHex());
     }
 
     [Theory]
-    [InlineData("#2563EB")]   // Standardblau der App
+    [InlineData("#2563EB")]   // the default blue of the app
     [InlineData("#DC2626")]
     [InlineData("#D97706")]
     [InlineData("#16A34A")]
@@ -55,7 +56,7 @@ public class ColorMathTests
     [InlineData("#12345")]
     [InlineData("#1234567")]
     [InlineData("#GGGGGG")]
-    [InlineData("#FF2563EB")]   // Alphakanal wird nicht angenommen
+    [InlineData("#FF2563EB")]   // an alpha channel is not accepted
     [InlineData("blau")]
     public void Verwirft_ungueltiges_Hex(string? input)
     {

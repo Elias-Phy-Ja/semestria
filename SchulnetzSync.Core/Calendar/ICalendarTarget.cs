@@ -4,21 +4,20 @@ using SchulnetzSync.Core.Sync;
 namespace SchulnetzSync.Core.Calendar;
 
 /// <summary>
-/// Abstraction over the Outlook calendar (Microsoft Graph).
-/// Implemented by <see cref="GraphCalendarTarget"/> in production
-/// and by in-memory fakes in tests.
+/// The Outlook calendar as far as the rest of the app is concerned.
+/// <see cref="GraphCalendarTarget"/> in production, in-memory fakes in the tests —
+/// which is what lets the whole sync run without a Microsoft account.
 /// </summary>
 public interface ICalendarTarget
 {
     /// <summary>
-    /// Returns all SchulnetzSync-managed events in the given time window,
-    /// including their extended properties.
+    /// All events we manage inside the time window, extended properties included.
     /// One Graph request per window (calendarView + $expand).
     /// </summary>
     /// <param name="progress">
-    /// Receives a diagnostic line stating how many events were read and how many
-    /// of them carry this app's marker. Useful to tell "calendar is empty" apart
-    /// from "markers were not recognised".
+    /// Gets a diagnostic line with how many events were read and how many carry our
+    /// marker. That distinction matters: it separates "calendar is empty" from
+    /// "markers were not recognised", which look identical from the outside.
     /// </param>
     Task<IReadOnlyList<TrackedEvent>> GetTrackedEventsAsync(
         DateTimeOffset from,
@@ -28,8 +27,8 @@ public interface ICalendarTarget
         CancellationToken ct = default);
 
     /// <summary>
-    /// Executes the sync plan (Create / Update / Delete / Flag / Clear / Cancel)
-    /// using Graph $batch (max 20 per batch). Respects 429 Retry-After.
+    /// Runs the plan through Graph $batch, 20 requests at a time, honouring
+    /// Retry-After on 429.
     /// </summary>
     Task ExecutePlanAsync(
         SyncPlan     plan,
@@ -38,10 +37,10 @@ public interface ICalendarTarget
         CancellationToken  ct       = default);
 
     /// <summary>
-    /// Deletes every calendar event that carries schulnetzType == <paramref name="type"/>.
-    /// Used by the "Remove all" action in the UI.
+    /// Deletes every event with schulnetzType == <paramref name="type"/>, behind the
+    /// "Remove all" action in the settings.
     /// </summary>
-    /// <returns>The number of events deleted.</returns>
+    /// <returns>How many events were deleted.</returns>
     Task<int> PurgeAsync(
         SchulnetzEventType type,
         string? calendarId,
@@ -49,20 +48,17 @@ public interface ICalendarTarget
         CancellationToken  ct       = default);
 
     /// <summary>
-    /// Deletes every event this app ever created, regardless of type — including
-    /// entries already marked as cancelled. Events the user created themselves
-    /// are untouched: only events carrying the schulnetzKey property are removed.
+    /// Deletes everything this app ever created, whatever the type, cancelled entries
+    /// included. Only events carrying schulnetzKey are touched, so anything the user
+    /// wrote themselves stays where it is.
     /// </summary>
-    /// <returns>The number of events deleted.</returns>
+    /// <returns>How many events were deleted.</returns>
     Task<int> PurgeAllAsync(
         string? calendarId,
         IProgress<string>? progress = null,
         CancellationToken  ct       = default);
 
-    /// <summary>
-    /// Returns the list of calendars available to the signed-in account.
-    /// Used to populate the calendar selection combo box in the UI.
-    /// </summary>
+    /// <summary>Calendars the signed-in account can write to, for the picker in the settings.</summary>
     Task<IReadOnlyList<(string Id, string Name)>> GetCalendarsAsync(
         CancellationToken ct = default);
 }

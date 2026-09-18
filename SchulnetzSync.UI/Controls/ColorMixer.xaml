@@ -5,7 +5,7 @@
 
     <StackPanel>
 
-        <!-- Sättigung (links → rechts) und Helligkeit (oben → unten) -->
+        <!-- Saturation left to right, brightness top to bottom -->
         <Grid x:Name="SvArea" Height="150" Cursor="Cross" Background="Transparent"
               MouseLeftButtonDown="SvArea_MouseDown"
               MouseMove="SvArea_MouseMove"
@@ -38,7 +38,7 @@
             </Canvas>
         </Grid>
 
-        <!-- Farbton -->
+        <!-- Hue -->
         <Grid x:Name="HueArea" Height="16" Margin="0,12,0,0" Cursor="Hand"
               Background="Transparent"
               MouseLeftButtonDown="HueArea_MouseDown"
@@ -68,7 +68,7 @@
             </Canvas>
         </Grid>
 
-        <!-- Vorschau und Hex-Wert -->
+        <!-- Preview and hex value -->
         <Grid Margin="0,14,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>

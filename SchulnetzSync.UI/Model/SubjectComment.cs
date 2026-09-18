@@ -3,9 +3,9 @@ namespace SchulnetzSync.UI.Model;
 /// <summary>
 /// A free-text note attached to a whole subject, e.g. "TEU".
 ///
-/// Rein lokal wie die Aufgaben. Der Kommentar hängt am Fachkürzel, nicht an
-/// einer einzelnen Lektion: So erscheint er bei jeder TEU-Stunde und jeder
-/// TEU-Prüfung, auch wenn die Schule Lektionen verschiebt.
+/// Local only, same as the tasks. The note hangs off the subject code rather than off one
+/// lesson, so it shows up at every TEU lesson and every TEU exam — even when the school
+/// moves lessons around.
 /// </summary>
 /// <param name="Id">Stable identity for editing and deleting.</param>
 /// <param name="Subject">Upper-case subject code, see <c>SubjectCode.FromSummary</c>.</param>

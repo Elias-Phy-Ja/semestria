@@ -1,28 +1,24 @@
 namespace SchulnetzSync.Core.Update;
 
 /// <summary>
-/// Decides whether to bother the user about an update. Pure functions: no
-/// clock, no files, no network — the time comes in as a parameter so the rules
-/// are testable.
+/// Decides whether to bother the user about an update. Pure functions: no clock,
+/// no files, no network — the time comes in as a parameter so the rules are testable.
 /// </summary>
 public static class UpdatePolicy
 {
     /// <summary>
     /// Days to wait after "Später erinnern".
     ///
-    /// Bewusst kurz und immer gleich: Ein Update soll nicht in Vergessenheit
-    /// geraten. Ein dringendes Update wartet ohnehin nicht auf diese Frist —
-    /// siehe die Mandatory-Prüfung in <see cref="Decide"/>, die vor der Frist
-    /// greift.
+    /// Short and always the same on purpose, so an update cannot quietly be forgotten.
+    /// An urgent one does not wait for this anyway — the mandatory check in
+    /// <see cref="Decide"/> runs before the deadline is even looked at.
     /// </summary>
     private const int SnoozeDays = 1;
 
-    /// <summary>
-    /// Decides what the loading view should show.
-    /// </summary>
+    /// <summary>Decides what the loading view should show.</summary>
     /// <param name="updates">What the store offers; empty means nothing to do.</param>
     /// <param name="prefs">The snooze state from disk.</param>
-    /// <param name="nowUtc">Current time, injected for deterministic tests.</param>
+    /// <param name="nowUtc">Current time, injected so the tests stay deterministic.</param>
     public static UpdateDecision Decide(
         IReadOnlyList<UpdateInfo> updates,
         UpdatePreferences         prefs,
@@ -31,35 +27,32 @@ public static class UpdatePolicy
         if (updates.Count == 0)
             return new UpdateDecision(UpdatePrompt.None);
 
-        // Bei mehreren Paketen (App plus optionale) benennt die Meldung das
-        // erste — für eine App mit einem Paket ist das ihre eigene Version.
+        // With several packages (the app plus optional ones) the message names the
+        // first, which for a single-package app is its own version.
         var version = updates[0].Version;
 
-        // Ein zwingendes Update sticht jede Verschiebung.
+        // Mandatory beats any postponement.
         if (updates.Any(u => u.IsMandatory))
             return new UpdateDecision(UpdatePrompt.Mandatory, version);
 
-        // Eine andere Version als die verschobene: die Frist galt der alten.
+        // A different version than the postponed one: the deadline was for the old one.
         bool sameVersion = string.Equals(prefs.SkippedVersion, version, StringComparison.Ordinal);
         if (!sameVersion)
             return new UpdateDecision(UpdatePrompt.Optional, version);
 
-        // Gleiche Version, Frist läuft noch.
+        // Same version, still inside the snooze window.
         if (prefs.RemindAfterUtc is { } until && nowUtc < until)
             return new UpdateDecision(UpdatePrompt.None);
 
-        // Gleiche Version, Frist abgelaufen oder keine mehr gesetzt.
+        // Same version, window expired or never set.
         return new UpdateDecision(UpdatePrompt.Optional, version);
     }
-
     /// <summary>
-    /// True when <paramref name="offered"/> is a higher version than
-    /// <paramref name="current"/>.
+    /// True when <paramref name="offered"/> really is higher than <paramref name="current"/>.
     ///
-    /// Der Store liefert als Version des Updates teils die bereits
-    /// installierte. Eine Zahl, die nicht höher ist als die laufende, darf
-    /// darum nicht als «Version X verfügbar» angezeigt werden.
-    /// Unlesbare Angaben gelten als nicht neuer.
+    /// The store sometimes hands back the version that is already installed, and a number
+    /// that is not higher than the running one must not turn into "Version X available".
+    /// Anything unparseable counts as not newer.
     /// </summary>
     public static bool IsNewerThan(string? offered, string? current)
         => TryParse(offered, out var a) && TryParse(current, out var b) && a > b;
@@ -69,9 +62,9 @@ public static class UpdatePolicy
         version = new Version(0, 0);
         if (string.IsNullOrWhiteSpace(text)) return false;
 
-        // "2.2.0" und "2.2.0.0" sollen vergleichbar sein
         if (!Version.TryParse(text.Trim(), out var parsed)) return false;
 
+        // Pad the missing parts so "2.2.0" and "2.2.0.0" compare equal.
         version = new Version(parsed.Major,
                               parsed.Minor,
                               Math.Max(parsed.Build, 0),
@@ -82,10 +75,9 @@ public static class UpdatePolicy
     /// <summary>
     /// The state after the user picked "Später erinnern": ask again tomorrow.
     ///
-    /// Der Zähler wird mitgeführt, steuert die Frist aber nicht — jedes
-    /// Verschieben kostet gleich viel. Eine neue Versionsnummer setzt ihn
-    /// zurück, damit er beschreibt, wie oft genau diese Version verschoben
-    /// wurde.
+    /// The counter comes along but does not steer the deadline — every postponement
+    /// costs the same. A new version number resets it, so it always says how often
+    /// this particular version was pushed away.
     /// </summary>
     public static UpdatePreferences Postpone(
         UpdatePreferences prefs,

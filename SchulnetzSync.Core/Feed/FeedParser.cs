@@ -7,22 +7,21 @@ using IcalCalendar = Ical.Net.Calendar;
 namespace SchulnetzSync.Core.Feed;
 
 /// <summary>
-/// Parses raw iCal text from the Schulnetz feed into typed <see cref="SchulnetzEvent"/> objects.
-/// Classification is driven exclusively by the UID prefix — never by SUMMARY content.
+/// Turns the raw iCal text of the Schulnetz feed into typed <see cref="SchulnetzEvent"/>s.
+/// Classification runs on the UID alone — SUMMARY is never asked, because it lies.
 /// </summary>
 public static class FeedParser
 {
-    // Zurich offset for all events; DST-aware via GetUtcOffset per date.
+    // Everything in the feed is Zurich local time; GetUtcOffset per date handles DST.
     private static readonly TimeZoneInfo s_zurichTz =
         TimeZoneInfo.FindSystemTimeZoneById("Europe/Zurich");
 
-    // UID format: <date>et<id>et<start>et<end>et<room>@centerboard.ch
-    // The second segment (index 1) after splitting on "et" is the type discriminator.
+    // UID layout: <date>et<id>et<start>et<end>et<room>@centerboard.ch
     private const string UidSegmentSeparator = "et";
 
     /// <summary>
-    /// Parses all VEVENTs from the given iCal text into a flat list.
-    /// Events with an unrecognisable or missing UID are silently skipped.
+    /// Parses every VEVENT into a flat list. Entries without a usable UID or start time
+    /// are skipped rather than reported — the feed occasionally ships such leftovers.
     /// </summary>
     public static IReadOnlyList<SchulnetzEvent> Parse(string icsContent)
     {
@@ -39,7 +38,7 @@ public static class FeedParser
             if (string.IsNullOrWhiteSpace(calEvent.Uid))
                 continue;
 
-            // DtStart is nullable in Ical.Net 5.x; an event without a start time is invalid.
+            // DtStart is nullable since Ical.Net 5.x, and an event without a start is junk.
             if (calEvent.DtStart is null)
                 continue;
 
@@ -49,8 +48,8 @@ public static class FeedParser
             DateTimeOffset start = ToOffset(calEvent.DtStart);
             DateTimeOffset end = ResolveEnd(calEvent, start);
 
-            // Empty LOCATION becomes null — never an empty string.
-            // Fallback: extract room from UID segment 4 (format: <date>et<id>et<start>et<end>et<room>@…)
+            // Empty LOCATION becomes null, never "". When it is missing the UID sometimes
+            // still carries the room, so try there before giving up.
             string? location = !string.IsNullOrEmpty(calEvent.Location)
                 ? calEvent.Location
                 : ExtractRoomFromUid(calEvent.Uid);
@@ -68,11 +67,9 @@ public static class FeedParser
 
         return result.AsReadOnly();
     }
-
     /// <summary>
-    /// Runs a quick structural check on the raw iCal text.
-    /// Returns a <see cref="FeedHealth"/> describing any problems found.
-    /// An unhealthy feed must not trigger automatic delete operations.
+    /// Quick structural sanity check on the raw text. An unhealthy feed must not be
+    /// allowed to delete anything — a truncated download reads like a mass cancellation.
     /// </summary>
     public static FeedHealth CheckPlausibility(string icsContent)
     {
@@ -91,14 +88,13 @@ public static class FeedParser
             : new FeedHealth(problems);
     }
 
-    // -----------------------------------------------------------------------
-    // Private helpers
-    // -----------------------------------------------------------------------
+    // ── Helpers ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Tries to extract the room/location from UID segment 4.
-    /// UID format: &lt;date&gt;et&lt;id&gt;et&lt;start&gt;et&lt;end&gt;et&lt;room&gt;@centerboard.ch
-    /// Returns null when the segment looks like a type keyword or time value.
+    /// Last resort for a missing room: segment 4 of the UID
+    /// (&lt;date&gt;et&lt;id&gt;et&lt;start&gt;et&lt;end&gt;et&lt;room&gt;@centerboard.ch).
+    /// That slot also holds type keywords and times, so anything that does not look
+    /// like a room name is rejected instead of ending up in the calendar.
     /// </summary>
     private static string? ExtractRoomFromUid(string uid)
     {
@@ -109,36 +105,32 @@ public static class FeedParser
 
         var candidate = segs[4].Trim();
         if (string.IsNullOrWhiteSpace(candidate))                                    return null;
-        // Skip type keywords
+        // Type keywords
         if (candidate.Equals("Pruefung",  StringComparison.OrdinalIgnoreCase))       return null;
         if (candidate.Equals("Prüfung",   StringComparison.OrdinalIgnoreCase))       return null;
         if (candidate.Equals("Termin",    StringComparison.OrdinalIgnoreCase))       return null;
         if (candidate.Equals("Lektion",   StringComparison.OrdinalIgnoreCase))       return null;
-        // Skip time patterns like "14:55"
+        // Times like "14:55"
         if (System.Text.RegularExpressions.Regex.IsMatch(candidate, @"^\d{1,2}:\d{2}$")) return null;
-        // Skip pure-numeric values
+        // Bare numbers
         if (System.Text.RegularExpressions.Regex.IsMatch(candidate, @"^\d+$"))       return null;
         if (candidate.Length < 2)                                                     return null;
 
         return candidate;
     }
-
     /// <summary>
-    /// Determines the event type and stable correlation key from the UID.
+    /// Reads type and correlation key out of the UID.
     ///
-    /// UID structure (Centerboard):
+    /// A Centerboard UID looks like this:
     ///   20260907 et P_65100 et 14:55 et 15:40 et Pruefung @centerboard.ch
-    ///   segment 0    segment 1   ...                        (split on "et")
-    ///
-    /// The second segment (index 1) carries the type:
-    ///   P_…   → Pruefung   — key = that segment ("P_65100")
-    ///   T_…   → Termin     — key = that segment ("T_7409")
-    ///   other → Lektion    — key = everything before "@" (date+id+times+room,
-    ///                         because lesson series IDs repeat across dates)
+    /// Split on "et", and segment 1 carries the type:
+    ///   P_…   → Pruefung, key is that segment ("P_65100")
+    ///   T_…   → Termin,   key is that segment ("T_7409")
+    ///   other → Lektion,  key is everything before "@", because lesson ids repeat
+    ///           week after week and would otherwise collide across dates.
     /// </summary>
     private static (string Key, SchulnetzEventType Type) ClassifyUid(string uid)
     {
-        // Strip domain part: take everything before the first '@'.
         ReadOnlySpan<char> beforeAt = uid.AsSpan();
         int atIndex = uid.IndexOf('@');
         if (atIndex > 0)
@@ -146,7 +138,6 @@ public static class FeedParser
 
         string beforeAtStr = beforeAt.ToString();
 
-        // Split on "et" — the Centerboard field separator.
         string[] segments = beforeAtStr.Split(UidSegmentSeparator);
 
         if (segments.Length < 2)
@@ -160,37 +151,28 @@ public static class FeedParser
         if (discriminator.StartsWith("T_", StringComparison.Ordinal))
             return (discriminator, SchulnetzEventType.Termin);
 
-        // Numeric → Lektion. Key is the full before-@ string so that two
-        // lessons of the same series on different dates get distinct keys.
         return (beforeAtStr, SchulnetzEventType.Lektion);
     }
 
     /// <summary>
-    /// Converts an Ical.Net <see cref="CalDateTime"/> to a <see cref="DateTimeOffset"/>
-    /// using the Europe/Zurich timezone.
-    ///
-    /// For all-day events (VALUE=DATE) the time component is midnight; the
-    /// Zurich offset is still applied so the value is unambiguous.
+    /// Ical.Net date to <see cref="DateTimeOffset"/> in Europe/Zurich. All-day entries
+    /// land on midnight, but still get the offset so the value stays unambiguous.
     /// </summary>
     private static DateTimeOffset ToOffset(CalDateTime calDt)
     {
         if (calDt.IsUtc)
             return new DateTimeOffset(calDt.Value, TimeSpan.Zero);
 
-        // calDt.Value is the local Zurich DateTime; force Unspecified kind so
-        // GetUtcOffset treats it as the named timezone, not system-local.
+        // Force Unspecified, otherwise GetUtcOffset reads it as the machine timezone
+        // instead of Zurich — which is wrong as soon as the laptop travels.
         var dt = DateTime.SpecifyKind(calDt.Value, DateTimeKind.Unspecified);
         TimeSpan offset = s_zurichTz.GetUtcOffset(dt);
         return new DateTimeOffset(dt, offset);
     }
 
     /// <summary>
-    /// Determines the event end time.
-    ///
-    /// The feed uses two patterns:
-    ///   1. Timed events: DTEND present.
-    ///   2. All-day events: DURATION present, DTEND absent.
-    ///      End = Start + Duration (e.g. DURATION:P4D → four-day span).
+    /// Works out the end time. Timed events bring a DTEND; all-day events bring a
+    /// DURATION instead (DURATION:P4D for a four-day block), so add it to the start.
     /// </summary>
     private static DateTimeOffset ResolveEnd(CalendarEvent calEvent, DateTimeOffset start)
     {
@@ -208,7 +190,7 @@ public static class FeedParser
             return start + span;
         }
 
-        // Zero-duration event (should not appear in this feed, but handle gracefully).
+        // Neither field set. Should not happen in this feed, but do not crash over it.
         return start;
     }
 }

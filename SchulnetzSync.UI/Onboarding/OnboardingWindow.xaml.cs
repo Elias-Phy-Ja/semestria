@@ -13,6 +13,12 @@ using Orientation         = System.Windows.Controls.Orientation;
 
 namespace SchulnetzSync.UI.Onboarding;
 
+/// <summary>
+/// The first-start wizard: welcome, legal texts, feed URL, Microsoft account, done.
+///
+/// Only the feed URL is really required. Everything else can be skipped, and the app is
+/// fully usable without an Outlook connection.
+/// </summary>
 public partial class OnboardingWindow : Window
 {
     private int  _step       = 1;
@@ -20,13 +26,13 @@ public partial class OnboardingWindow : Window
     private bool _skipSignIn = false;
 
     /// <summary>
-    /// Schritt 4 ist zweigeteilt: erst die Frage, dann - nur bei Ja - die
-    /// eigentliche Einrichtung. Die Einrichtung ist der mit Abstand
-    /// komplizierteste Teil und soll niemanden aufhalten, der sie nicht braucht.
+    /// Step 4 comes in two halves: first the question, then — only on a yes — the actual
+    /// setup. That setup is by far the most complicated part of the app, and nobody who
+    /// does not need it should be made to walk through it.
     /// </summary>
     private bool _showOutlookSetup;
 
-    // Schritte: 1=Willkommen, 2=Rechtliches, 3=Feed-URL, 4=Anmelden, 5=Fertig
+    // Steps: 1 welcome, 2 legal, 3 feed URL, 4 sign-in, 5 done
     private const int TotalSteps = 5;
 
     private static readonly string[] StepNames =
@@ -38,7 +44,7 @@ public partial class OnboardingWindow : Window
     {
         InitializeComponent();
 
-        // Eigene Client-ID vorab befüllen (nur relevant ohne mitgelieferte Registrierung)
+        // Pre-fill a custom client id; only ever relevant without the built-in registration.
         var existingId = AppState.Config.ClientId;
         if (MicrosoftAccount.IsUsable(existingId))
             TxtClientId.Text = existingId;
@@ -51,9 +57,7 @@ public partial class OnboardingWindow : Window
         ShowStep(1);
     }
 
-    // -----------------------------------------------------------------------
-    // Navigation
-    // -----------------------------------------------------------------------
+    // ── Navigation ──────────────────────────────────────────────────────
 
     private void BtnNext_Click(object sender, RoutedEventArgs e)
     {
@@ -65,7 +69,7 @@ public partial class OnboardingWindow : Window
 
     private void BtnBack_Click(object sender, RoutedEventArgs e)
     {
-        // Aus der Outlook-Einrichtung geht es zurueck zur Frage, nicht zur Feed-URL
+        // Back out of the Outlook setup lands on the question, not on the feed URL.
         if (_step == 4 && _showOutlookSetup)
         {
             _showOutlookSetup = false;
@@ -78,7 +82,7 @@ public partial class OnboardingWindow : Window
         ShowStep(_step);
     }
 
-    /// <summary>Der Benutzer will Outlook jetzt verknuepfen - Anleitung zeigen.</summary>
+    /// <summary>They want Outlook now, so show the walkthrough.</summary>
     private void BtnLinkNow_Click(object sender, RoutedEventArgs e)
     {
         _skipSignIn       = false;
@@ -86,7 +90,7 @@ public partial class OnboardingWindow : Window
         ShowStep(4);
     }
 
-    /// <summary>Der Benutzer will Outlook spaeter verknuepfen - Schritt ueberspringen.</summary>
+    /// <summary>They want Outlook later, so skip the whole step.</summary>
     private void BtnLinkLater_Click(object sender, RoutedEventArgs e)
     {
         _skipSignIn       = true;
@@ -95,7 +99,7 @@ public partial class OnboardingWindow : Window
         ShowStep(_step);
     }
 
-    /// <summary>Blendet Frage oder Einrichtung ein.</summary>
+    /// <summary>Switches between the question and the setup half of step 4.</summary>
     private void ShowStep4Sub(bool showSetup)
     {
         Step4Ask.Visibility   = showSetup ? Visibility.Collapsed : Visibility.Visible;
@@ -144,8 +148,8 @@ public partial class OnboardingWindow : Window
             _          => "Weiter",
         };
 
-        // Auf der Frage-Seite fuehren die beiden Auswahl-Buttons weiter,
-        // nicht der Weiter-Button unten.
+        // On the question page the two choice buttons move things along, not the
+        // "Weiter" button at the bottom.
         BtnNext.Visibility = step == 4 && !_showOutlookSetup
             ? Visibility.Collapsed
             : Visibility.Visible;
@@ -156,7 +160,7 @@ public partial class OnboardingWindow : Window
         UpdateNextButton();
     }
 
-    /// <summary>Schrittleiste links: erledigt mit Haken, aktueller Schritt hervorgehoben.</summary>
+    /// <summary>The step rail on the left: ticks for done, highlight for the current one.</summary>
     private void BuildStepRail(int current)
     {
         StepRail.Children.Clear();
@@ -205,7 +209,7 @@ public partial class OnboardingWindow : Window
             row.Children.Add(label);
             StepRail.Children.Add(row);
 
-            // Verbindungslinie zum nächsten Schritt
+            // Connecting line down to the next step
             if (i < TotalSteps)
                 StepRail.Children.Add(new Border
                 {
@@ -218,9 +222,7 @@ public partial class OnboardingWindow : Window
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Schritt-Validierung
-    // -----------------------------------------------------------------------
+    // ── Validation per step ─────────────────────────────────────────────
 
     private bool CanAdvance() => _step switch
     {
@@ -260,16 +262,12 @@ public partial class OnboardingWindow : Window
         return true;
     }
 
-    // -----------------------------------------------------------------------
-    // Schritt 2: Rechtliches
-    // -----------------------------------------------------------------------
+    // ── Step 2: the legal texts ─────────────────────────────────────────
 
     private void Legal_CheckChanged(object sender, RoutedEventArgs e)
         => UpdateNextButton();
 
-    // -----------------------------------------------------------------------
-    // Schritt 3: Feed-URL
-    // -----------------------------------------------------------------------
+    // ── Step 3: the feed URL ────────────────────────────────────────────
 
     private void TxtFeedUrl_TextChanged(object sender,
         System.Windows.Controls.TextChangedEventArgs e)
@@ -302,9 +300,7 @@ public partial class OnboardingWindow : Window
         TxtFeedUrl.CaretIndex = TxtFeedUrl.Text.Length;
     }
 
-    // -----------------------------------------------------------------------
-    // Schritt 4: Microsoft-Anmeldung
-    // -----------------------------------------------------------------------
+    // ── Step 4: signing in to Microsoft ─────────────────────────────────
 
     private void OnEnterStep4()
     {
@@ -314,8 +310,8 @@ public partial class OnboardingWindow : Window
     }
 
     /// <summary>
-    /// Die zu verwendende App-ID: eine selbst eingetragene sticht die
-    /// mitgelieferte. Null wenn beides fehlt.
+    /// The app id to use: one the user typed in beats the built-in one.
+    /// Null when there is neither.
     /// </summary>
     private string? EffectiveClientId()
     {
@@ -331,7 +327,7 @@ public partial class OnboardingWindow : Window
         UpdateNextButton();
     }
 
-    /// <summary>Hinweistext und Anmelde-Button an den aktuellen Zustand anpassen.</summary>
+    /// <summary>Brings the hint text and the sign-in button in line with the current state.</summary>
     private void RefreshClientIdState()
     {
         ClientIdHint.Text = MicrosoftAccount.IsUsable(TxtClientId.Text.Trim())
@@ -350,15 +346,15 @@ public partial class OnboardingWindow : Window
 
         try
         {
-            // Frische Instanz bei jedem Versuch, kein eingefrorener Zustand
+            // A fresh instance per attempt, so no stale state survives a failed try.
             var auth = new MsalAuthProvider(clientId);
             await auth.AcquireTokenInteractiveAsync();
 
             _signedIn = true;
             SignInSuccess.Visibility = Visibility.Visible;
             BtnSignIn.Visibility     = Visibility.Collapsed;
-            // Nur eine selbst eingetragene ID persistieren; die mitgelieferte
-            // soll bei einem App-Update automatisch mitwandern.
+            // Only store an id the user typed in. The built-in one has to be free to
+            // change with an app update, which it cannot do once it is written to disk.
             var custom = TxtClientId.Text.Trim();
             if (MicrosoftAccount.IsUsable(custom))
                 AppState.Config.ClientId = custom;
@@ -367,18 +363,16 @@ public partial class OnboardingWindow : Window
         }
         catch (Exception ex)
         {
-            // Fehlermeldung OHNE Client-ID oder URL
+            // Error message with the client id and any URL stripped out.
             var safeMsg = SanitizeErrorMessage(ex.Message, clientId);
             TxtSignInError.Text       = "Fehler: " + safeMsg;
             TxtSignInError.Visibility = Visibility.Visible;
-            // Button aktivieren: erneuter Versuch möglich
+            // Re-enable the button so another attempt is possible.
             BtnSignIn.IsEnabled = true;
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Schritt 5: Fertig
-    // -----------------------------------------------------------------------
+    // ── Step 5: done ────────────────────────────────────────────────────
 
     private void BuildFinishSummary()
     {
@@ -434,20 +428,18 @@ public partial class OnboardingWindow : Window
         SummaryList.Children.Add(grid);
     }
 
-    // -----------------------------------------------------------------------
-    // Abschluss
-    // -----------------------------------------------------------------------
+    // ── Wrapping up ─────────────────────────────────────────────────────
 
     private void Complete()
     {
         var config = AppState.Config;
 
-        // Feed-URL verschlüsselt speichern
+        // The feed URL goes to disk encrypted, never in plain text.
         var url = TxtFeedUrl.Text.Trim();
         if (!string.IsNullOrEmpty(url))
             ConfigManager.SetFeedUrl(config, url);
 
-        // Nur eine eigene Client-ID speichern; die mitgelieferte steht im Code
+        // Again: only a custom client id is saved, the built-in one lives in the code.
         var clientId = TxtClientId.Text.Trim();
         if (MicrosoftAccount.IsUsable(clientId))
             config.ClientId = clientId;
@@ -458,13 +450,11 @@ public partial class OnboardingWindow : Window
         ConfigManager.Save(config);
         AppState.Reload();
 
-        // Fenster schliessen; App.xaml.cs öffnet danach das Hauptfenster
+        // Close up; App.xaml.cs takes over and opens the main window.
         Close();
     }
 
-    // -----------------------------------------------------------------------
-    // Button-Aktivierung
-    // -----------------------------------------------------------------------
+    // ── When the Weiter button is allowed to be enabled ──────────────────
 
     private void UpdateNextButton()
     {
@@ -472,18 +462,16 @@ public partial class OnboardingWindow : Window
         {
             2 => ChkAgb.IsChecked == true && ChkDatenschutz.IsChecked == true,
             3 => !string.IsNullOrWhiteSpace(TxtFeedUrl.Text),
-            4 => _signedIn || _skipSignIn,  // Ueberspringen ist jederzeit erlaubt
+            4 => _signedIn || _skipSignIn,  // skipping is always allowed
             _ => true
         };
     }
 
-    // -----------------------------------------------------------------------
-    // Security-Helpers
-    // -----------------------------------------------------------------------
+    // ── Keeping the token out of sight ──────────────────────────────────
 
     /// <summary>
-    /// Zeigt von einer Feed-URL nur den Host, KEIN Token und keinen Query-String.
-    /// Schützt vor unabsichtlichem Anzeigen des persönlichen Tokens.
+    /// Shows the host of a feed URL and nothing else — no query string, so no token.
+    /// The URL ends up on screen in a few places, and this is what makes that safe.
     /// </summary>
     private static string SafeDisplayUrl(string url)
     {
@@ -494,8 +482,8 @@ public partial class OnboardingWindow : Window
     }
 
     /// <summary>
-    /// Bereinigt Exception-Meldungen: entfernt Client-IDs und URLs damit
-    /// diese nicht in der UI erscheinen.
+    /// Strips client ids and URLs out of an exception message before it is shown.
+    /// Error texts love to quote the request that failed.
     /// </summary>
     private static string SanitizeErrorMessage(string message, string? clientId)
     {

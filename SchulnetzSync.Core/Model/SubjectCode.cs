@@ -3,21 +3,20 @@ using System.Text.RegularExpressions;
 namespace SchulnetzSync.Core.Model;
 
 /// <summary>
-/// Derives the subject code ("TEU", "FRA") from a Schulnetz summary.
+/// Pulls the subject code ("TEU", "FRA") out of a Schulnetz summary.
 ///
-/// Der Code ist der Schlüssel für Fachfarben, Aufgabenlisten-Vorschläge und
-/// Fachkommentare. Er muss daher für Lektionen und Prüfungen desselben Fachs
-/// gleich ausfallen: «9:30 TEU_I26A» und «TEU_I26A Prüfung 1.1» ergeben beide «TEU».
+/// The code is the key for subject colours, task suggestions and subject comments, so a
+/// lesson and an exam of the same subject have to end up with the same one: "9:30 TEU_I26A"
+/// and "TEU_I26A Prüfung 1.1" both have to give "TEU".
 /// </summary>
 public static partial class SubjectCode
 {
-    /// <summary>Longest code taken from a summary without an underscore.</summary>
+    /// <summary>Longest code we accept from a summary that has no underscore.</summary>
     private const int MaxLengthWithoutUnderscore = 6;
 
     /// <summary>
-    /// Returns the upper-case subject code. Everything before the first underscore;
-    /// without underscore the first six characters. A leading time ("9:30 ") is ignored.
-    /// Returns an empty string for an empty summary.
+    /// Upper-case subject code: everything before the first underscore, or the first six
+    /// characters when there is none. A leading time ("9:30 ") is ignored. Empty in, empty out.
     /// </summary>
     public static string FromSummary(string? summary)
     {
@@ -30,12 +29,12 @@ public static partial class SubjectCode
     }
 
     /// <summary>
-    /// Splits a summary into subject code and the rest, e.g.
-    /// "FRA_I26A_DuaLi Examen de grammaire" into ("FRA", "Examen de grammaire").
+    /// Splits a summary into code and remainder, e.g. "FRA_I26A_DuaLi Examen de grammaire"
+    /// into ("FRA", "Examen de grammaire").
     ///
-    /// Anders als <see cref="FromSummary"/> rät die Methode nicht: Nur wenn der
-    /// erste Teil dem Schulnetz-Muster FACH_KLASSE_LEHRER folgt, gibt es einen
-    /// Code. Titel wie "Begrüssung und Einführung 1. Klasse" bleiben ganz stehen.
+    /// Unlike <see cref="FromSummary"/> this one does not guess: there is only a code when
+    /// the first word follows the Schulnetz pattern SUBJECT_CLASS_TEACHER. Titles such as
+    /// "Begrüssung und Einführung 1. Klasse" stay in one piece.
     /// </summary>
     public static (string Code, string Detail) Split(string? summary)
     {

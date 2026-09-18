@@ -22,7 +22,7 @@
                        ItemInvoked="NavView_ItemInvoked"
                        Loaded="NavView_Loaded">
 
-        <!-- ── Sidebar-Logo ── -->
+        <!-- ── Sidebar logo ── -->
         <ui:NavigationView.PaneHeader>
             <StackPanel Margin="16,12,16,8">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,2">
@@ -40,7 +40,7 @@
             </StackPanel>
         </ui:NavigationView.PaneHeader>
 
-        <!-- ── Navigationspunkte ── -->
+        <!-- ── Navigation items ── -->
         <ui:NavigationView.MenuItems>
             <ui:NavigationViewItem x:Name="NavDashboard"
                                    Tag="Dashboard"
@@ -77,8 +77,8 @@
 
         <ui:NavigationView.FooterMenuItems>
             <!--
-                Kein Seitenwechsel: öffnet die Web-App im Browser.
-                SelectsOnInvoked=False, damit die aktuelle Seite markiert bleibt.
+                Not a page: this opens the web app in the browser.
+                SelectsOnInvoked=False so the current page stays highlighted.
             -->
             <ui:NavigationViewItem x:Name="NavSynapkey"
                                    Tag="Synapkey"
@@ -86,7 +86,7 @@
                                    SelectsOnInvoked="False"
                                    ToolTipService.ToolTip="Synapkey-Dashboard im Browser öffnen">
                 <ui:NavigationViewItem.Icon>
-                    <!-- Segoe MDL2 «OpenInNewWindow» -->
+                    <!-- Segoe MDL2 "OpenInNewWindow" -->
                     <ui:FontIcon Glyph="&#xE8A7;"/>
                 </ui:NavigationViewItem.Icon>
             </ui:NavigationViewItem>
@@ -100,18 +100,17 @@
             </ui:NavigationViewItem>
         </ui:NavigationView.FooterMenuItems>
 
-        <!-- ── Inhalt ── -->
+        <!-- ── Content ── -->
         <Frame x:Name="ContentFrame"
                NavigationUIVisibility="Hidden"/>
 
         </ui:NavigationView>
 
         <!-- ══════════════════════════════════════════════════════════════
-             LADEANSICHT
+             LOADING VIEW
 
-             Kein eigenes Fenster, nur eine Schicht ueber der Oberflaeche.
-             Sie deckt die Navigation ab, solange der Start laeuft, und
-             verschwindet danach.
+             Not a window of its own, just a layer on top of everything else.
+             It covers the navigation while the app starts and disappears afterwards.
              ══════════════════════════════════════════════════════════════ -->
         <Border x:Name="LoadingOverlay"
                 Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
@@ -135,7 +134,7 @@
                            HorizontalAlignment="Center"
                            Margin="0,2,0,26"/>
 
-                <!-- Zustand 1 und 3: Fortschritt -->
+                <!-- States 1 and 3: progress -->
                 <StackPanel x:Name="LoadingProgressArea">
                     <ProgressBar x:Name="LoadingBar"
                                  Width="320" Height="4"
@@ -148,7 +147,7 @@
                                Margin="0,12,0,0"/>
                 </StackPanel>
 
-                <!-- Zustand 2: Update gefunden -->
+                <!-- State 2: an update was found -->
                 <StackPanel x:Name="UpdatePromptArea" Visibility="Collapsed">
                     <TextBlock x:Name="TxtUpdateHeadline"
                                FontSize="16" FontWeight="SemiBold"
@@ -177,7 +176,7 @@
                                 Click="BtnUpdateLater_Click"/>
                     </StackPanel>
 
-                    <!-- Ausweg, wenn ein zwingendes Update nicht durchläuft -->
+                    <!-- A way out when a mandatory update refuses to go through -->
                     <StackPanel x:Name="UpdateFailureArea"
                                 Visibility="Collapsed"
                                 Margin="0,16,0,0">
@@ -205,7 +204,7 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- Zustand 4: nach dem Neustart -->
+                <!-- State 4: back after the restart -->
                 <StackPanel x:Name="UpdateDoneArea" Visibility="Collapsed">
                     <TextBlock Text="✓" FontSize="34"
                                HorizontalAlignment="Center"
