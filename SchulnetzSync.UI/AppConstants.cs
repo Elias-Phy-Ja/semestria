@@ -38,12 +38,12 @@ public static class AppConstants
     public const string AppName    = "Semestria";
     /// <summary>
     /// The version shown to the user. Has to match Packaging\Package.appxmanifest,
-    /// which spells it out with four parts: 2.2.0.0.
+    /// which spells it out with four parts: 2.3.0.0.
     /// </summary>
-    public const string Version    = "2.2.0";
+    public const string Version    = "2.3.0";
 
-    /// <summary>Short form for the sidebar, e.g. "v2.2".</summary>
-    public const string VersionShort = "v2.2";
+    /// <summary>Short form for the sidebar, e.g. "v2.3".</summary>
+    public const string VersionShort = "v2.3";
     public const string Publisher  = "Elias Wyss";
 
     /// <summary>Version of the legal texts. Bumping it makes everyone accept them again.</summary>
