@@ -1,88 +1,95 @@
 # Notes to Certification
 
-Text zum Einfuegen im Partner Center unter
+Text fuer das Partner Center unter
 **Supplemental info > Additional Testing Information**.
 
-Hintergrund: Die Einreichung vom 21.09.2026 ist an Punkt **10.3.3 App Is
-Testable** gescheitert. Die Tester bei Microsoft haben kein Schulnetz-Konto,
-landen darum im Einrichtungsassistenten bei Schritt 3 und sehen nie die
-eigentliche Funktion. Am Paket muss dafuer nichts geaendert werden, es fehlt
-nur ein Testzugang.
+## Stand
 
-## Drei Eigenheiten des Formulars
+Zwei Ablehnungen, beide mit demselben Punkt **10.3.3 App Is Testable**:
 
-Daran ist das Speichern nacheinander gescheitert:
+| Review | Ergebnis |
+|---|---|
+| 21.09.2026 | abgelehnt, 10.3.3 |
+| 24.09.2026 | abgelehnt, 10.3.3, getestet auf einem Microsoft Surface Laptop |
 
-1. Das Feld **Description** nimmt hoechstens **2000 Zeichen**. Die erste Fassung
-   hatte 2132.
-2. Sonderzeichen wie der Geviertstrich koennen das Speichern verhindern. Der
-   Text ist darum reines ASCII, die deutschen Beschriftungen stehen ohne
-   Umlaute da.
-3. **Eine URL in der Description wird abgewiesen.** Der Link gehoert deshalb in
-   die **Credentials**-Tabelle darunter, und der Text verweist nur dorthin.
-   Im Text steht bewusst nirgends mehr die Zeichenfolge http.
+Der zweite Bericht ist wortgleich mit dem ersten. Zwei Erklaerungen kommen in
+Frage, und sie schliessen sich nicht aus:
+
+1. Die Notes waren bei der zweiten Einreichung gar nicht gespeichert. Das
+   Formular hatte dreimal abgelehnt, zuletzt wegen der URL im Textfeld.
+2. Der Tester wollte die beworbene Outlook-Funktion pruefen und meldete sich
+   mit einem **Geschaeftskonto** an. Das kann nicht klappen: die
+   App-Registrierung ist vom Typ PersonalMicrosoftAccount, die Anmeldung
+   laeuft gegen den consumers-Endpunkt, und ein Arbeits- oder Schulkonto wird
+   abgewiesen. Der Tester sieht eine Fehlermeldung und kommt nicht weiter.
+
+Der Text unten stellt darum beides gleich zu Beginn klar: der Kalender
+braucht ueberhaupt kein Konto, und die Outlook-Anmeldung funktioniert nur mit
+einem privaten Microsoft-Konto.
+
+## Eigenheiten des Formulars
+
+1. **Description** nimmt hoechstens **2000 Zeichen**. Der Text unten hat
+   1781, mit Zeilenumbruechen als zwei Zeichen gerechnet 1813.
+2. Sonderzeichen koennen das Speichern verhindern. Der Text ist reines ASCII,
+   deutsche Beschriftungen darum ohne Umlaute.
+3. **Eine URL in der Description wird abgewiesen.** Der Link gehoert in die
+   Credentials-Tabelle, im Text steht nirgends die Zeichenfolge http.
 
 ## Credentials-Tabelle
 
-Ueber **+ New credential** eine Zeile anlegen:
+Ueber **+ New credential**:
 
 | Spalte | Wert |
 |---|---|
 | Name | `Test feed URL` |
 | Value | `https://raw.githubusercontent.com/Elias-Phy-Ja/semestria/main/SchulnetzSync.Tests/Fixtures/sample-feed.ics` |
 
-Weist auch dieses Feld die URL ab: das `https://` weglassen und in den Namen
-schreiben, also Name `Test feed URL (prefix with https)` und Value
-`raw.githubusercontent.com/Elias-Phy-Ja/semestria/main/SchulnetzSync.Tests/Fixtures/sample-feed.ics`.
+Weist auch dieses Feld die URL ab: `https://` weglassen und in den Namen
+schreiben.
 
 ---
 
-## Description, zum Kopieren (1823 Zeichen)
+## Description, zum Kopieren
 
 Semestria is a calendar app for students in Switzerland. It reads exams and
-school events from the student's personal timetable feed (an iCal subscription
-link issued by the school portal "Schulnetz") and shows them in the app.
-Copying entries into Outlook is optional.
+school events from the student's personal school timetable feed (an iCal
+subscription link) and displays them. Writing entries to Outlook is optional.
 
-Testers have no school account, so the app shows nothing until a feed link is
-entered. A public test feed is provided in the Credentials section below under
-the name "Test feed URL". It contains anonymised sample data, needs no login
-and can be pasted straight into the app.
+PLEASE READ BEFORE TESTING:
+- The main function, the calendar, needs NO account. It only needs the test
+  feed link, found in the Credentials section below under the name "Test feed
+  URL". It holds anonymised sample data and needs no login.
+- The optional Outlook sign-in accepts PERSONAL Microsoft accounts only
+  (outlook.com, hotmail.com, live.com). Work and school accounts are rejected
+  by design, as the app registration is of type "Personal Microsoft account".
+  A work account will show an error. Step 4 can be skipped; everything listed
+  below still works without it.
 
 HOW TO TEST (about one minute):
-1. Start the app. A five-step setup wizard opens. Click the blue button at the
+1. Start the app. A five-step wizard opens. Click the blue button at the
    bottom right ("Los geht's").
-2. Step 2: tick both checkboxes, then click the blue button ("Weiter").
-3. Step 3: paste the test feed URL from the Credentials section into the input
-   field, then click "Weiter".
-4. Step 4 (Outlook) is optional. Click the SECOND of the two large cards, the
-   one that starts with "Spaeter". No Microsoft account is needed to test.
-5. Step 5: click the blue button at the bottom right to finish. The main
-   window opens and the sample entries are loaded.
+2. Step 2: tick both checkboxes, then the blue button ("Weiter").
+3. Step 3: paste the test feed URL into the input field, then "Weiter".
+4. Step 4 (Outlook, optional): click the SECOND of the two large cards, the
+   one starting with "Spaeter".
+5. Step 5: click the blue button at the bottom right. The main window opens
+   and the sample entries are loaded.
 
 WHAT TO LOOK AT (left menu, top to bottom):
-- 2nd item, the calendar: month and week view with the sample entries. This is
-  the primary functionality of the app.
+- 2nd item, the calendar in month and week view with the sample entries. This
+  is the primary functionality of the app.
 - 1st item, the dashboard: upcoming exams and today's timetable.
-- 3rd item, tasks: local to-do lists. Add one with the input field at the top.
+- 3rd item, tasks: local to-do lists.
 
-NOTES:
-- No backend, no account system, no telemetry. All data stays on the device.
-- The user interface is in German.
-- The Outlook connection (Microsoft Graph, delegated Calendars.ReadWrite) is
-  optional and is not needed for any of the above.
-- The package declares internet client access only, used to download the
-  calendar feed over an encrypted connection.
+The app has no backend, no account system and no telemetry. All data stays on
+the device. The user interface is in German. The package declares internet
+client access only, used to fetch the calendar feed.
 
 ---
 
 ## Hinweis zur Test-URL
 
-Sie zeigt auf `SchulnetzSync.Tests/Fixtures/sample-feed.ics` im Branch `main`
-dieses Repos und funktioniert, solange das Repo oeffentlich ist und die Datei
-dort liegt. Wird sie je verschoben, bricht der Testzugang bei der naechsten
-Zertifizierung. Wer das ausschliessen will, verlinkt statt `main` einen festen
-Commit-Hash.
-
+Sie zeigt auf `SchulnetzSync.Tests/Fixtures/sample-feed.ics` im Branch `main`.
 Geprueft am 22.09.2026: HTTP 200, 5822 Bytes, 20 VEVENTs. Ein Dry-Run der CLI
-gegen diese URL ergibt 12 Eintraege, also 6 Pruefungen und 6 Termine.
+dagegen ergibt 12 Eintraege, also 6 Pruefungen und 6 Termine.
