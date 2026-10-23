@@ -66,6 +66,14 @@
                 </ui:NavigationViewItem.Icon>
             </ui:NavigationViewItem>
 
+            <ui:NavigationViewItem x:Name="NavGrades"
+                                   Tag="Grades"
+                                   Content="Noten">
+                <ui:NavigationViewItem.Icon>
+                    <ui:FontIcon Glyph="&#xE9D2;"/>
+                </ui:NavigationViewItem.Icon>
+            </ui:NavigationViewItem>
+
             <ui:NavigationViewItem x:Name="NavSettings"
                                    Tag="Settings"
                                    Content="Einstellungen">

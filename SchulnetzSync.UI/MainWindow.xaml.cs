@@ -338,6 +338,7 @@ public partial class MainWindow : Window
                 case "Dashboard": ContentFrame.Navigate(new DashboardPage()); break;
                 case "Events":    ContentFrame.Navigate(new EventsPage());    break;
                 case "Tasks":     ContentFrame.Navigate(new TasksPage());     break;
+                case "Grades":    ContentFrame.Navigate(new GradesPage());    break;
                 case "Settings":  ContentFrame.Navigate(new SettingsPage());  break;
                 case "About":     ContentFrame.Navigate(new AboutPage());     break;
             }
@@ -352,6 +353,7 @@ public partial class MainWindow : Window
             case "Dashboard": NavView.SelectedItem = NavDashboard; break;
             case "Events":    NavView.SelectedItem = NavEvents;    break;
             case "Tasks":     NavView.SelectedItem = NavTasks;     break;
+            case "Grades":    NavView.SelectedItem = NavGrades;    break;
             case "Settings":  NavView.SelectedItem = NavSettings;  break;
         }
     }

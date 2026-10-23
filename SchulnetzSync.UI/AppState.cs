@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Feed;
+using SchulnetzSync.Core.Grades;
 using SchulnetzSync.Core.Model;
 using SchulnetzSync.UI.Model;
 
@@ -717,6 +718,85 @@ public static class AppState
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_subjectCommentsPath)!);
             File.WriteAllText(_subjectCommentsPath, JsonSerializer.Serialize(_subjectComments));
+        }
+        catch { }
+    }
+
+    // ── Grades ───────────────────────────────────────────────────────────────
+    //
+    // Typed in by hand, local only. The promotion rule the user picked (or built) is
+    // stored next to them.
+
+    private static readonly string _gradesPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Semestria", "grades.json");
+
+    private static readonly string _promotionRulePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Semestria", "promotion-rule.json");
+
+    private static readonly List<GradeEntry> _grades = LoadJson<List<GradeEntry>>(_gradesPath) ?? [];
+
+    private static PromotionRule _promotionRule =
+        LoadJson<PromotionRule>(_promotionRulePath) ?? PromotionRule.PlusPointsSystem;
+
+    public static IReadOnlyList<GradeEntry> Grades => _grades;
+
+    /// <summary>The rule the grade page checks against.</summary>
+    public static PromotionRule PromotionRule
+    {
+        get => _promotionRule;
+        set { _promotionRule = value; SaveJson(_promotionRulePath, _promotionRule); Notify(); }
+    }
+
+    /// <summary>Adds a grade, or replaces the one with the same id.</summary>
+    public static void SaveGrade(GradeEntry grade)
+    {
+        var i = _grades.FindIndex(g => g.Id == grade.Id);
+        if (i < 0) _grades.Add(grade); else _grades[i] = grade;
+        SaveJson(_gradesPath, _grades);
+        Notify();
+    }
+
+    public static void RemoveGrade(Guid id)
+    {
+        if (_grades.RemoveAll(g => g.Id == id) == 0) return;
+        SaveJson(_gradesPath, _grades);
+        Notify();
+    }
+
+    /// <summary>
+    /// Subject codes to offer when adding a grade: the ones from the timetable plus any
+    /// that already have grades.
+    /// </summary>
+    public static IReadOnlyList<string> GradeSubjectSuggestions()
+        => _cachedFeedEvents
+            .Where(e => e.Type == SchulnetzEventType.Lektion)
+            .Select(e => SubjectCode.Split(e.Summary).Code)
+            .Concat(_grades.Select(g => g.Subject))
+            .Where(c => c.Length > 0)
+            .Select(c => c.ToUpperInvariant())
+            .Distinct()
+            .OrderBy(c => c, StringComparer.CurrentCulture)
+            .ToList();
+
+    private static T? LoadJson<T>(string path) where T : class
+    {
+        try
+        {
+            if (File.Exists(path))
+                return JsonSerializer.Deserialize<T>(File.ReadAllText(path));
+        }
+        catch { /* corrupt file: start empty rather than not at all */ }
+        return null;
+    }
+
+    private static void SaveJson<T>(string path, T value)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, JsonSerializer.Serialize(value));
         }
         catch { }
     }
