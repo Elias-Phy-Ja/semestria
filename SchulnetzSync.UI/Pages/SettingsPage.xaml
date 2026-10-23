@@ -198,6 +198,12 @@
                               Content="Feed beim App-Start automatisch aktualisieren"/>
                     <TextBlock Style="{StaticResource NoteText}" Margin="24,0,0,0"
                                Text="Aktualisiert den Kalender im Hintergrund. Wenn offline, wird der gespeicherte Feed genutzt."/>
+                    <Separator Style="{StaticResource Divider}" Margin="0,10,0,6"/>
+                    <CheckBox x:Name="ChkShowNews" IsChecked="True"
+                              Margin="0,0,0,4"
+                              Content="Nachrichten und Umfragen vom Entwickler anzeigen"/>
+                    <TextBlock Style="{StaticResource NoteText}" Margin="24,0,0,0"
+                               Text="Lädt kurz nach dem Start eine öffentliche Datei von semestria.elias-wyss.ch. Es werden keine Angaben über dich gesendet."/>
                 </StackPanel>
             </Border>
 

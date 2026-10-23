@@ -57,7 +57,7 @@ public static class UpdatePolicy
     public static bool IsNewerThan(string? offered, string? current)
         => TryParse(offered, out var a) && TryParse(current, out var b) && a > b;
 
-    private static bool TryParse(string? text, out Version version)
+    internal static bool TryParse(string? text, out Version version)
     {
         version = new Version(0, 0);
         if (string.IsNullOrWhiteSpace(text)) return false;

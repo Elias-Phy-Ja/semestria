@@ -47,7 +47,7 @@ public static class AppConstants
     public const string Publisher  = "Elias Wyss";
 
     /// <summary>Version of the legal texts. Bumping it makes everyone accept them again.</summary>
-    public const int LegalVersion = 1;
+    public const int LegalVersion = 2;
 
     /// <summary>Where feedback and bug reports go.</summary>
     public const string GitHubUrl = "https://github.com/Elias-Phy-Ja/semestria";

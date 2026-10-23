@@ -68,6 +68,12 @@ public sealed class SyncConfig
     /// </summary>
     public bool AutoRefreshFeed { get; set; } = true;
 
+    /// <summary>
+    /// Fetch the public news.json some seconds after start and show new messages from the
+    /// developer. Sends nothing about the user; can be switched off in the settings.
+    /// </summary>
+    public bool ShowNews { get; set; } = true;
+
     /// <summary>Hands the diff engine the parts of the config it cares about.</summary>
     public SyncOptions ToSyncOptions() => new()
     {

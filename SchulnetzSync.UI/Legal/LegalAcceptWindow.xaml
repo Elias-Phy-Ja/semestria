@@ -1,0 +1,60 @@
+<Window x:Class="SchulnetzSync.UI.Legal.LegalAcceptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        xmlns:legal="clr-namespace:SchulnetzSync.UI.Legal"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Aktualisierte Bedingungen"
+        Width="680" Height="640"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="28,22,28,22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Die Bedingungen wurden aktualisiert"
+                   FontSize="22" FontWeight="Bold" Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="1" Style="{StaticResource BodyText}" Margin="0,0,0,14"
+                   Text="{x:Static legal:LegalTexts.ChangesSummary}"/>
+
+        <TabControl Grid.Row="2">
+            <TabItem Header="Nutzungsbedingungen">
+                <ScrollViewer Padding="2,8,8,8" VerticalScrollBarVisibility="Auto">
+                    <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.85" LineHeight="18"
+                               Text="{x:Static legal:LegalTexts.Agb}"/>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Datenschutzerklärung">
+                <ScrollViewer Padding="2,8,8,8" VerticalScrollBarVisibility="Auto">
+                    <TextBlock FontSize="12" TextWrapping="Wrap" Opacity="0.85" LineHeight="18"
+                               Text="{x:Static legal:LegalTexts.Datenschutz}"/>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <StackPanel Grid.Row="3" Margin="0,14,0,0">
+            <CheckBox x:Name="ChkAgb" Checked="Check_Changed" Unchecked="Check_Changed"
+                      Content="Ich habe die Nutzungsbedingungen gelesen und akzeptiere sie."/>
+            <CheckBox x:Name="ChkDatenschutz" Checked="Check_Changed" Unchecked="Check_Changed"
+                      Margin="0,6,0,0"
+                      Content="Ich habe die Datenschutzerklärung gelesen und akzeptiere sie."/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="BtnQuit" Content="Semestria beenden"
+                    Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                    Click="BtnQuit_Click"/>
+            <Button x:Name="BtnAccept" Content="Akzeptieren und weiter"
+                    Style="{StaticResource PrimaryButton}" IsEnabled="False"
+                    Click="BtnAccept_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

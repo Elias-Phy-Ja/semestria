@@ -56,6 +56,7 @@ public partial class SettingsPage : Page
             ChkCancel.IsChecked       = config.CancelInsteadOfDelete;
             ChkEnrich.IsChecked       = config.EnrichExamLocationFromLesson;
             ChkAutoRefresh.IsChecked  = config.AutoRefreshFeed;
+            ChkShowNews.IsChecked     = config.ShowNews;
 
             // Tick the radio button for the stored theme.
             switch (config.ResolveTheme())
@@ -265,6 +266,7 @@ public partial class SettingsPage : Page
         config.CancelInsteadOfDelete        = ChkCancel.IsChecked == true;
         config.EnrichExamLocationFromLesson = ChkEnrich.IsChecked == true;
         config.AutoRefreshFeed              = ChkAutoRefresh.IsChecked == true;
+        config.ShowNews                     = ChkShowNews.IsChecked == true;
 
         // Target calendar.
         if (CmbCalendar.SelectedIndex > 0 && CmbCalendar.SelectedItem is string calName)

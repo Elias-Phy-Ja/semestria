@@ -209,7 +209,7 @@ footer {
       <div class="logo-mark"><img src="logo.png" alt="Semestria Logo"></div>
       Semestria
     </a>
-    <a class="nav-back" href="https://elias-phy-ja.github.io/semestria/">← Zurück zur Startseite</a>
+    <a class="nav-back" href="./">← Zurück zur Startseite</a>
   </div>
 </nav>
 
@@ -218,7 +218,7 @@ footer {
   <div class="page-header">
     <p class="page-label">Rechtliches</p>
     <h1>Datenschutz &amp; Nutzungsbedingungen</h1>
-    <p class="page-meta">Version 1.0 · Stand: September 2026</p>
+    <p class="page-meta">Version 2.0 · Stand: Oktober 2026</p>
   </div>
 
   <div class="tabs">
@@ -232,19 +232,19 @@ footer {
     <div class="section">
       <p class="section-num">01</p>
       <h2>Verantwortlicher</h2>
-      <p>EliasWyss («Entwickler»). Semestria ist ein privates Non-Profit-Projekt.</p>
+      <p>Elias Wyss («Entwickler»). Semestria ist ein privates Non-Profit-Projekt.</p>
     </div>
 
     <div class="section">
       <p class="section-num">02</p>
-      <h2>Grundsatz: Keine Cloud, keine Telemetrie</h2>
-      <p>Semestria verarbeitet alle Daten ausschliesslich lokal auf deinem Gerät.</p>
+      <h2>Grundsatz: Deine Daten bleiben bei dir</h2>
+      <p>Semestria verarbeitet deine Daten ausschliesslich lokal auf deinem Gerät.</p>
       <div class="chip-list">
         <span class="chip no">Keine Telemetrie</span>
         <span class="chip no">Keine Nutzungsstatistiken</span>
         <span class="chip no">Kein Tracking</span>
         <span class="chip no">Keine Werbung</span>
-        <span class="chip no">Kein Backend-Server</span>
+        <span class="chip no">Kein Konto, kein Server mit deinen Daten</span>
       </div>
     </div>
 
@@ -271,14 +271,19 @@ footer {
             <td>Nur zu Microsoft Graph API</td>
           </tr>
           <tr>
-            <td>Konfigurationsdaten</td>
-            <td><code style="font-family:var(--f-mono);font-size:.8em">%LOCALAPPDATA%\Semestria\config.json</code></td>
+            <td>Einstellungen, Aufgaben, Notizen, eigene Termine, Noten</td>
+            <td><code style="font-family:var(--f-mono);font-size:.8em">%LOCALAPPDATA%\Semestria\</code></td>
             <td>Keine Übertragung</td>
           </tr>
           <tr>
             <td>Kalendereinträge</td>
-            <td>Arbeitsspeicher (nicht persistiert)</td>
-            <td>Microsoft Graph API → dein Outlook-Kalender</td>
+            <td>Lokal zwischengespeichert</td>
+            <td>Auf Wunsch: Microsoft Graph API → dein Outlook-Kalender</td>
+          </tr>
+          <tr>
+            <td>Gesehene Nachrichten</td>
+            <td><code style="font-family:var(--f-mono);font-size:.8em">%LOCALAPPDATA%\Semestria\seen-news.json</code></td>
+            <td>Keine Übertragung</td>
           </tr>
         </tbody>
       </table>
@@ -289,6 +294,26 @@ footer {
 
     <div class="section">
       <p class="section-num">04</p>
+      <h2>Nachrichten vom Entwickler</h2>
+      <p>Etwa zehn Sekunden nach dem Start lädt die App die öffentliche Datei <code style="font-family:var(--f-mono);font-size:.85em">https://semestria.elias-wyss.ch/news.json</code>. Dabei sendet die App keine Angaben über dich, keine Kennung und keine Daten aus der App.</p>
+      <p>Wie bei jedem Webseitenaufruf erhält der Server deine IP-Adresse und technische Angaben zur Anfrage (Zeitpunkt, angefragte Datei). Die Seite liegt beim Webhoster Hostinger, der solche Zugriffe gemäss seiner Datenschutzerklärung kurzzeitig protokollieren kann. Der Entwickler wertet diese Protokolle nicht aus. Welche Nachrichten du schon gesehen hast, speichert die App nur lokal.</p>
+      <p>Den Abruf kannst du in den Einstellungen der App ausschalten.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">05</p>
+      <h2>Umfragen</h2>
+      <p>Ein Link zu einer Umfrage öffnet sich in deinem Browser. Was du dort angibst, verarbeitet der jeweilige Formulardienst nach seiner eigenen Datenschutzerklärung. Die Teilnahme ist freiwillig; die App überträgt nichts an das Formular.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">06</p>
+      <h2>Optionale Cloud-Funktionen</h2>
+      <p>Zurzeit gibt es keine. Sollten später Cloud-Funktionen angeboten werden, sind sie freiwillig und werden erst nach deiner ausdrücklichen Zustimmung aktiviert. Vorher erfährst du genau, welche Daten wohin gehen, wie sie verschlüsselt sind und wie du sie wieder löschst. Ohne Zustimmung bleibt alles wie in Abschnitt 02 beschrieben.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">07</p>
       <h2>Drittanbieter-Dienste</h2>
       <p>Die App nutzt folgende externe Dienste, auf deren Datenschutzpraktiken wir keinen Einfluss haben:</p>
       <table class="data-table">
@@ -298,41 +323,50 @@ footer {
             <td><a href="https://privacy.microsoft.com" target="_blank" rel="noopener">privacy.microsoft.com</a></td>
           </tr>
           <tr>
+            <td>Microsoft Store</td>
+            <td>Prüfung auf neue Versionen</td>
+          </tr>
+          <tr>
             <td>Schulnetz / Centerboard</td>
             <td>Dein persönlicher iCal-Feed</td>
+          </tr>
+          <tr>
+            <td>Hostinger</td>
+            <td>Webhosting dieser Seite und der Nachrichtendatei</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <div class="section">
-      <p class="section-num">05</p>
+      <p class="section-num">08</p>
       <h2>Deine Rechte</h2>
       <p>Du kannst jederzeit:</p>
       <div class="chip-list">
         <span class="chip">Alle App-Daten löschen<br><small>%LOCALAPPDATA%\Semestria\ entfernen</small></span>
         <span class="chip">Microsoft-Zugriff widerrufen<br><small>account.microsoft.com/privacy</small></span>
+        <span class="chip">Nachrichten ausschalten<br><small>Einstellungen in der App</small></span>
         <span class="chip">App deinstallieren</span>
       </div>
     </div>
 
     <div class="section">
-      <p class="section-num">06</p>
+      <p class="section-num">09</p>
       <h2>Datensicherheit</h2>
-      <p>Feed-URL und Microsoft-Token sind mit DPAPI verschlüsselt. Es findet keine Übertragung an Dritte ausser Microsoft (Kalender-Sync) und deinem Schulnetz-Anbieter (Feed-Abruf) statt.</p>
+      <p>Feed-URL und Microsoft-Token sind mit DPAPI verschlüsselt. Verbindungen zu Schulnetz, Microsoft und dem Nachrichtenserver laufen nur über HTTPS. Es findet keine Übertragung deiner Daten an Dritte ausser Microsoft (Kalender-Sync) und deinem Schulnetz-Anbieter (Feed-Abruf) statt.</p>
     </div>
 
     <div class="section">
-      <p class="section-num">07</p>
-      <h2>Minderjährige</h2>
+      <p class="section-num">10</p>
+      <h2>Kinder und Jugendliche</h2>
       <p>Die App richtet sich an Schülerinnen und Schüler. Es werden keine besonderen Kategorien personenbezogener Daten verarbeitet.</p>
     </div>
 
     <div class="section">
-      <p class="section-num">08</p>
+      <p class="section-num">11</p>
       <h2>Kontakt &amp; Änderungen</h2>
       <p>Bei Fragen oder Anmerkungen: <a href="https://github.com/Elias-Phy-Ja/semestria/issues" target="_blank" rel="noopener">github.com/Elias-Phy-Ja/semestria/issues</a></p>
-      <p>Bei wesentlichen Änderungen dieser Erklärung wird beim nächsten App-Start die aktualisierte Version angezeigt.</p>
+      <p>Bei wesentlichen Änderungen zeigt die App beim nächsten Start die neue Fassung an und fragt erneut nach deiner Zustimmung.</p>
     </div>
 
   </div>
@@ -349,7 +383,7 @@ footer {
     <div class="section">
       <p class="section-num">02</p>
       <h2>Leistungsbeschreibung</h2>
-      <p>Semestria ist eine kostenlose, quelloffene Desktop-App für Windows. Sie liest deinen persönlichen Schulnetz-Kalender und schreibt Prüfungen sowie Schultermine in deinen Microsoft Outlook-Kalender. Die App funktioniert rein lokal auf deinem Gerät — es werden keine Daten an eigene Server übertragen.</p>
+      <p>Semestria ist eine kostenlose, quelloffene Desktop-App für Windows. Sie liest deinen persönlichen Schulnetz-Kalender, zeigt ihn in der App an und schreibt auf Wunsch Prüfungen sowie Schultermine in deinen Microsoft Outlook-Kalender. Dazu kommen Aufgaben, Notizen und Noten, die du selbst einträgst. Deine Daten bleiben auf deinem Gerät.</p>
     </div>
 
     <div class="section">
@@ -364,11 +398,12 @@ footer {
       <p>Die App wird «so wie sie ist» bereitgestellt, ohne jegliche Garantie. Der Entwickler übernimmt keine Haftung für:</p>
       <div class="chip-list">
         <span class="chip">Fehler bei der Synchronisation</span>
-        <span class="chip">Verlust von Kalenderdaten</span>
+        <span class="chip">Verlust von Kalenderdaten, Aufgaben oder Noten</span>
+        <span class="chip">Falsch berechnete Schnitte, Pluspunkte oder Promotionsprognosen</span>
         <span class="chip">Schäden durch Nutzung oder Nicht-Nutzung</span>
         <span class="chip">Unterbrüche der Verfügbarkeit</span>
       </div>
-      <p style="margin-top:12px">Es liegt in deiner Verantwortung, die synchronisierten Daten auf Korrektheit zu prüfen — besonders vor wichtigen Prüfungen.</p>
+      <p style="margin-top:12px">Es liegt in deiner Verantwortung, die Daten auf Korrektheit zu prüfen, besonders vor wichtigen Prüfungen. Massgebend sind immer die Angaben deiner Schule, nicht die Berechnungen der App.</p>
     </div>
 
     <div class="section">
@@ -385,18 +420,30 @@ footer {
 
     <div class="section">
       <p class="section-num">07</p>
+      <h2>Nachrichten und Umfragen</h2>
+      <p>Der Entwickler kann über die App kurze Nachrichten anzeigen, etwa Hinweise zu neuen Versionen oder Links zu Umfragen. Die Teilnahme an Umfragen ist freiwillig. Umfragen laufen über externe Formulardienste, für die deren eigene Bedingungen gelten. Nachrichten lassen sich in den Einstellungen ausschalten.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">08</p>
+      <h2>Optionale Cloud-Funktionen</h2>
+      <p>Zurzeit bietet Semestria keine Cloud-Funktionen an. Sollten später solche dazukommen, etwa Zugriff über eine Web-App, sind sie freiwillig und erst nach deiner ausdrücklichen, separaten Zustimmung aktiv. Ohne diese Zustimmung funktioniert die App weiterhin vollständig lokal. Für die Cloud-Funktionen gelten dann ergänzende Bedingungen, die dir vor der Aktivierung angezeigt werden.</p>
+    </div>
+
+    <div class="section">
+      <p class="section-num">09</p>
       <h2>Open Source</h2>
       <p>Der Quellcode steht unter der MIT-Lizenz auf <a href="https://github.com/Elias-Phy-Ja/semestria" target="_blank" rel="noopener">GitHub</a> zur Verfügung. Du darfst den Code verwenden, verändern und weitergeben, sofern du die Lizenzbedingungen einhältst.</p>
     </div>
 
     <div class="section">
-      <p class="section-num">08</p>
+      <p class="section-num">10</p>
       <h2>Änderungen</h2>
-      <p>Der Entwickler behält sich vor, diese Nutzungsbedingungen jederzeit zu ändern. Bei wesentlichen Änderungen wird beim nächsten Start die aktualisierte Version angezeigt.</p>
+      <p>Der Entwickler behält sich vor, diese Nutzungsbedingungen zu ändern. Bei wesentlichen Änderungen zeigt die App beim nächsten Start die neue Fassung an und fragt erneut nach deiner Zustimmung.</p>
     </div>
 
     <div class="section">
-      <p class="section-num">09</p>
+      <p class="section-num">11</p>
       <h2>Anwendbares Recht</h2>
       <p>Es gilt schweizerisches Recht. Gerichtsstand ist Bern, Schweiz.</p>
     </div>
@@ -412,7 +459,7 @@ footer {
       <div class="foot-meta">© 2026 EliasWyss · Non-Profit · MIT-Lizenz</div>
     </div>
     <div class="foot-links">
-      <a href="https://elias-phy-ja.github.io/semestria/">Startseite</a>
+      <a href="./">Startseite</a>
       <a href="https://github.com/Elias-Phy-Ja/semestria" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/Elias-Phy-Ja/semestria/issues" target="_blank" rel="noopener">Issues</a>
     </div>

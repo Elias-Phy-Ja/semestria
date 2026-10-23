@@ -488,3 +488,7 @@ Packaging/_publish/
 Packaging/_pack/
 Packaging/_out/
 Packaging/helper.csproj
+
+# News admin on Hostinger: secrets and runtime data stay on the server
+docs/admin/config.php
+docs/admin/data/*.json

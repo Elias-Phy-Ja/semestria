@@ -4,6 +4,8 @@ using System.Windows;
 using ModernWpf;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Feed;
+using SchulnetzSync.Core.News;
+using SchulnetzSync.UI.News;
 using SchulnetzSync.UI.Onboarding;
 using SchulnetzSync.UI.Update;
 
@@ -25,6 +27,9 @@ public partial class App : Application
 
     /// <summary>Where update information comes from; a stand-in when --fake-update is set.</summary>
     private IUpdateSourceFactory _updateSources = new StoreUpdateSourceFactory();
+
+    /// <summary>--fake-news: sample messages instead of the real news.json, seen ids ignored.</summary>
+    private static bool _fakeNews;
     private System.Windows.Threading.DispatcherTimer? _reminderTimer;
 
     public App()
@@ -53,6 +58,10 @@ public partial class App : Application
             _updateSources = new FakeUpdateSourceFactory("2.1.0.0", mandatory: true);
         else if (e.Args.Contains("--fake-update", StringComparer.OrdinalIgnoreCase))
             _updateSources = new FakeUpdateSourceFactory("2.1.0.0", mandatory: false);
+
+        // Same idea for the news: shows sample messages without the server
+        if (e.Args.Contains("--fake-news", StringComparer.OrdinalIgnoreCase))
+            _fakeNews = true;
 
         // Theme from the config; with no choice of their own the app starts dark.
         ThemeManager.Current.ApplicationTheme = AppState.Config.ResolveTheme() switch
@@ -109,9 +118,18 @@ public partial class App : Application
         // outcome of one.
         main.StartupFinished += () =>
         {
+            // Changed legal texts come first: nothing runs until they are accepted.
+            if (LegalAcceptWindow.IsNeeded(AppState.Config))
+            {
+                var legal = new LegalAcceptWindow { Owner = main };
+                legal.ShowDialog();
+                if (!legal.Accepted) { Shutdown(); return; }
+            }
+
             if (AppState.Config.AutoRefreshFeed)
                 _ = TryAutoRefreshFeedAsync();
             StartReminderTimer();
+            _ = ShowNewsLaterAsync(main);
         };
 
         // ContentRendered can fire more than once; the startup phase must not.
@@ -250,6 +268,37 @@ public partial class App : Application
             AppState.IsRefreshingFeed = false;
             AppState.Notify();
         }
+    }
+
+    /// <summary>
+    /// Some seconds after the Store check, loads news.json and shows what is new. Runs late
+    /// on purpose so it never competes with the update check or the first paint.
+    /// Offline or a broken file is logged, never shown.
+    /// </summary>
+    private static async Task ShowNewsLaterAsync(Window owner)
+    {
+        if (!AppState.Config.ShowNews) return;
+
+        await Task.Delay(TimeSpan.FromSeconds(10));
+        if (!AppState.Config.ShowNews || !owner.IsVisible) return;
+
+        IReadOnlyList<NewsItem> pending;
+        try
+        {
+            using var http = new HttpClient();
+            INewsSource source = _fakeNews ? new FakeNewsSource() : new HttpNewsSource(http);
+            var feed = await source.FetchAsync();
+            var seen = _fakeNews ? new HashSet<string>() : AppState.SeenNewsIds;
+            pending  = NewsSelector.Pending(feed, seen, DateTimeOffset.Now, AppConstants.Version);
+        }
+        catch (Exception ex)
+        {
+            LogLine($"Nachrichten nicht geladen: {ex.GetType().Name}: {ex.Message}");
+            return;
+        }
+
+        if (pending.Count == 0 || !owner.IsVisible) return;
+        new NewsWindow(pending) { Owner = owner }.Show();
     }
 
     protected override void OnExit(ExitEventArgs e)

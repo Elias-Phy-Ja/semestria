@@ -801,6 +801,23 @@ public static class AppState
         catch { }
     }
 
+    // ── News already shown ───────────────────────────────────────────────────
+
+    private static readonly string _seenNewsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Semestria", "seen-news.json");
+
+    private static readonly HashSet<string> _seenNews = LoadJson<HashSet<string>>(_seenNewsPath) ?? [];
+
+    /// <summary>Ids of the developer messages this user has already seen.</summary>
+    public static IReadOnlySet<string> SeenNewsIds => _seenNews;
+
+    public static void MarkNewsSeen(IEnumerable<string> ids)
+    {
+        foreach (var id in ids) _seenNews.Add(id);
+        SaveJson(_seenNewsPath, _seenNews);
+    }
+
     // ── Resetting the calendar ───────────────────────────────────────────────
 
     /// <summary>Clears hidden entries and hand-made events. Colours stay.</summary>

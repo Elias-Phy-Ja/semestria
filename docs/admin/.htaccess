@@ -1,0 +1,16 @@
+# Admin area: no indexing, no framing, strict content security policy.
+# The PHP files repeat the important headers, in case mod_headers is missing.
+
+Options -Indexes
+
+<IfModule mod_headers.c>
+    Header always set Content-Security-Policy "default-src 'none'; style-src 'self'; img-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
+    Header always set X-Robots-Tag "noindex, nofollow"
+    Header always set Cache-Control "no-store"
+</IfModule>
+
+# Only the entry page and the stylesheet are reachable; lib.php, config.php and the
+# data folder must never be requested directly.
+<FilesMatch "^(lib|config|config\.example)\.php$">
+    Require all denied
+</FilesMatch>
