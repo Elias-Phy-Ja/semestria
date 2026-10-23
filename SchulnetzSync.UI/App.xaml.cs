@@ -237,7 +237,7 @@ public partial class App : Application
 
             if (AppState.IsSyncing) return; // check again, a manual sync may have started meanwhile
             var feedEvents = FeedParser.Parse(icsContent);
-            AppState.CachedFeedEvents = feedEvents;
+            AppState.ApplyFeed(feedEvents, FeedParser.CheckPlausibility(icsContent));
             AppState.MarkFeedRefreshed(DateTimeOffset.Now);
         }
         catch

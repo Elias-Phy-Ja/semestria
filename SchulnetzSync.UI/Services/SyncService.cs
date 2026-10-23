@@ -78,7 +78,7 @@ public sealed class SyncService
         var feedEvents  = FeedParser.Parse(icsContent);
 
         // Fill the cache right away, so the calendar page has something to show.
-        AppState.CachedFeedEvents = feedEvents;
+        AppState.ApplyFeed(feedEvents, feedHealth);
         AppState.MarkFeedRefreshed(DateTimeOffset.Now);
 
         var pruefCount  = feedEvents.Count(e => e.Type == SchulnetzEventType.Pruefung);

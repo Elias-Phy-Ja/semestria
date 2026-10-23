@@ -170,8 +170,40 @@ public partial class EventsPage : WpfPage
         var manualEvents = AppState.ManualAsEvents()
             .Where(e => !suppressed.Contains(e.Key) && MatchFilter(e));
 
-        return feedEvents.Concat(manualEvents).ToList();
+        var cancelled = AppState.CancelledLessons
+            .Where(e => !suppressed.Contains(e.Key) && MatchFilter(e));
+
+        return feedEvents.Concat(manualEvents).Concat(cancelled).ToList();
     }
+
+    // ── Cancelled lessons ────────────────────────────────────────────────────
+
+    private static readonly Color _cancelledBadgeColor = Color.FromRgb(0xB9, 0x1C, 0x1C);
+
+    /// <summary>The red "Ausfall" tag on a cancelled lesson.</summary>
+    private static WpfBorder CancelledBadge(double fontSize) => new()
+    {
+        Background          = new SolidColorBrush(_cancelledBadgeColor),
+        CornerRadius        = new CornerRadius(3),
+        Padding             = new Thickness(4, 0, 4, 1),
+        Margin              = new Thickness(0, 0, 4, 0),
+        HorizontalAlignment = WpfHA.Left,
+        VerticalAlignment   = VerticalAlignment.Center,
+        Child = new WpfTextBlock
+        {
+            Text       = "Ausfall",
+            FontSize   = fontSize,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = WpfBrushes.White
+        }
+    };
+
+    /// <summary>
+    /// Greyed-out background for a cancelled lesson: a faint tint of its own colour, so the
+    /// subject stays recognisable while the text follows the light or dark theme.
+    /// </summary>
+    private static Brush CancelledBackground(Color color)
+        => new SolidColorBrush(Color.FromArgb(38, color.R, color.G, color.B));
 
     private bool MatchFilter(SchulnetzEvent e) => _filter switch
     {
@@ -341,7 +373,7 @@ public partial class EventsPage : WpfPage
         bool isPruefung   = ev.Type == SchulnetzEventType.Pruefung;
         var (title, rest) = ShortTitle(ev);
         pill.ToolTip      = ev.Summary;
-        pill.Child = new WpfTextBlock
+        var text = new WpfTextBlock
         {
             Text         = timePrefix + title + (rest.Length > 0 ? " · " + rest : ""),
             FontSize     = 10,
@@ -349,6 +381,23 @@ public partial class EventsPage : WpfPage
             Foreground   = WpfBrushes.White,
             TextTrimming = TextTrimming.CharacterEllipsis
         };
+
+        if (AppState.IsCancelledLesson(ev.Key))
+        {
+            pill.Background      = CancelledBackground(color);
+            pill.ToolTip         = "Ausgefallen: " + ev.Summary;
+            text.Foreground      = (Brush)FindResource("SystemControlForegroundBaseHighBrush");
+            text.Opacity         = 0.55;
+            text.TextDecorations = TextDecorations.Strikethrough;
+            var row = new DockPanel { LastChildFill = true };
+            row.Children.Add(CancelledBadge(8));
+            row.Children.Add(text);
+            pill.Child = row;
+        }
+        else
+        {
+            pill.Child = text;
+        }
 
         pill.MouseLeftButtonUp += EventPill_MouseUp;
         return pill;
@@ -780,6 +829,23 @@ public partial class EventsPage : WpfPage
             });
         }
 
+        if (AppState.IsCancelledLesson(ev.Key))
+        {
+            // Greyed out and struck through, but still readable in both themes
+            card.Background      = CancelledBackground(color);
+            card.BorderBrush     = new SolidColorBrush(Color.FromArgb(120, color.R, color.G, color.B));
+            card.BorderThickness = new Thickness(1);
+            card.ToolTip         = "Ausgefallen: " + ev.Summary;
+            var themeText = (Brush)FindResource("SystemControlForegroundBaseHighBrush");
+            foreach (var tb in inner.Children.OfType<WpfTextBlock>())
+            {
+                tb.Foreground      = themeText;
+                tb.Opacity         = 0.55;
+                tb.TextDecorations = TextDecorations.Strikethrough;
+            }
+            inner.Children.Insert(0, CancelledBadge(8));
+        }
+
         var subject = CommentSubjectOf(ev);
         if (subject is not null && AppState.CommentCount(subject) > 0)
         {
@@ -844,9 +910,12 @@ public partial class EventsPage : WpfPage
         bool isPruefung = ev.Type == SchulnetzEventType.Pruefung;
         bool isLektion  = ev.Type == SchulnetzEventType.Lektion;
         bool isManual   = EventKeys.IsManual(ev.Key);
+        bool isCancelled = isLektion && AppState.IsCancelledLesson(ev.Key);
 
         // Panel heading
-        TxtPanelTitle.Text       = isPruefung ? "⚠  PRÜFUNG" : isLektion ? "📘  STUNDE" : "📌  TERMIN";
+        TxtPanelTitle.Text       = isPruefung  ? "⚠  PRÜFUNG"
+                                 : isCancelled ? "📘  STUNDE · AUSFALL"
+                                 : isLektion   ? "📘  STUNDE" : "📌  TERMIN";
         TxtPanelTitle.Foreground = new SolidColorBrush(color);
         BtnDeleteFromApp.Tag     = ev;
 
@@ -864,13 +933,17 @@ public partial class EventsPage : WpfPage
         });
 
         // Title
+        if (isCancelled)
+            DetailContent.Children.Add(CancelledBadge(11));
         DetailContent.Children.Add(new WpfTextBlock
         {
-            Text         = ev.Summary,
-            FontSize     = 16,
-            FontWeight   = FontWeights.Bold,
-            TextWrapping = TextWrapping.Wrap,
-            Margin       = new Thickness(0, 0, 0, 16)
+            Text            = ev.Summary,
+            FontSize        = 16,
+            FontWeight      = FontWeights.Bold,
+            TextWrapping    = TextWrapping.Wrap,
+            TextDecorations = isCancelled ? TextDecorations.Strikethrough : null,
+            Opacity         = isCancelled ? 0.6 : 1.0,
+            Margin          = new Thickness(0, isCancelled ? 6 : 0, 0, 16)
         });
 
         // Date
@@ -887,8 +960,10 @@ public partial class EventsPage : WpfPage
             DetailContent.Children.Add(MakeDetailRow("📍", ev.Location!));
 
         // What kind of entry this is
-        var typeHint = isPruefung ? "Als Prüfung klassifiziert."
-                     : isLektion  ? $"Fach: {colorKey}"
+        var typeHint = isPruefung  ? "Als Prüfung klassifiziert."
+                     : isCancelled ? $"Fach: {colorKey}. Diese Stunde ist aus dem Schulnetz verschwunden, " +
+                                     "bevor sie stattfand – sie fällt aus."
+                     : isLektion   ? $"Fach: {colorKey}"
                      : isManual   ? "Manuell erstellter Eintrag."
                      :              "Als Schultermin klassifiziert.";
         DetailContent.Children.Add(new WpfTextBlock

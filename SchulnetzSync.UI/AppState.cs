@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using SchulnetzSync.Core.Configuration;
+using SchulnetzSync.Core.Feed;
 using SchulnetzSync.Core.Model;
 using SchulnetzSync.UI.Model;
 
@@ -109,6 +110,68 @@ public static class AppState
             Directory.CreateDirectory(Path.GetDirectoryName(_cachePath)!);
             File.WriteAllText(_cachePath,
                 JsonSerializer.Serialize(_cachedFeedEvents, _eventJsonOpts));
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Takes in a freshly parsed feed: replaces the cache and, if the feed looks whole,
+    /// compares its lessons with the last snapshot to find cancelled ones.
+    /// </summary>
+    public static void ApplyFeed(IReadOnlyList<SchulnetzEvent> feedEvents, FeedHealth health)
+    {
+        if (health.IsHealthy)
+        {
+            // First run of a version with this feature: the old cache is the best guess
+            // of the timetable as it was before.
+            var previous = _knownLessons ?? LessonTracker.Seed(_cachedFeedEvents);
+            _knownLessons = LessonTracker.Update(previous, feedEvents, DateTimeOffset.Now);
+            SaveKnownLessons();
+        }
+
+        CachedFeedEvents = feedEvents;
+    }
+
+    // ── Cancelled lessons ────────────────────────────────────────────────────
+    //
+    // The feed drops a cancelled lesson without a trace, so the app keeps the timetable
+    // of the last refresh and compares (see LessonTracker). Shown in the in-app calendar
+    // only, never written to Outlook.
+
+    private static readonly string _knownLessonsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Semestria", "known-lessons.json");
+
+    // Null until the first refresh with this feature, so ApplyFeed knows to seed it.
+    private static IReadOnlyList<KnownLesson>? _knownLessons = LoadKnownLessons();
+
+    /// <summary>Lessons that vanished from the feed before they took place.</summary>
+    public static IEnumerable<SchulnetzEvent> CancelledLessons
+        => (_knownLessons ?? []).Where(k => k.IsCancelled).Select(k => k.Lesson);
+
+    /// <summary>True when this key belongs to a cancelled lesson.</summary>
+    public static bool IsCancelledLesson(string key)
+        => _knownLessons?.Any(k => k.IsCancelled && k.Lesson.Key == key) == true;
+
+    private static IReadOnlyList<KnownLesson>? LoadKnownLessons()
+    {
+        try
+        {
+            if (File.Exists(_knownLessonsPath))
+                return JsonSerializer.Deserialize<List<KnownLesson>>(
+                    File.ReadAllText(_knownLessonsPath), _eventJsonOpts);
+        }
+        catch { /* corrupt file: start over, which only means no cancellations until next time */ }
+        return null;
+    }
+
+    private static void SaveKnownLessons()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_knownLessonsPath)!);
+            File.WriteAllText(_knownLessonsPath,
+                JsonSerializer.Serialize(_knownLessons, _eventJsonOpts));
         }
         catch { }
     }
