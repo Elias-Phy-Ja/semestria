@@ -4,6 +4,7 @@ using SchulnetzSync.Core.Calendar;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Feed;
 using SchulnetzSync.Core.Model;
+using SchulnetzSync.Core.Profiles;
 using SchulnetzSync.Core.Sync;
 
 // Command line entry point. Mostly here for scheduled runs and for debugging the
@@ -44,7 +45,9 @@ rootCmd.SetHandler(async ctx =>
     bool confirm = ctx.ParseResult.GetValueForOption(confirmOpt);
     string? feedUrl = ctx.ParseResult.GetValueForOption(feedOpt);
 
-    var config = ConfigManager.Load();
+    // Runs as whichever profile is active in the app; it owns the files and the Outlook events.
+    var profile = ProfileBootstrap.Initialize(Environment.UserName, DateTimeOffset.Now).Active;
+    var config  = ConfigManager.Load();
 
     // --login: sign in and nothing else, so the silent runs afterwards have a token.
     if (login)
@@ -76,7 +79,7 @@ rootCmd.SetHandler(async ctx =>
         }
 
         var token   = await GetTokenAsync(config, silent, ctx); if (ctx.ExitCode != 0) return;
-        var target  = new GraphCalendarTarget(token!);
+        var target  = new GraphCalendarTarget(token!, profile.CalendarOwner);
         Console.WriteLine($"Lösche alle {purgeType}-Einträge...");
         var purged = await target.PurgeAsync(purgeType, config.CalendarId,
             new Progress<string>(Console.WriteLine), ctx.GetCancellationToken());
@@ -148,7 +151,7 @@ rootCmd.SetHandler(async ctx =>
             ctx.ExitCode = 1; return;
         }
         var token = await GetTokenAsync(config, silent, ctx); if (ctx.ExitCode != 0) return;
-        var target = new GraphCalendarTarget(token!);
+        var target = new GraphCalendarTarget(token!, profile.CalendarOwner);
 
         var from = feedEvents.Count > 0 ? feedEvents.Min(e => e.Start).AddDays(-1) : DateTimeOffset.UtcNow;
         var to   = feedEvents.Count > 0 ? feedEvents.Max(e => e.Start).AddDays(1)  : DateTimeOffset.UtcNow.AddYears(1);
@@ -184,7 +187,7 @@ rootCmd.SetHandler(async ctx =>
     }
 
     var token2   = await GetTokenAsync(config, silent, ctx); if (ctx.ExitCode != 0) return;
-    var calendar = new GraphCalendarTarget(token2!);
+    var calendar = new GraphCalendarTarget(token2!, profile.CalendarOwner);
     var progress = silent ? null : new Progress<string>(Console.WriteLine);
     await calendar.ExecutePlanAsync(plan, options, progress, ctx.GetCancellationToken());
 

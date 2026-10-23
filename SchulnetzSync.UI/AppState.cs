@@ -5,6 +5,7 @@ using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Feed;
 using SchulnetzSync.Core.Grades;
 using SchulnetzSync.Core.Model;
+using SchulnetzSync.Core.Profiles;
 using SchulnetzSync.UI.Model;
 
 namespace SchulnetzSync.UI;
@@ -24,7 +25,7 @@ public sealed record ManualEventData(
 /// the colours and the comments. Every page reads from here and subscribes to
 /// <see cref="Changed"/> rather than talking to the other pages.
 ///
-/// Everything is written to %LOCALAPPDATA%\Semestria as it changes, so a crash costs at
+/// Everything is written to the active profile's folder (see DataPaths) as it changes, so a crash costs at
 /// most the keystroke that was in flight.
 /// </summary>
 public static class AppState
@@ -64,9 +65,7 @@ public static class AppState
     }
 
     // ── Cached feed, kept on disk ────────────────────────────────────────────
-    private static readonly string _cachePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "cached-events.json");
+    private static readonly string _cachePath = DataPaths.ProfileFile("cached-events.json");
 
     // Enums as strings, otherwise SchulnetzEventType does not survive the round trip
     private static readonly JsonSerializerOptions _eventJsonOpts = new()
@@ -139,9 +138,7 @@ public static class AppState
     // of the last refresh and compares (see LessonTracker). Shown in the in-app calendar
     // only, never written to Outlook.
 
-    private static readonly string _knownLessonsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "known-lessons.json");
+    private static readonly string _knownLessonsPath = DataPaths.ProfileFile("known-lessons.json");
 
     // Null until the first refresh with this feature, so ApplyFeed knows to seed it.
     private static IReadOnlyList<KnownLesson>? _knownLessons = LoadKnownLessons();
@@ -178,9 +175,7 @@ public static class AppState
     }
 
     // ── Entries the user hid ─────────────────────────────────────────────────
-    private static readonly string _suppressedPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "suppressed.json");
+    private static readonly string _suppressedPath = DataPaths.ProfileFile("suppressed.json");
 
     private static HashSet<string> _suppressedKeys = LoadSuppressed();
 
@@ -213,9 +208,7 @@ public static class AppState
     }
 
     // ── Colours per category and per subject ─────────────────────────────────
-    private static readonly string _colorsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "colors.json");
+    private static readonly string _colorsPath = DataPaths.ProfileFile("colors.json");
 
     private static Dictionary<string, string> _categoryColors = LoadColors();
 
@@ -269,9 +262,7 @@ public static class AppState
     // (P_65100), but a lesson key contains date, time and room — so if that exact
     // lesson gets rescheduled, its individual colour falls back to the subject one.
 
-    private static readonly string _eventColorsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "event-colors.json");
+    private static readonly string _eventColorsPath = DataPaths.ProfileFile("event-colors.json");
 
     private static readonly Dictionary<string, string> _eventColors = LoadEventColors();
 
@@ -346,9 +337,7 @@ public static class AppState
     }
 
     // ── Hand-made entries ────────────────────────────────────────────────────
-    private static readonly string _manualPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "manual-events.json");
+    private static readonly string _manualPath = DataPaths.ProfileFile("manual-events.json");
 
     private static List<ManualEventData> _manualEvents = LoadManual();
     public static IReadOnlyList<ManualEventData> ManualEvents => _manualEvents;
@@ -426,9 +415,7 @@ public static class AppState
     }
 
     // ── Tasks ────────────────────────────────────────────────────────────────
-    private static readonly string _tasksPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "tasks.json");
+    private static readonly string _tasksPath = DataPaths.ProfileFile("tasks.json");
 
     private static List<TaskItem> _tasks = LoadTasks();
 
@@ -472,9 +459,7 @@ public static class AppState
     }
 
     // ── Task lists ───────────────────────────────────────────────────────────
-    private static readonly string _taskListsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "task-lists.json");
+    private static readonly string _taskListsPath = DataPaths.ProfileFile("task-lists.json");
 
     private static List<string> _taskLists = LoadTaskLists();
 
@@ -528,9 +513,7 @@ public static class AppState
     // behind it, and even a list called "DEU" should be allowed to look different from the
     // DEU lessons.
 
-    private static readonly string _taskListColorsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "task-list-colors.json");
+    private static readonly string _taskListColorsPath = DataPaths.ProfileFile("task-list-colors.json");
 
     private static readonly Dictionary<string, string> _taskListColors = LoadTaskListColors();
 
@@ -647,9 +630,7 @@ public static class AppState
     }
 
     // ── Subject comments ─────────────────────────────────────────────────────
-    private static readonly string _subjectCommentsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "subject-comments.json");
+    private static readonly string _subjectCommentsPath = DataPaths.ProfileFile("subject-comments.json");
 
     private static readonly List<SubjectComment> _subjectComments = LoadSubjectComments();
 
@@ -727,13 +708,9 @@ public static class AppState
     // Typed in by hand, local only. The promotion rule the user picked (or built) is
     // stored next to them.
 
-    private static readonly string _gradesPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "grades.json");
+    private static readonly string _gradesPath = DataPaths.ProfileFile("grades.json");
 
-    private static readonly string _promotionRulePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "promotion-rule.json");
+    private static readonly string _promotionRulePath = DataPaths.ProfileFile("promotion-rule.json");
 
     private static readonly List<GradeEntry> _grades = LoadJson<List<GradeEntry>>(_gradesPath) ?? [];
 
@@ -803,9 +780,7 @@ public static class AppState
 
     // ── News already shown ───────────────────────────────────────────────────
 
-    private static readonly string _seenNewsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "seen-news.json");
+    private static readonly string _seenNewsPath = DataPaths.ProfileFile("seen-news.json");
 
     private static readonly HashSet<string> _seenNews = LoadJson<HashSet<string>>(_seenNewsPath) ?? [];
 

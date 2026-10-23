@@ -39,8 +39,9 @@ public partial class AboutPage : Page
     private void BtnReset_Click(object sender, RoutedEventArgs e)
     {
         var result = MessageBox.Show(
-            "Alle Einstellungen (Feed-URL, Konto, Einstellungen) werden gelöscht " +
-            "und das Onboarding startet neu.\n\nFortfahren?",
+            $"Alle Daten des Profils «{ProfileSession.Active.Name}» (Feed-URL, Microsoft-Konto, " +
+            "Einstellungen, Aufgaben, Noten) werden gelöscht und das Onboarding startet neu. " +
+            "Andere Profile bleiben unberührt.\n\nFortfahren?",
             "App zurücksetzen",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -49,9 +50,8 @@ public partial class AboutPage : Page
 
         try
         {
-            var dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Semestria");
+            // Only this profile's folder; the profile list and the other people stay.
+            var dir = SchulnetzSync.Core.Profiles.DataPaths.ProfileDirectory;
 
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);

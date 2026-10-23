@@ -37,6 +37,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         TxtLoadingVersion.Text = "Version " + AppConstants.Version;
+        ShowProfileHeader();
     }
 
     // ═══════════════════════════════════════════════════════════════════════

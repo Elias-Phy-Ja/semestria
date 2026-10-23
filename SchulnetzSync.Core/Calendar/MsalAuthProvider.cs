@@ -1,11 +1,12 @@
 using Microsoft.Identity.Client;
 using Microsoft.Identity.Client.Extensions.Msal;
+using SchulnetzSync.Core.Profiles;
 
 namespace SchulnetzSync.Core.Calendar;
 
 /// <summary>
 /// Sign-in against Microsoft Graph through MSAL. The token cache lives under
-/// %LOCALAPPDATA%\Semestria and is protected by DPAPI.
+/// the active profile's folder, one sign-in per profile, and is protected by DPAPI.
 /// </summary>
 public sealed class MsalAuthProvider
 {
@@ -78,9 +79,8 @@ public sealed class MsalAuthProvider
 
     private static void RegisterTokenCache(ITokenCache tokenCache)
     {
-        var cacheDir  = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Semestria");
+        // Per profile: every person signs in with their own Microsoft account
+        var cacheDir  = DataPaths.ProfileDirectory;
 
         Directory.CreateDirectory(cacheDir);
 

@@ -1,7 +1,7 @@
 namespace SchulnetzSync.Core.Calendar;
 
 /// <summary>
-/// The four extended properties we stamp on every event we create. They are how the
+/// The extended properties we stamp on every event we create. They are how the
 /// app recognises its own entries later — without them a sync could not tell an exam
 /// it wrote from an appointment the user typed in by hand.
 ///
@@ -15,7 +15,7 @@ namespace SchulnetzSync.Core.Calendar;
 /// </summary>
 public static class ExtendedPropertyIds
 {
-    // One GUID family for all four, which makes them easy to spot in a Graph trace.
+    // One GUID family for all of them, which makes them easy to spot in a Graph trace.
     private const string Namespace = "BC709B49-3C5D-4FB0-AA36-C9A0EFAE";
 
     /// <summary>The Schulnetz key, e.g. "P_65100".</summary>
@@ -29,4 +29,11 @@ public static class ExtendedPropertyIds
 
     /// <summary>ISO date of the first run in which the event was missing from the feed.</summary>
     public const string MissingSince = $"String {{{Namespace}DF21}} Name schulnetzMissingSince";
+
+    /// <summary>
+    /// Tag of the Semestria profile that wrote the event. Two profiles may share a calendar;
+    /// this keeps each sync to its own events. Events from before profiles have none and
+    /// belong to the first profile.
+    /// </summary>
+    public const string Profile      = $"String {{{Namespace}DF22}} Name schulnetzProfile";
 }

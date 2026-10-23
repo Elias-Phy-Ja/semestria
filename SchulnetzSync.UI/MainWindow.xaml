@@ -10,6 +10,40 @@
         Width="960" Height="640"
         WindowStartupLocation="CenterScreen">
 
+    <Window.Resources>
+        <!-- Flat button for the profile switcher and its menu: no border, a hover fill -->
+        <Style x:Key="FlatMenuButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1A808080"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2A808080"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1A808080"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Grid>
 
         <ui:NavigationView x:Name="NavView"
@@ -24,8 +58,8 @@
 
         <!-- ── Sidebar logo ── -->
         <ui:NavigationView.PaneHeader>
-            <StackPanel Margin="16,12,16,8">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,2">
+            <StackPanel Margin="10,12,10,8">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,8">
                     <Image Source="pack://application:,,,/Resources/Semestra_Logo.png"
                            Width="22" Height="22" Margin="0,0,8,0"
                            VerticalAlignment="Center"
@@ -34,9 +68,53 @@
                                FontSize="17" FontWeight="Bold"
                                Foreground="{StaticResource AccentBrush}"
                                VerticalAlignment="Center"/>
+                    <TextBlock Text="{x:Static local:AppConstants.VersionShort}"
+                               FontSize="11" Opacity="0.45" Margin="8,3,0,0"
+                               VerticalAlignment="Center"/>
                 </StackPanel>
-                <TextBlock Text="{x:Static local:AppConstants.VersionShort}"
-                           FontSize="11" Opacity="0.45"/>
+
+                <!-- Profile switcher: one click, like the account picker in Teams -->
+                <Button x:Name="BtnProfile" Style="{StaticResource FlatMenuButton}"
+                        HorizontalContentAlignment="Stretch"
+                        ToolTip="Profil wechseln"
+                        AutomationProperties.Name="Profil wechseln"
+                        Click="BtnProfile_Click">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="AvatarCircle" Width="30" Height="30" CornerRadius="15"
+                                Background="{StaticResource AccentBrush}">
+                            <TextBlock x:Name="TxtAvatar" Foreground="White" FontSize="12"
+                                       FontWeight="SemiBold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="10,0,6,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtProfileName" FontSize="14" FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="TxtProfileHint" FontSize="11" Opacity="0.55"
+                                       Text="Profil wechseln"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="&#xE70D;" FontSize="10" Opacity="0.6"
+                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                </Button>
+
+                <Popup x:Name="ProfilePopup"
+                       PlacementTarget="{Binding ElementName=BtnProfile}"
+                       Placement="Bottom" VerticalOffset="4"
+                       StaysOpen="False" AllowsTransparency="True">
+                    <Border Width="264" CornerRadius="10" Padding="8"
+                            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="1">
+                        <!-- Filled in code: profiles, then add / rename / remove -->
+                        <StackPanel x:Name="ProfileMenu"/>
+                    </Border>
+                </Popup>
             </StackPanel>
         </ui:NavigationView.PaneHeader>
 

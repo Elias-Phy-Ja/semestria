@@ -2,6 +2,7 @@ using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions.Authentication;
 using SchulnetzSync.Core.Model;
+using SchulnetzSync.Core.Profiles;
 using SchulnetzSync.Core.Sync;
 
 namespace SchulnetzSync.Core.Calendar;
@@ -9,7 +10,7 @@ namespace SchulnetzSync.Core.Calendar;
 /// <summary>
 /// The real <see cref="ICalendarTarget"/>, talking to Microsoft Graph.
 ///
-/// Reading:  calendarView with $expand over all four extended properties, one request per window.
+/// Reading:  calendarView with $expand over all our extended properties, one request per window.
 /// Writing:  one request per action, in plan order.
 /// All-day:  isAllDay=true, midnight to midnight, end exclusive, timezone "W. Europe Standard Time".
 /// Category: every written event gets "Schulnetz: Prüfung" or "Schulnetz: Termin", so the
@@ -34,8 +35,13 @@ public sealed class GraphCalendarTarget : ICalendarTarget
 
     private readonly GraphServiceClient _graph;
 
-    public GraphCalendarTarget(string accessToken)
+    /// <summary>The profile syncing; it only ever sees and touches its own events.</summary>
+    private readonly CalendarOwner _owner;
+
+    public GraphCalendarTarget(string accessToken, CalendarOwner owner)
     {
+        ArgumentNullException.ThrowIfNull(owner);
+        _owner = owner;
         var authProvider = new BaseBearerTokenAuthenticationProvider(
             new StaticTokenProvider(accessToken));
         _graph = new GraphServiceClient(authProvider);
@@ -49,7 +55,7 @@ public sealed class GraphCalendarTarget : ICalendarTarget
         CancellationToken ct = default)
     {
         // Graph accepts only ONE singleValueExtendedProperties expand; writing several
-        // next to each other silently returns an incomplete set. So all four ids go into
+        // next to each other silently returns an incomplete set. So all ids go into
         // a single filter joined with "or".
         var idFilter = string.Join(" or ", new[]
         {
@@ -57,6 +63,7 @@ public sealed class GraphCalendarTarget : ICalendarTarget
             ExtendedPropertyIds.Type,
             ExtendedPropertyIds.Hash,
             ExtendedPropertyIds.MissingSince,
+            ExtendedPropertyIds.Profile,
         }.Select(id => $"id eq '{id}'"));
 
         var expandFilter = $"singleValueExtendedProperties($filter={idFilter})";
@@ -102,7 +109,7 @@ public sealed class GraphCalendarTarget : ICalendarTarget
 
         // Everything without our key property belongs to the user, so drop it here.
         var tracked = events
-            .Select(TryMapToTracked)
+            .Select(e => TryMapToTracked(e, _owner))
             .Where(t => t is not null)
             .Select(t => t!)
             .ToList();
@@ -335,7 +342,7 @@ public sealed class GraphCalendarTarget : ICalendarTarget
         };
     }
 
-    private static void AddExtendedProperties(
+    private void AddExtendedProperties(
         Event ev, string key, string type, string hash, string? missingSince)
     {
         ev.SingleValueExtendedProperties =
@@ -344,13 +351,14 @@ public sealed class GraphCalendarTarget : ICalendarTarget
             new() { Id = ExtendedPropertyIds.Type,        Value = type },
             new() { Id = ExtendedPropertyIds.Hash,        Value = hash },
             new() { Id = ExtendedPropertyIds.MissingSince, Value = missingSince ?? "" },
+            new() { Id = ExtendedPropertyIds.Profile,     Value = _owner.ProfileTag },
         ];
     }
     /// <summary>
     /// Turns a Graph event back into a <see cref="TrackedEvent"/>, or null when it is
     /// not one of ours.
     /// </summary>
-    private static TrackedEvent? TryMapToTracked(Event ev)
+    private static TrackedEvent? TryMapToTracked(Event ev, CalendarOwner owner)
     {
         if (ev.Id is null) return null;
 
@@ -374,6 +382,9 @@ public sealed class GraphCalendarTarget : ICalendarTarget
 
         var key  = GetProp(ExtendedPropertyIds.Key);
         if (key is null) return null;   // someone else wrote this event
+
+        // Written by Semestria, but for another profile: not ours to change or delete
+        if (!owner.Owns(GetProp(ExtendedPropertyIds.Profile))) return null;
 
         var typeStr  = GetProp(ExtendedPropertyIds.Type);
         var hash     = GetProp(ExtendedPropertyIds.Hash);

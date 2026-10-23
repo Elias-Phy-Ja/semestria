@@ -211,7 +211,7 @@ public partial class SettingsPage : Page
             try   { token = await auth.AcquireTokenSilentAsync(); }
             catch { return; } // no token, so there is nothing to list
 
-            var target = new GraphCalendarTarget(token);
+            var target = new GraphCalendarTarget(token, ProfileSession.Owner);
             var cals   = await target.GetCalendarsAsync();
 
             Dispatcher.Invoke(() =>
@@ -321,7 +321,7 @@ public partial class SettingsPage : Page
             catch (InteractiveLoginRequiredException)
             { token = await auth.AcquireTokenInteractiveAsync(); }
 
-            var target = new GraphCalendarTarget(token);
+            var target = new GraphCalendarTarget(token, ProfileSession.Owner);
             var count  = await target.PurgeAllAsync(
                 AppState.Config.CalendarId,
                 new Progress<string>(msg => Dispatcher.Invoke(

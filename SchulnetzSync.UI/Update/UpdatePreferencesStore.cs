@@ -7,15 +7,14 @@ namespace SchulnetzSync.UI.Update;
 /// <summary>
 /// Loads and saves the snooze state.
 ///
-/// Sits under %LOCALAPPDATA%\Semestria next to the config, the tasks and the cache —
+/// Sits in %LOCALAPPDATA%\Semestria next to profiles.json, shared by all profiles —
 /// deliberately not in ApplicationData.Current.LocalFolder, which throws for unpackaged
 /// starts and therefore on every "dotnet run" during development.
 /// </summary>
 public static class UpdatePreferencesStore
 {
-    private static readonly string Path = System.IO.Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria", "update-prefs.json");
+    // Machine-wide: an update is installed once for every profile
+    private static readonly string Path = SchulnetzSync.Core.Profiles.DataPaths.GlobalFile("update-prefs.json");
 
     /// <summary>
     /// Reads the state. A missing or damaged file falls back to the default,

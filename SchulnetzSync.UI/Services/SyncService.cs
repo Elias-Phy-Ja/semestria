@@ -122,7 +122,7 @@ public sealed class SyncService
         catch (InteractiveLoginRequiredException)
         { token = await auth.AcquireTokenInteractiveAsync(ct); }
 
-        var calendar = new GraphCalendarTarget(token);
+        var calendar = new GraphCalendarTarget(token, ProfileSession.Owner);
         var options  = config.ToSyncOptions();
         // The read window has to cover the hand-made entries too, otherwise the sync
         // cannot find them again in the calendar and would create them a second time.

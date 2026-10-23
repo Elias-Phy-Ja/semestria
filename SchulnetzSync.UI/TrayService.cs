@@ -156,7 +156,7 @@ public sealed class TrayService : IDisposable
         var auth  = new MsalAuthProvider(clientId);
         var token = await auth.AcquireTokenSilentAsync();
 
-        var calendar = new GraphCalendarTarget(token);
+        var calendar = new GraphCalendarTarget(token, ProfileSession.Owner);
         var options  = config.ToSyncOptions();
 
         var from    = feedEvents.Count > 0 ? feedEvents.Min(e => e.Start).AddDays(-1) : DateTimeOffset.UtcNow;

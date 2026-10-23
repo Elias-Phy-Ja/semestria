@@ -1,20 +1,19 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using SchulnetzSync.Core.Profiles;
 
 namespace SchulnetzSync.Core.Configuration;
 
 /// <summary>
-/// Reads and writes <see cref="SyncConfig"/> in the user AppData folder.
+/// Reads and writes <see cref="SyncConfig"/> in the active profile's folder.
 /// The feed URL goes through DPAPI, so the file alone is useless on another machine.
 /// </summary>
 public static class ConfigManager
 {
-    private static readonly string ConfigDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Semestria");
-
-    private static readonly string ConfigPath = Path.Combine(ConfigDir, "config.json");
+    // Asked on every use: the folder belongs to the active profile (see DataPaths).
+    private static string ConfigDir  => DataPaths.ProfileDirectory;
+    private static string ConfigPath => DataPaths.ProfileFile("config.json");
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {

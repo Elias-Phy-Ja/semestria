@@ -116,7 +116,7 @@ public static class LegalTexts
 
         3.1 Feed-URL (Schulnetz-Kalender)
         Deine Feed-URL wird verschlüsselt auf deinem Gerät gespeichert.
-        Speicherort: %LOCALAPPDATA%\Semestria\config.json
+        Speicherort: %LOCALAPPDATA%\Semestria\profiles\<Profil>\config.json
         Die Verschlüsselung erfolgt mit dem Windows-Datenschutz-API (DPAPI),
         das an dein Windows-Benutzerkonto gebunden ist. Niemand ausser dir
         (auf diesem Gerät) kann die URL entschlüsseln.
@@ -124,14 +124,16 @@ public static class LegalTexts
 
         3.2 Microsoft-Zugangstoken
         Nach der Anmeldung speichert die App ein Zugriffstoken für Microsoft Graph.
-        Speicherort: %LOCALAPPDATA%\Semestria\token_cache.bin
+        Speicherort: %LOCALAPPDATA%\Semestria\profiles\<Profil>\token_cache.bin
         Das Token verlässt dein Gerät nur, um API-Anfragen an Microsoft Graph zu
         stellen (Lesen/Schreiben deines Outlook-Kalenders). Du kannst den Zugriff
         jederzeit unter account.microsoft.com/privacy entziehen.
 
         3.3 Einstellungen, Aufgaben, Notizen und Noten
         Einstellungen, Aufgaben, Kommentare, Farben, eigene Termine und Noten
-        speichert die App nur lokal in %LOCALAPPDATA%\Semestria\.
+        speichert die App nur lokal in %LOCALAPPDATA%\Semestria\, für jedes
+        Profil in einem eigenen Unterordner. Profile auf demselben PC sehen
+        die Daten der anderen nicht.
         Diese Daten werden nicht übertragen.
 
         3.4 Kalenderdaten

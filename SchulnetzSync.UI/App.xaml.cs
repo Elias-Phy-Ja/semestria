@@ -43,6 +43,10 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Profiles first: every file path below depends on which person is running.
+        ProfileSession.Initialize();
+        ProfileSession.CleanUpRemovedProfiles();
+
         // Show unhandled errors instead of letting the app vanish without a word.
         DispatcherUnhandledException += OnUnhandledException;
 
@@ -101,7 +105,7 @@ public partial class App : Application
     {
         if (AppState.Config.IsOnboardingComplete)
             OpenMainWindow();
-        else
+        else if (!ProfileSession.AbandonUnfinishedProfile())   // a new profile goes back to the previous one
             Shutdown();
     }
 
@@ -194,11 +198,9 @@ public partial class App : Application
     {
         try
         {
-            var dir = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Semestria");
-            System.IO.Directory.CreateDirectory(dir);
-            System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "crash.log"), text);
+            // One log for the whole computer, not per profile
+            System.IO.Directory.CreateDirectory(SchulnetzSync.Core.Profiles.DataPaths.Root);
+            System.IO.File.AppendAllText(SchulnetzSync.Core.Profiles.DataPaths.GlobalFile("crash.log"), text);
         }
         catch { /* Protokollieren darf nie den Ablauf stören */ }
     }

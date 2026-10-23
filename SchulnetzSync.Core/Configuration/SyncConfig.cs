@@ -5,7 +5,7 @@ namespace SchulnetzSync.Core.Configuration;
 
 /// <summary>
 /// Everything the app remembers between runs. Lands as JSON in
-/// %LOCALAPPDATA%\Semestria\config.json, with the feed URL encrypted via DPAPI.
+/// config.json in the active profile's folder (see DataPaths), with the feed URL encrypted via DPAPI.
 /// </summary>
 public sealed class SyncConfig
 {
