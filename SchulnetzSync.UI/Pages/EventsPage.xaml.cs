@@ -896,6 +896,7 @@ public partial class EventsPage : WpfPage
     {
         _panelMode             = "None";
         _selectedEvent         = null;
+        _editingManualId       = null;
         DetailPanel.Visibility = Visibility.Collapsed;
         DetailColumnDef.Width  = new GridLength(0);
     }
@@ -990,26 +991,37 @@ public partial class EventsPage : WpfPage
         }
         DetailContent.Children.Add(BuildColorSection(ev, colorKey, isLektion, isPruefung));
 
-        // Delete, for hand-made entries only
+        // Edit and delete, for hand-made entries only
         if (isManual)
         {
             DetailContent.Children.Add(new WpfTextBlock
             {
-                Text     = "Manuellen Eintrag löschen:",
+                Text     = "Eigener Eintrag:",
                 FontSize = 11,
                 Opacity  = 0.60,
                 Margin   = new Thickness(0, 16, 0, 6)
             });
+            var actions = new StackPanel { Orientation = WpfOrientation.Horizontal };
+            var btnEdit = new WpfButton
+            {
+                Content             = "✏️  Bearbeiten",
+                Style               = (Style)FindResource("SecondaryButton"),
+                Padding             = new Thickness(12, 5, 12, 5),
+                Margin              = new Thickness(0, 0, 8, 0),
+                Tag                 = ev
+            };
+            btnEdit.Click += BtnEditManual_Click;
             var btnDelete = new WpfButton
             {
-                Content             = "🗑  Eintrag löschen",
+                Content             = "🗑  Löschen",
                 Style               = (Style)FindResource("SecondaryButton"),
-                HorizontalAlignment = WpfHA.Left,
                 Padding             = new Thickness(12, 5, 12, 5),
                 Tag                 = ev
             };
             btnDelete.Click += BtnDeleteManual_Click;
-            DetailContent.Children.Add(btnDelete);
+            actions.Children.Add(btnEdit);
+            actions.Children.Add(btnDelete);
+            DetailContent.Children.Add(actions);
         }
 
         OpenPanel("Detail");
@@ -1673,11 +1685,16 @@ public partial class EventsPage : WpfPage
     // ══════════════════════════════════════════════════════════════════════
     // ADD-EVENT PANEL
     // ══════════════════════════════════════════════════════════════════════
+    /// <summary>The hand-made entry the form is editing; null while it creates a new one.</summary>
+    private Guid? _editingManualId;
+
     private void ShowAddEventPanel()
     {
         TxtPanelTitle.Text       = "➕  NEUER EINTRAG";
         TxtPanelTitle.SetResourceReference(WpfTextBlock.ForegroundProperty, "SystemControlForegroundBaseHighBrush");
+        BtnSaveManualEvent.Content = "✓  Eintrag hinzufügen";
         _selectedEvent           = null;
+        _editingManualId         = null;
 
         // Clear the form
         TxtNewTitle.Text      = "";
@@ -1690,6 +1707,27 @@ public partial class EventsPage : WpfPage
         TimePickers.Visibility = Visibility.Visible;
 
         OpenPanel("AddEvent", 320);
+    }
+
+    /// <summary>The same form as for a new entry, filled with an existing hand-made one.</summary>
+    private void ShowEditEventPanel(ManualEventData m)
+    {
+        ShowAddEventPanel();
+        TxtPanelTitle.Text         = "✏️  EINTRAG BEARBEITEN";
+        BtnSaveManualEvent.Content = "✓  Änderungen speichern";
+        _editingManualId           = m.Id;
+
+        TxtNewTitle.Text       = m.Title;
+        DpNewDate.SelectedDate = m.Start.Date;
+        ChkNewAllDay.IsChecked = m.IsAllDay;
+        TimePickers.Visibility = m.IsAllDay ? Visibility.Collapsed : Visibility.Visible;
+        if (!m.IsAllDay)
+        {
+            TxtStartTime.Text = m.Start.ToString("HH:mm", _deCH);
+            TxtEndTime.Text   = m.End.ToString("HH:mm", _deCH);
+        }
+        CmbNewType.SelectedIndex = m.TypeKey == "Pruefung" ? 0 : 1;
+        TxtNewLocation.Text      = m.Location ?? "";
     }
 
     // ── Handlers ─────────────────────────────────────────────────────────────
@@ -1744,7 +1782,7 @@ public partial class EventsPage : WpfPage
         var location = string.IsNullOrWhiteSpace(TxtNewLocation.Text) ? null : TxtNewLocation.Text.Trim();
 
         var manualEvent = new ManualEventData(
-            Id:       Guid.NewGuid(),
+            Id:       _editingManualId ?? Guid.NewGuid(),
             Title:    title,
             Start:    start,
             End:      end,
@@ -1752,7 +1790,10 @@ public partial class EventsPage : WpfPage
             Location: location,
             TypeKey:  typeKey);
 
-        AppState.AddManualEvent(manualEvent); // fires Notify, which refreshes us
+        // Both fire Notify, which refreshes us
+        if (_editingManualId is null) AppState.AddManualEvent(manualEvent);
+        else                          AppState.UpdateManualEvent(manualEvent);
+        _editingManualId = null;
         ClosePanel();
     }
 
@@ -1853,12 +1894,25 @@ public partial class EventsPage : WpfPage
         if (sender is not WpfButton btn || btn.Tag is not SchulnetzEvent ev) return;
         if (!EventKeys.IsManual(ev.Key)) return;
 
+        if (!EventKeys.TryGetManualId(ev.Key, out var id)) return;
+
         if (!Confirm($"«{ev.Summary}» wirklich löschen?")) return;
 
-        var id = Guid.ParseExact(ev.Key[EventKeys.ManualPrefix.Length..], "N");
         AppState.RemoveManualEvent(id);
         _selectedEvent = null;
         ClosePanel();
+    }
+
+    private void BtnEditManual_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfButton btn || btn.Tag is not SchulnetzEvent ev) return;
+        if (!EventKeys.TryGetManualId(ev.Key, out var id)) return;
+
+        var manual = AppState.ManualEvents.FirstOrDefault(m => m.Id == id);
+        if (manual is null) return;
+
+        ShowEditEventPanel(manual);
+        Refresh();
     }
 
     private void BtnCalSettings_Click(object sender, RoutedEventArgs e)
@@ -1871,7 +1925,8 @@ public partial class EventsPage : WpfPage
 
     private void BtnAddEvent_Click(object sender, RoutedEventArgs e)
     {
-        if (_panelMode == "AddEvent") { ClosePanel(); Refresh(); return; }
+        // "Neu" while editing switches to an empty form rather than closing
+        if (_panelMode == "AddEvent" && _editingManualId is null) { ClosePanel(); Refresh(); return; }
         _selectedEvent = null;
         ShowAddEventPanel();
         Refresh();

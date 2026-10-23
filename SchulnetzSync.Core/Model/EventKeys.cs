@@ -17,4 +17,15 @@ public static class EventKeys
 
     /// <summary>Builds the stable key for a hand-made event.</summary>
     public static string ForManual(Guid id) => ManualPrefix + id.ToString("N");
+
+    /// <summary>
+    /// The id back out of a hand-made key, the reverse of <see cref="ForManual"/>.
+    /// False for feed keys and anything malformed.
+    /// </summary>
+    public static bool TryGetManualId(string? key, out Guid id)
+    {
+        id = Guid.Empty;
+        return IsManual(key)
+            && Guid.TryParseExact(key![ManualPrefix.Length..], "N", out id);
+    }
 }

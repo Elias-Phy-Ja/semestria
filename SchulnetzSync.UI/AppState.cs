@@ -375,6 +375,19 @@ public static class AppState
         Notify();
     }
 
+    /// <summary>
+    /// Replaces a hand-made entry by id. The key stays the same, so the next Outlook sync
+    /// updates the existing appointment instead of creating a second one.
+    /// </summary>
+    public static void UpdateManualEvent(ManualEventData ev)
+    {
+        var i = _manualEvents.FindIndex(e => e.Id == ev.Id);
+        if (i < 0) return;
+        _manualEvents[i] = ev;
+        SaveManual();
+        Notify();
+    }
+
     public static void RemoveManualEvent(Guid id)
     {
         _manualEvents.RemoveAll(e => e.Id == id);
