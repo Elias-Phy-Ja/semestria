@@ -1,0 +1,22 @@
+{
+    "version": 1,
+    "items": [
+        {
+            "id": "umfrage-herbst",
+            "title": "Kurze Umfrage <script>alert(1)</script>",
+            "body": "Zeile 1\nZeile 2",
+            "kind": "survey",
+            "link": "https://forms.office.com/r/abc",
+            "linkLabel": "Zur Umfrage",
+            "publishedAt": "2026-10-24T08:00:00+02:00",
+            "expiresAt": "2026-11-30T00:00:00+01:00"
+        },
+        {
+            "id": "2026-10-24-neu-noten",
+            "title": "Neu: Noten",
+            "body": "",
+            "kind": "info",
+            "publishedAt": "2026-10-24T00:06:51+02:00"
+        }
+    ]
+}

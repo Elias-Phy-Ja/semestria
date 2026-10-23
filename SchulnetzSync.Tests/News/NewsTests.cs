@@ -56,6 +56,30 @@ public class NewsTests
         Assert.Null(item.MinVersion);
     }
 
+    /// <summary>
+    /// The fixture is a news.json written by the PHP admin page itself (docs/admin), so
+    /// this pins down that the app reads exactly what the admin writes.
+    /// </summary>
+    [Fact]
+    public void Parse_ReadsWhatTheAdminPageWrites()
+    {
+        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "news-from-admin.json"));
+
+        var feed = NewsFeed.Parse(json);
+
+        Assert.Equal(2, feed.Items.Count);
+        var survey = feed.Items.Single(i => i.Id == "umfrage-herbst");
+        Assert.Equal("Zeile 1\nZeile 2", survey.Body);
+        Assert.True(survey.HasSafeLink);
+        Assert.Equal(new DateTimeOffset(2026, 10, 24, 8, 0, 0, TimeSpan.FromHours(2)), survey.PublishedAt);
+        Assert.Equal(new DateTimeOffset(2026, 11, 30, 0, 0, 0, TimeSpan.FromHours(1)), survey.ExpiresAt);
+
+        // Fields the admin leaves out when empty arrive as null, not as ""
+        var info = feed.Items.Single(i => i.Id != "umfrage-herbst");
+        Assert.Null(info.Link);
+        Assert.Null(info.ExpiresAt);
+    }
+
     [Fact]
     public void Parse_SkipsItemsWithoutIdOrTitle()
     {

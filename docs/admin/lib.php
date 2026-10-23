@@ -13,6 +13,14 @@
 
 declare(strict_types=1);
 
+// Errors go to the server log, never into the page: they would show paths and internals.
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
+if (!extension_loaded('mbstring')) {
+    http_response_code(500);
+    exit('Die PHP-Erweiterung mbstring fehlt. In hPanel unter PHP-Konfiguration aktivieren.');
+}
 if (!is_file(__DIR__ . '/config.php')) {
     http_response_code(500);
     exit('config.php fehlt. Kopiere config.example.php nach config.php und fülle SETUP_TOKEN aus.');
@@ -25,6 +33,9 @@ const MAX_FAILS_TOTAL      = 25;
 const LOCKOUT_SECONDS      = 15 * 60;
 const KINDS                = ['info' => 'Info', 'survey' => 'Umfrage', 'update' => 'Update'];
 const TZ                   = 'Europe/Zurich';
+
+// Hostinger runs on UTC; dates in ids and defaults must be Swiss dates.
+date_default_timezone_set(TZ);
 
 // ── Output ──────────────────────────────────────────────────────────────
 
@@ -263,6 +274,13 @@ function validate_item(array $in, ?string $editingId, array $existingIds): array
 {
     $errors = [];
     $str = fn(string $k) => is_string($in[$k] ?? null) ? trim($in[$k]) : '';
+
+    // Anything that is not valid UTF-8 would break json_encode and the app's parser
+    foreach (['title', 'body', 'linkLabel', 'link', 'id'] as $k) {
+        if (!mb_check_encoding($str($k), 'UTF-8')) {
+            return [null, ['Der Text enthält ungültige Zeichen. Bitte neu eintippen statt einfügen.']];
+        }
+    }
 
     $title = $str('title');
     $body  = str_replace("\r\n", "\n", $str('body'));
