@@ -4,7 +4,8 @@ using SchulnetzSync.Core.Configuration;
 namespace SchulnetzSync.UI.Legal;
 
 /// <summary>
-/// Asks for consent again after the legal texts changed. Shown once after an update that
+/// Asks for consent again after the legal texts changed. Shown at start-up, before the main
+/// window, the update check or any network access, once after an update that
 /// raised <see cref="AppConstants.LegalVersion"/>; there is no way into the app without
 /// accepting, only out of it.
 /// </summary>

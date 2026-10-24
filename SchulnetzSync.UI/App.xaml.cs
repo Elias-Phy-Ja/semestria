@@ -75,6 +75,19 @@ public partial class App : Application
             _       => null
         };
 
+        // Changed legal texts come before everything else: no window, no update check, no
+        // feed, no sync until they are accepted.
+        if (LegalAcceptWindow.IsNeeded(AppState.Config))
+        {
+            // A background start cannot ask, so it does nothing at all; the texts appear the
+            // next time someone opens the app.
+            if (e.Args.Contains("--silent")) { Shutdown(); return; }
+
+            var legal = new LegalAcceptWindow();
+            legal.ShowDialog();
+            if (!legal.Accepted) { Shutdown(); return; }
+        }
+
         _tray = new TrayService();
 
         // --silent: sync in the background, never show a window.
@@ -122,14 +135,6 @@ public partial class App : Application
         // outcome of one.
         main.StartupFinished += () =>
         {
-            // Changed legal texts come first: nothing runs until they are accepted.
-            if (LegalAcceptWindow.IsNeeded(AppState.Config))
-            {
-                var legal = new LegalAcceptWindow { Owner = main };
-                legal.ShowDialog();
-                if (!legal.Accepted) { Shutdown(); return; }
-            }
-
             if (AppState.Config.AutoRefreshFeed)
                 _ = TryAutoRefreshFeedAsync();
             StartReminderTimer();
