@@ -12,7 +12,7 @@
 
 ---
 
-Semestria liest Prüfungen und Schultermine aus dem persönlichen Schulnetz-iCal-Feed, schreibt sie automatisch in den InApp Kalender und optional im  Outlook-Kalender. Ausserdem hat man die Möglichkeit Aufgaben einzutragen und kann so ein Wichtiges Werkzeug sein.
+Semestria liest Prüfungen, Schultermine und den Stundenplan aus dem persönlichen Schulnetz-iCal-Feed und zeigt sie im Kalender der App, auf Wunsch auch in Outlook. Dazu kommen Aufgaben mit Erinnerung und ein Notenbereich, der Schnitt, Pluspunkte und Promotion ausrechnet, bis hin zur Matur- oder BM-Note. Alles bleibt lokal auf deinem Gerät, mit einem eigenen Profil pro Person.
 
 ## Screenshots
 
@@ -27,15 +27,15 @@ Semestria liest Prüfungen und Schultermine aus dem persönlichen Schulnetz-iCal
 <table>
 <tr>
 <td width="50%"><img src="Pictures/Screenshot%202026-09-17%20200437.png" alt="Wochenansicht" /><br/>
-<sub><b>Wochenansicht</b> — der Stundenplan als Raster. Prüfungen rot, Termine orange, jedes Fach in seiner eigenen Farbe.</sub></td>
+<sub><b>Wochenansicht</b> der Stundenplan als Raster. Prüfungen rot, Termine orange, jedes Fach in seiner eigenen Farbe.</sub></td>
 <td width="50%"><img src="Pictures/Screenshot%202026-09-17%20200500.png" alt="Monatsansicht" /><br/>
-<sub><b>Monatsansicht</b> — der ganze Monat auf einen Blick, volle Tage mit "+N mehr".</sub></td>
+<sub><b>Monatsansicht</b> der ganze Monat auf einen Blick, volle Tage mit "+N mehr".</sub></td>
 </tr>
 <tr>
 <td width="50%"><img src="Pictures/Screenshot%202026-09-17%20201204.png" alt="Aufgaben" /><br/>
-<sub><b>Aufgaben</b> — nach Fach gruppiert, mit Abgabe und Erinnerung. Wichtiges steht zuoberst.</sub></td>
+<sub><b>Aufgaben</b> nach Fach gruppiert, mit Abgabe und Erinnerung. Wichtiges steht zuoberst.</sub></td>
 <td width="50%"><img src="Pictures/Screenshot%202026-09-17%20201258.png" alt="Einrichtung" /><br/>
-<sub><b>Einrichtung</b> — fünf Schritte, bis der Feed läuft. Outlook ist dabei freiwillig.</sub></td>
+<sub><b>Einrichtung</b> fünf Schritte, bis der Feed läuft. Outlook ist dabei freiwillig.</sub></td>
 </tr>
 </table>
 
@@ -44,9 +44,14 @@ Semestria liest Prüfungen und Schultermine aus dem persönlichen Schulnetz-iCal
 
 ## Features
 
-- 📅 Synchronisiert Prüfungen und Termine direkt aus dem Schulnetz-iCal
-- 🔒 Feed-URL wird verschlüsselt lokal gespeichert (Windows DPAPI)
-- 🗓️ Schreibt Events in den Outlook-Kalender via Microsoft Graph API
+- 📅 Stundenplan, Prüfungen und Schultermine direkt aus dem Schulnetz-iCal, ausgefallene Lektionen durchgestrichen
+- ✏️ Eigene Einträge im Kalender, jederzeit bearbeitbar
+- 🗓️ Optional: Prüfungen und Termine in Outlook via Microsoft Graph
+- ✅ Aufgaben mit Listen, Abgabedatum und Erinnerung
+- 🎓 Noten pro Semester oder Schuljahr, Promotionsregeln (Kanti Aarau, IMS Aarau oder eigene), Zielrechner und Abschluss mit Matur- bzw. BM-Prüfungsnoten
+- 👥 Mehrere Profile auf einem PC, jedes mit eigenen Daten und eigener Microsoft-Anmeldung
+- 🧭 Kurze Anleitung auf jeder Seite, alle wieder abrufbar unter «Hilfe»
+- 🔒 Alles lokal: Feed-URL verschlüsselt (Windows DPAPI), keine Telemetrie, kein Konto
 - 🖥️ Läuft im Hintergrund als System-Tray-App
 
 ## Download
@@ -55,11 +60,14 @@ Semestria liest Prüfungen und Schultermine aus dem persönlichen Schulnetz-iCal
 
 Alternativ: `.msix`-Datei unter [Releases](../../releases) (Sideloading erforderlich).
 
+Datenschutz und Nutzungsbedingungen: [docs/policy.html](docs/policy.html)
+
 ## Tech Stack
 
 | | |
 |---|---|
 | UI | WPF · .NET 9 · ModernWpfUI |
+| Logik | .NET 8 Core-Bibliothek, xUnit-Tests |
 | Kalender | Microsoft Graph API v5 · MSAL |
 | iCal | Ical.Net 5 |
 | Sicherheit | DPAPI (lokale Verschlüsselung) |
@@ -69,6 +77,32 @@ Alternativ: `.msix`-Datei unter [Releases](../../releases) (Sideloading erforder
 
 Ausführliche Notizen zu den einzelnen Arbeitstagen liegen unter
 [Session Summary](Session%20Summary/).
+
+### 24.10.2026 (v3.0)
+
+**Noten**
+- [x] Neuer Bereich «Noten»: Noten mit Gewicht (0.25, 0.5, 1 …) eintragen, Fachnoten auf halbe Noten gerundet
+- [x] Semester und Schuljahre als Tabs, neue beginnen, alte löschen
+- [x] Promotionsregel zuerst wählen: Vorlagen Kanti Aarau (Matur) und IMS Aarau (BM) oder eigene Regel
+- [x] Zielrechner: welche Note die nächste Prüfung braucht
+- [x] Abschluss: Matur- bzw. BM-Noten aus Zeugnis- und Prüfungsnoten, mit Prüfungsziel
+
+**Kalender**
+- [x] Ausgefallene Lektionen grau, durchgestrichen und mit «Ausfall»-Badge
+- [x] Eigene Einträge bearbeiten
+- [x] Schultermine werden standardmässig nicht mehr nach Outlook geschrieben
+
+**Profile**
+- [x] Mehrere Profile auf einem PC, Wechsel oben links mit einem Klick
+- [x] Jedes Profil mit eigenen Daten und eigener Microsoft-Anmeldung
+- [x] Outlook-Termine sind pro Profil markiert, kein Profil ändert die Termine eines anderen
+
+**Hilfe und Nachrichten**
+- [x] Kurze Anleitung auf jeder Seite, Überblicks-Rundgang beim ersten Start, Seite «Hilfe»
+- [x] Nachrichten und Umfrage-Links vom Entwickler, frühestens ab dem 4. Start, abschaltbar
+- [x] Nutzungsbedingungen und Datenschutzerklärung Version 2.0, Zustimmung vor dem ersten Laden
+
+*Summary: Das grösste Update bisher. Semestria ist vom Kalender-Sync zum Schulbegleiter geworden, mit Noten, Profilen und Anleitungen. Getestet mit 293 automatischen Tests, darunter die Rechenbeispiele der Alten Kanti Aarau und der IMS Aarau.*
 
 ### 17.09.2026 (v2.2)
 - [x] Dashboard neu: Stundenplan, Kennzahlen, Aufgaben, einklappbares Protokoll
