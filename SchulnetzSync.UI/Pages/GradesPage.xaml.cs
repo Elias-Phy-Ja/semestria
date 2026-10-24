@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Grades;
+using SchulnetzSync.UI.Controls;
 
 // Pin down the WPF versions of names WinForms also uses
 using WpfBorder      = System.Windows.Controls.Border;
@@ -35,7 +36,7 @@ namespace SchulnetzSync.UI.Pages;
 /// first visit gets a short guided tour. Everything is built in code from the computed
 /// standings, like the calendar, and rebuilt after each change.
 /// </summary>
-public partial class GradesPage : WpfPage
+public partial class GradesPage : WpfPage, ITourPage
 {
     private static readonly CultureInfo _deCH = CultureInfo.GetCultureInfo("de-CH");
 
@@ -78,12 +79,9 @@ public partial class GradesPage : WpfPage
         {
             AppState.Changed += OnStateChanged;
             Refresh();
-            if (AppState.HasChosenRule && !AppState.Config.GradesTutorialSeen)
-                Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, () => StartTutorial());
         };
         Unloaded    += (_, _) => AppState.Changed -= OnStateChanged;
-        SizeChanged += (_, _) => { ApplyLayoutWidth(); PositionTutorial(); };
-        Scroller.ScrollChanged += (_, _) => PositionTutorial();
+        SizeChanged += (_, _) => ApplyLayoutWidth();
         PreviewKeyDown += OnPreviewKeyDown;
     }
 
@@ -243,14 +241,10 @@ public partial class GradesPage : WpfPage
     private void ShowPeriodHint()
     {
         CloseDialog();
-        _hintSteps =
-        [
-            new(() => _addPeriodButton, "Zuerst ein Semester oder Schuljahr",
-                "Noten gehören immer zu einem Semester oder Schuljahr. Starte es hier, danach kannst du eintragen.")
-        ];
-        _tourIndex = 0;
-        TutorialLayer.Visibility = Visibility.Visible;
-        ShowTourStep();
+        MainWindow.Current?.Tour.ShowHint(
+            new TourStep(() => _addPeriodButton, "Zuerst ein Semester oder Schuljahr",
+                "Noten gehören immer zu einem Semester oder Schuljahr. Starte es hier, danach kannst du eintragen."),
+            "Jetzt starten", ShowNewPeriodDialog);
     }
 
     private void ShowAddFinalDialog()
@@ -357,8 +351,7 @@ public partial class GradesPage : WpfPage
                 return;
             }
             AppState.PromotionRule = rule;   // fires Notify, which rebuilds the page
-            if (!AppState.Config.GradesTutorialSeen)
-                Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, () => StartTutorial());
+            MainWindow.Current?.MaybeStartTour(this);
         };
         return card;
     }
@@ -1681,14 +1674,17 @@ public partial class GradesPage : WpfPage
     // Tutorial
     // ══════════════════════════════════════════════════════════════════════
 
-    private sealed record TourStep(Func<FrameworkElement?> Target, string Title, string Text);
+    public string TourKey => "grades";
 
-    private IReadOnlyList<TourStep> TourSteps() =>
+    /// <summary>The tour waits until a rule is chosen; before that the page shows only the choice.</summary>
+    public bool TourReady => AppState.HasChosenRule;
+
+    public IReadOnlyList<TourStep> TourSteps() =>
     [
         new(() => BtnAddGrade, "Note eintragen",
             "Hier trägst du eine Note ein: Fach, Note und Gewicht. Eine halbe Prüfung zählt 0.5, eine Viertelprüfung 0.25."),
         new(() => PeriodTabs, "Semester und Schuljahre",
-            "Jedes Semester oder Schuljahr ist ein Tab. Mit «+ Semester / Jahr» beginnst du frisch, frühere bleiben hier. Löschen geht über den Knopf darunter."),
+            "Jedes Semester oder Schuljahr ist ein Tab. Mit «+ Semester / Jahr» beginnst du frisch, frühere bleiben hier."),
         new(() => FinalTab, "Abschluss",
             "Hier fügst du deinen Abschluss hinzu: Matur an der Kanti Aarau oder BM an der IMS Aarau. Semestria rechnet die Noten aus Zeugnissen und Prüfungen."),
         new(() => KpiStrip, "Dein Überblick",
@@ -1700,203 +1696,19 @@ public partial class GradesPage : WpfPage
         new(() => _calculatorCard, "Zielrechner",
             "Wähl eine Ziel-Fachnote und das Gewicht der nächsten Prüfung. Semestria sagt dir, welche Note du dafür brauchst."),
         new(() => BtnHelp, "Jederzeit wieder",
-            "Mit dem Fragezeichen startest du diese Anleitung noch einmal."),
+            "Mit dem Fragezeichen oder «Anleitung» unten links startest du diese Anleitung noch einmal."),
     ];
 
-    private int _tourIndex = -1;
-
-    /// <summary>A single hint instead of the tour; null while the tour (or nothing) runs.</summary>
-    private IReadOnlyList<TourStep>? _hintSteps;
-
-    private IReadOnlyList<TourStep> CurrentSteps() => _hintSteps ?? TourSteps();
-
-    private void BtnHelp_Click(object sender, RoutedEventArgs e) => StartTutorial();
-
-    private void StartTutorial()
+    private void BtnHelp_Click(object sender, RoutedEventArgs e)
     {
         CloseDialog();
         if (_finalMode) { _finalMode = false; Refresh(); }
-        _hintSteps = null;
-        _tourIndex = 0;
-        TutorialLayer.Visibility = Visibility.Visible;
-        ShowTourStep();
+        MainWindow.Current?.StartTour(this);
     }
 
-    private void EndTutorial()
-    {
-        bool wasHint = _hintSteps is not null;
-        _tourIndex = -1;
-        _hintSteps = null;
-        TutorialLayer.Visibility = Visibility.Collapsed;
-        TutorialLayer.Children.Clear();
-
-        // A hint is not the tour: the tour still comes once
-        if (!wasHint && !AppState.Config.GradesTutorialSeen)
-        {
-            AppState.Config.GradesTutorialSeen = true;
-            ConfigManager.Save(AppState.Config);
-        }
-    }
-
-    private void ShowTourStep()
-    {
-        var steps = CurrentSteps();
-        if (_tourIndex < 0 || _tourIndex >= steps.Count) { EndTutorial(); return; }
-
-        // Scroll the element into view first, then measure once the layout has settled
-        steps[_tourIndex].Target()?.BringIntoView();
-        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, PositionTutorial);
-    }
-
-    /// <summary>Dims the page, cuts a hole around the current element and places the bubble.</summary>
-    private void PositionTutorial()
-    {
-        if (_tourIndex < 0 || TutorialLayer.Visibility != Visibility.Visible) return;
-
-        var steps  = CurrentSteps();
-        var step   = steps[_tourIndex];
-        var target = step.Target();
-        double w = TutorialLayer.ActualWidth, h = TutorialLayer.ActualHeight;
-        if (w == 0 || h == 0) return;
-
-        TutorialLayer.Children.Clear();
-
-        Rect hole = Rect.Empty;
-        if (target is { IsVisible: true } && target.IsDescendantOf(Root))
-        {
-            // TransformToVisual, not ToAncestor: the layer is a sibling of the content
-            hole = target.TransformToVisual(TutorialLayer)
-                         .TransformBounds(new Rect(0, 0, target.ActualWidth, target.ActualHeight));
-            hole.Inflate(8, 8);
-        }
-
-        var dim = new GeometryGroup { FillRule = FillRule.EvenOdd };
-        dim.Children.Add(new RectangleGeometry(new Rect(0, 0, w, h)));
-        if (!hole.IsEmpty) dim.Children.Add(new RectangleGeometry(hole, 12, 12));
-        TutorialLayer.Children.Add(new WpfPath { Data = dim, Fill = new SolidColorBrush(Color.FromArgb(0xB0, 0, 0, 0)) });
-
-        if (!hole.IsEmpty)
-        {
-            var ring = new WpfBorder
-            {
-                Width = hole.Width, Height = hole.Height, CornerRadius = new CornerRadius(12),
-                BorderBrush = new SolidColorBrush(_accent), BorderThickness = new Thickness(2),
-                IsHitTestVisible = false
-            };
-            Canvas.SetLeft(ring, hole.X);
-            Canvas.SetTop(ring, hole.Y);
-            TutorialLayer.Children.Add(ring);
-        }
-
-        var bubble = TourBubble(step, _tourIndex, steps.Count);
-        bubble.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
-        var size = bubble.DesiredSize;
-
-        // Below the element when there is room, otherwise above, otherwise in the middle
-        double x, y;
-        if (hole.IsEmpty)
-        {
-            x = (w - size.Width) / 2;
-            y = (h - size.Height) / 2;
-        }
-        else
-        {
-            x = Math.Clamp(hole.X, 16, Math.Max(16, w - size.Width - 16));
-            y = hole.Bottom + 12 + size.Height <= h - 16 ? hole.Bottom + 12
-              : hole.Top - 12 - size.Height >= 16       ? hole.Top - 12 - size.Height
-              : Math.Max(16, (h - size.Height) / 2);
-        }
-        Canvas.SetLeft(bubble, x);
-        Canvas.SetTop(bubble, y);
-        TutorialLayer.Children.Add(bubble);
-    }
-
-    private FrameworkElement TourBubble(TourStep step, int index, int count)
-    {
-        var panel = new StackPanel();
-        panel.Children.Add(new WpfTextBlock
-        {
-            Text = _hintSteps is not null ? "HINWEIS" : $"{index + 1} VON {count}", FontSize = 11, FontWeight = FontWeights.Bold,
-            Foreground = new SolidColorBrush(_accent)
-        });
-        panel.Children.Add(new WpfTextBlock
-        {
-            Text = step.Title, FontSize = 16, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 4, 0, 6)
-        });
-        panel.Children.Add(new WpfTextBlock
-        {
-            Text = step.Text, FontSize = 13, TextWrapping = TextWrapping.Wrap, LineHeight = 19, Opacity = 0.9
-        });
-
-        var buttons = new Grid { Margin = new Thickness(0, 14, 0, 0) };
-        buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        if (_hintSteps is not null)
-        {
-            var later = new WpfButton { Content = "Später", Style = (Style)FindResource("SecondaryButton"), HorizontalAlignment = WpfHA.Left };
-            later.Click += (_, _) => EndTutorial();
-            buttons.Children.Add(later);
-            var start = new WpfButton { Content = "Jetzt starten", Style = (Style)FindResource("PrimaryButton") };
-            start.Click += (_, _) => { EndTutorial(); ShowNewPeriodDialog(); };
-            Grid.SetColumn(start, 1);
-            buttons.Children.Add(start);
-            panel.Children.Add(buttons);
-            start.Loaded += (_, _) => start.Focus();
-            return new WpfBorder
-            {
-                Width = 340, Padding = new Thickness(20, 16, 20, 16), CornerRadius = new CornerRadius(12),
-                Background = (Brush)FindResource("SystemControlBackgroundChromeMediumBrush"),
-                BorderBrush = new SolidColorBrush(_accent), BorderThickness = new Thickness(1),
-                Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 24, ShadowDepth = 4, Opacity = 0.35 },
-                Child = panel
-            };
-        }
-
-        bool last = index == count - 1;
-        if (!last)
-        {
-            var skip = new WpfButton { Content = "Überspringen", Style = (Style)FindResource("SecondaryButton"), HorizontalAlignment = WpfHA.Left };
-            skip.Click += (_, _) => EndTutorial();
-            buttons.Children.Add(skip);
-        }
-
-        var nav = new StackPanel { Orientation = WpfOrientation.Horizontal };
-        if (index > 0)
-        {
-            var back = new WpfButton { Content = "Zurück", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
-            back.Click += (_, _) => { _tourIndex--; ShowTourStep(); };
-            nav.Children.Add(back);
-        }
-        var next = new WpfButton { Content = last ? "Fertig" : "Weiter", Style = (Style)FindResource("PrimaryButton") };
-        next.Click += (_, _) => { _tourIndex++; ShowTourStep(); };
-        nav.Children.Add(next);
-        Grid.SetColumn(nav, 1);
-        buttons.Children.Add(nav);
-        panel.Children.Add(buttons);
-
-        next.Loaded += (_, _) => next.Focus();
-
-        return new WpfBorder
-        {
-            Width = 340, Padding = new Thickness(20, 16, 20, 16), CornerRadius = new CornerRadius(12),
-            Background = (Brush)FindResource("SystemControlBackgroundChromeMediumBrush"),
-            BorderBrush = new SolidColorBrush(_accent), BorderThickness = new Thickness(1),
-            Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 24, ShadowDepth = 4, Opacity = 0.35 },
-            Child = panel
-        };
-    }
-
-    /// <summary>Escape closes the tour or the dialog; arrows step through the tour.</summary>
+    /// <summary>Escape closes an open dialog.</summary>
     private void OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        if (_tourIndex >= 0)
-        {
-            if (e.Key == Key.Escape)     { EndTutorial(); e.Handled = true; }
-            else if (e.Key == Key.Right) { _tourIndex++; ShowTourStep(); e.Handled = true; }
-            else if (e.Key == Key.Left && _tourIndex > 0) { _tourIndex--; ShowTourStep(); e.Handled = true; }
-            return;
-        }
         if (e.Key == Key.Escape && DialogLayer.Visibility == Visibility.Visible)
         {
             CloseDialog();

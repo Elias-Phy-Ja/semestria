@@ -14,7 +14,7 @@
 
             <!-- ═══ APPEARANCE ═══ -->
             <TextBlock Text="DARSTELLUNG" Style="{StaticResource SectionLabel}"/>
-            <Border Style="{StaticResource Card}">
+            <Border x:Name="CardAppearance" Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="Erscheinungsbild"
                                Style="{StaticResource HeadlineText}"
@@ -39,7 +39,7 @@
 
             <!-- ═══ FEED URL ═══ -->
             <TextBlock Text="SCHULNETZ" Style="{StaticResource SectionLabel}"/>
-            <Border Style="{StaticResource Card}">
+            <Border x:Name="CardFeed" Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="Feed-URL"
                                Style="{StaticResource HeadlineText}"
@@ -53,7 +53,7 @@
 
             <!-- ═══ MICROSOFT ACCOUNT ═══ -->
             <TextBlock Text="OUTLOOK (OPTIONAL)" Style="{StaticResource SectionLabel}"/>
-            <Border Style="{StaticResource Card}">
+            <Border x:Name="CardOutlook" Style="{StaticResource Card}">
                 <StackPanel>
 
                     <!-- Connection status -->
@@ -160,7 +160,7 @@
 
             <!-- ═══ CALENDAR ═══ -->
             <TextBlock Text="KALENDER" Style="{StaticResource SectionLabel}"/>
-            <Border Style="{StaticResource Card}">
+            <Border x:Name="CardCalendar" Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="Ziel-Kalender"
                                Style="{StaticResource HeadlineText}"
@@ -175,7 +175,7 @@
 
             <!-- ═══ OPTIONS ═══ -->
             <TextBlock Text="SYNCHRONISATION" Style="{StaticResource SectionLabel}"/>
-            <Border Style="{StaticResource Card}">
+            <Border x:Name="CardOptions" Style="{StaticResource Card}">
                 <StackPanel>
                     <CheckBox x:Name="ChkPruefungen"
                               Content="Prüfungen synchronisieren"
@@ -209,7 +209,7 @@
 
             <!-- ═══ CLEAN-UP ═══ -->
             <TextBlock Text="AUFRÄUMEN" Style="{StaticResource SectionLabel}"/>
-            <Border Style="{StaticResource Card}">
+            <Border x:Name="CardCleanup" Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="Alle Semestria-Einträge aus Outlook entfernen"
                                Style="{StaticResource HeadlineText}"

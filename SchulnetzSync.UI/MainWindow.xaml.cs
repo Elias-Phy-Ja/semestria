@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Interop;
 using ModernWpf.Controls;
 using SchulnetzSync.Core.Update;
+using SchulnetzSync.UI.Controls;
 using SchulnetzSync.UI.Pages;
 using SchulnetzSync.UI.Update;
 
@@ -38,6 +39,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         TxtLoadingVersion.Text = "Version " + AppConstants.Version;
         ShowProfileHeader();
+        HookTours();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -134,7 +136,11 @@ public partial class MainWindow : Window
     private void FinishStartup()
     {
         LoadingOverlay.Visibility = Visibility.Collapsed;
+        _startupDone = true;
         StartupFinished?.Invoke();
+
+        // The first page was loaded behind the loading view; its tour may run now
+        if (ContentFrame.Content is ITourPage page) MaybeStartTour(page);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -313,6 +319,11 @@ public partial class MainWindow : Window
     /// </summary>
     private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
+        if (args.InvokedItemContainer is NavigationViewItem { Tag: "Tour" })
+        {
+            if (ContentFrame.Content is ITourPage page) StartTour(page);
+            return;
+        }
         if (args.InvokedItemContainer is not NavigationViewItem { Tag: "Synapkey" }) return;
 
         try

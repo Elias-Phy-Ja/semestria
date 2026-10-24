@@ -163,6 +163,18 @@
         </ui:NavigationView.MenuItems>
 
         <ui:NavigationView.FooterMenuItems>
+            <!-- Starts the short tour of the page on screen; not a page itself -->
+            <ui:NavigationViewItem x:Name="NavTour"
+                                   Tag="Tour"
+                                   Content="Anleitung"
+                                   SelectsOnInvoked="False"
+                                   ToolTipService.ToolTip="Kurze Anleitung zu dieser Seite">
+                <ui:NavigationViewItem.Icon>
+                    <!-- Segoe MDL2 "Lightbulb" -->
+                    <ui:FontIcon Glyph="&#xEA80;"/>
+                </ui:NavigationViewItem.Icon>
+            </ui:NavigationViewItem>
+
             <!--
                 Not a page: this opens the web app in the browser.
                 SelectsOnInvoked=False so the current page stays highlighted.
@@ -304,5 +316,8 @@
                 </StackPanel>
             </StackPanel>
         </Border>
+
+        <!-- Guided tours of the pages, above everything (see Controls/TourOverlay) -->
+        <Canvas x:Name="TourLayer" Visibility="Collapsed"/>
     </Grid>
 </Window>

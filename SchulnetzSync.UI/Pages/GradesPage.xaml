@@ -3,7 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       Title="Noten">
 
-    <!-- Three layers: the page, a dialog for entering grades and rules, and the tutorial -->
+    <!-- Two layers: the page and a dialog for entering grades and rules. The tour is drawn by the main window. -->
     <Grid x:Name="Root">
 
         <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto">
@@ -112,7 +112,5 @@
             </Border>
         </Grid>
 
-        <!-- Tutorial layer: dims the page, highlights one element, explains it in a bubble -->
-        <Canvas x:Name="TutorialLayer" Visibility="Collapsed" Background="Transparent"/>
     </Grid>
 </Page>

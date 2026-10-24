@@ -75,7 +75,11 @@ public sealed class SyncConfig
     public bool ShowNews { get; set; } = true;
 
     /// <summary>True once the short tour of the grade page was shown (or skipped).</summary>
+    /// <remarks>From before <see cref="SeenTours"/>; still read, so nobody sees that tour twice.</remarks>
     public bool GradesTutorialSeen { get; set; }
+
+    /// <summary>The pages whose short tour was shown or skipped, by key ("dashboard", "tasks" …).</summary>
+    public HashSet<string> SeenTours { get; set; } = [];
 
     /// <summary>Hands the diff engine the parts of the config it cares about.</summary>
     public SyncOptions ToSyncOptions() => new()
