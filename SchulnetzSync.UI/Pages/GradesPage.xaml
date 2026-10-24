@@ -21,19 +21,16 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>  <!-- title and buttons -->
+                        <RowDefinition Height="Auto"/>  <!-- tabs -->
+                        <RowDefinition Height="Auto"/>  <!-- actions of the tab -->
+                        <RowDefinition Height="Auto"/>  <!-- banner -->
+                    </Grid.RowDefinitions>
                     <StackPanel>
                         <TextBlock Text="Noten" FontSize="26" FontWeight="Bold"/>
                         <TextBlock x:Name="TxtSummary" FontSize="13" Opacity="0.65" Margin="0,2,0,0"
                                    TextWrapping="Wrap"/>
-                        <!-- «Semester / Jahr» or «Abschluss», filled in code -->
-                        <StackPanel x:Name="ModeBar" Orientation="Horizontal" Margin="0,12,0,0"/>
-                        <!-- Semester / school year picker and «Neues Semester/Jahr», filled in code -->
-                        <WrapPanel x:Name="PeriodBar" Margin="0,12,0,0"/>
-                        <!-- Shown while an earlier period is selected -->
-                        <Border x:Name="PeriodBanner" Style="{StaticResource InfoBox}"
-                                Margin="0,12,0,0" Padding="12,8" Visibility="Collapsed">
-                            <TextBlock x:Name="TxtPeriodBanner" FontSize="12" TextWrapping="Wrap"/>
-                        </Border>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
                         <Button x:Name="BtnHelp" Content="?" MinWidth="38" Padding="12,6" FontWeight="SemiBold" Margin="0,0,8,0"
@@ -51,7 +48,30 @@
                                 AutomationProperties.Name="Note eintragen"
                                 Click="BtnAddGrade_Click"/>
                     </StackPanel>
+                    <!-- Tabs: one per semester / school year, «+ Semester / Jahr», and on the
+                         right, set apart, the final certificate. Filled in code. -->
+                    <Grid x:Name="TabBar" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,18,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <WrapPanel x:Name="PeriodTabs" VerticalAlignment="Center"/>
+                        <StackPanel x:Name="FinalTab" Grid.Column="1" Orientation="Horizontal"
+                                    VerticalAlignment="Top" Margin="16,0,0,0"/>
+                    </Grid>
+
+                    <!-- Actions for the selected tab: delete, or the school of the final certificate -->
+                    <WrapPanel x:Name="PeriodBar" Grid.Row="2" Grid.ColumnSpan="2" Margin="0,10,0,0"/>
+
+                    <!-- Shown while an earlier period is selected -->
+                    <Border x:Name="PeriodBanner" Grid.Row="3" Grid.ColumnSpan="2" Style="{StaticResource InfoBox}"
+                            Margin="0,10,0,0" Padding="12,8" Visibility="Collapsed">
+                        <TextBlock x:Name="TxtPeriodBanner" FontSize="12" TextWrapping="Wrap"/>
+                    </Border>
                 </Grid>
+
+                <!-- Before anything else: which school's rule applies -->
+                <StackPanel x:Name="SetupPane" Grid.Row="1" Grid.RowSpan="3" Visibility="Collapsed"/>
 
                 <!-- Overview: promotion, overall average, plus points, insufficient subjects -->
                 <UniformGrid x:Name="KpiStrip" Grid.Row="1" Columns="4" Margin="-6,0,-6,8"/>

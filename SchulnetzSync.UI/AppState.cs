@@ -717,6 +717,12 @@ public static class AppState
     private static PromotionRule _promotionRule =
         LoadJson<PromotionRule>(_promotionRulePath) ?? PromotionRule.PlusPointsSystem;
 
+    /// <summary>
+    /// False until the user picked a rule on purpose. The grade page asks for one first:
+    /// a promotion check against a rule of a different school is worse than none.
+    /// </summary>
+    public static bool HasChosenRule { get; private set; } = File.Exists(_promotionRulePath);
+
     public static IReadOnlyList<GradeEntry> Grades => _grades;
 
     // ── Final exams: Matur or Berufsmatur ────────────────────────────────────
@@ -732,6 +738,25 @@ public static class AppState
     public static FinalExamState FinalExams
         => _finalExams ?? FinalExamState.Empty(
             _promotionRule.Name == PromotionRule.ImsBm.Name ? FinalMethod.ImsBm : FinalMethod.KantiMatur);
+
+    /// <summary>True once the user added a final certificate (Matur / BM) to the grade page.</summary>
+    public static bool HasFinal => _finalExams is not null;
+
+    /// <summary>Adds the final certificate, computed the way of the given school.</summary>
+    public static void AddFinal(FinalMethod method)
+    {
+        _finalExams = FinalExamState.Empty(method);
+        SaveJson(_finalExamsPath, _finalExams);
+        Notify();
+    }
+
+    /// <summary>Removes the final certificate together with every exam grade typed in for it.</summary>
+    public static void RemoveFinal()
+    {
+        _finalExams = null;
+        try { File.Delete(_finalExamsPath); } catch (IOException) { }
+        Notify();
+    }
 
     public static void SetFinalMethod(FinalMethod method)
     {
@@ -794,6 +819,16 @@ public static class AppState
         Notify();
     }
 
+    /// <summary>Deletes a semester or school year together with all of its grades.</summary>
+    public static void DeleteGradePeriod(Guid id)
+    {
+        _grades.RemoveAll(g => g.PeriodId == id);
+        _gradePeriods = Core.Grades.GradePeriods.Remove(_gradePeriods, id, DateTimeOffset.Now);
+        SaveJson(_gradesPath, _grades);
+        SaveJson(_gradePeriodsPath, _gradePeriods);
+        Notify();
+    }
+
     /// <summary>
     /// Loads the periods, creating the first one on the first start of a version with
     /// periods and putting every existing grade into it.
@@ -817,7 +852,7 @@ public static class AppState
     public static PromotionRule PromotionRule
     {
         get => _promotionRule;
-        set { _promotionRule = value; SaveJson(_promotionRulePath, _promotionRule); Notify(); }
+        set { _promotionRule = value; HasChosenRule = true; SaveJson(_promotionRulePath, _promotionRule); Notify(); }
     }
 
     /// <summary>Adds a grade, or replaces the one with the same id.</summary>

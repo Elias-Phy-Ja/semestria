@@ -105,6 +105,25 @@ public static class GradePeriods
         return new GradePeriodState([.. state?.Periods ?? [], period], period.Id);
     }
 
+    /// <summary>
+    /// Removes a period. If it was the running one, the most recently started remaining
+    /// period takes over; removing the only period leaves a fresh, empty one for now.
+    /// The caller deletes the grades that belonged to it.
+    /// </summary>
+    public static GradePeriodState Remove(GradePeriodState state, Guid id, DateTimeOffset now)
+    {
+        var rest = state.Periods.Where(p => p.Id != id).ToList();
+        if (rest.Count == state.Periods.Count) return state;
+        if (rest.Count == 0)
+        {
+            var kind = state.Periods[0].Kind;
+            return Start(null, kind, SuggestName(kind, now), now);
+        }
+
+        var current = state.CurrentId != id ? state.CurrentId : rest.OrderBy(p => p.StartedAt).Last().Id;
+        return new GradePeriodState(rest, current);
+    }
+
     /// <summary>The grades of one period.</summary>
     public static IEnumerable<GradeEntry> In(this IEnumerable<GradeEntry> grades, Guid periodId)
         => grades.Where(g => g.PeriodId == periodId);

@@ -77,7 +77,7 @@ public partial class GradesPage : WpfPage
         {
             AppState.Changed += OnStateChanged;
             Refresh();
-            if (!AppState.Config.GradesTutorialSeen)
+            if (AppState.HasChosenRule && !AppState.Config.GradesTutorialSeen)
                 Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, () => StartTutorial());
         };
         Unloaded    += (_, _) => AppState.Changed -= OnStateChanged;
@@ -94,7 +94,22 @@ public partial class GradesPage : WpfPage
 
     private void Refresh()
     {
-        BuildModeBar();
+        // No rule yet: the page asks for one before anything else
+        bool setup = !AppState.HasChosenRule;
+        SetupPane.Visibility = setup ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var part in new UIElement[] { KpiStrip, ConditionChips, MainArea, TabBar, PeriodBar, BtnAddGrade, BtnHelp })
+            part.Visibility = setup ? Visibility.Collapsed : Visibility.Visible;
+        if (setup)
+        {
+            BtnRule.Visibility      = Visibility.Collapsed;
+            PeriodBanner.Visibility = Visibility.Collapsed;
+            TxtSummary.Text         = "Bevor es losgeht: Wie rechnet deine Schule?";
+            BuildSetup();
+            return;
+        }
+
+        if (_finalMode && !AppState.HasFinal) _finalMode = false;
+        BuildTabs();
         BtnRule.Visibility  = _finalMode ? Visibility.Collapsed : Visibility.Visible;
         BtnAddGrade.Content = _finalMode ? "+  Prüfung eintragen" : "+  Note eintragen";
         System.Windows.Automation.AutomationProperties.SetName(BtnAddGrade, _finalMode ? "Prüfung eintragen" : "Note eintragen");
@@ -134,28 +149,188 @@ public partial class GradesPage : WpfPage
         KpiStrip.Columns  = ActualWidth > 0 && ActualWidth < 760 ? 2 : 4;
     }
 
-    // ── Mode: periods or final certificate ───────────────────────────────────
+    // ── Tabs: semesters, school years and the final certificate ──────────────
 
-    private void BuildModeBar()
+    /// <summary>
+    /// One tab per semester or school year, «+ Semester / Jahr», and on the right, set apart,
+    /// the final certificate: «+ Abschluss hinzufügen» until there is one.
+    /// </summary>
+    private void BuildTabs()
     {
-        ModeBar.Children.Clear();
-        foreach (var (label, final) in new[] { ("Semester / Jahr", false), ("Abschluss · Matur / BM", true) })
+        PeriodTabs.Children.Clear();
+        FinalTab.Children.Clear();
+        var state = AppState.GradePeriods;
+
+        foreach (var p in state.Periods.OrderBy(p => p.StartedAt))
         {
-            var btn = new WpfButton
+            bool selected = !_finalMode && p.Id == ViewPeriodId;
+            var tab = new WpfButton
             {
-                Content = label, Margin = new Thickness(0, 0, 8, 0),
-                Style = (Style)FindResource(final == _finalMode ? "PrimaryButton" : "SecondaryButton")
+                Content = p.Id == state.CurrentId ? $"{p.Name}  ·  aktuell" : p.Name,
+                Style   = (Style)FindResource(selected ? "PrimaryButton" : "SecondaryButton"),
+                Margin  = new Thickness(0, 0, 8, 8)
             };
-            System.Windows.Automation.AutomationProperties.SetName(btn, final ? "Abschluss" : "Semester und Jahr");
-            btn.Click += (_, _) =>
+            System.Windows.Automation.AutomationProperties.SetName(tab, $"Tab {p.Name}");
+            tab.Click += (_, _) =>
             {
-                if (_finalMode == final) return;
-                _finalMode       = final;
+                _finalMode       = false;
+                _viewPeriodId    = p.Id == state.CurrentId ? null : p.Id;
                 _selectedSubject = null;
                 Refresh();
             };
-            ModeBar.Children.Add(btn);
+            PeriodTabs.Children.Add(tab);
         }
+
+        var add = new WpfButton
+        {
+            Content = "+  Semester / Jahr", Style = RowButtonStyle(), Padding = new Thickness(12, 8, 12, 8),
+            Margin = new Thickness(0, 0, 8, 8), ToolTip = "Ein neues Semester oder Schuljahr beginnen"
+        };
+        System.Windows.Automation.AutomationProperties.SetName(add, "Neues Semester oder Jahr");
+        add.Click += (_, _) => ShowNewPeriodDialog();
+        PeriodTabs.Children.Add(add);
+
+        // The final certificate sits apart on the right
+        FinalTab.Children.Add(new WpfBorder
+        {
+            Width = 1, Margin = new Thickness(0, 4, 16, 12),
+            Background = new SolidColorBrush(Color.FromArgb(0x40, 0x80, 0x80, 0x80))
+        });
+        if (AppState.HasFinal)
+        {
+            var name = AppState.FinalExams.Method == FinalMethod.KantiMatur ? "Matur" : "BM";
+            var tab = new WpfButton
+            {
+                Content = $"🎓  Abschluss · {name}",
+                Style   = (Style)FindResource(_finalMode ? "PrimaryButton" : "SecondaryButton"),
+                Margin  = new Thickness(0, 0, 0, 8)
+            };
+            System.Windows.Automation.AutomationProperties.SetName(tab, "Tab Abschluss");
+            tab.Click += (_, _) => { _finalMode = true; _selectedSubject = null; Refresh(); };
+            FinalTab.Children.Add(tab);
+        }
+        else
+        {
+            var addFinal = new WpfButton
+            {
+                Content = "🎓  Abschluss hinzufügen", Style = (Style)FindResource("SecondaryButton"),
+                Margin = new Thickness(0, 0, 0, 8),
+                ToolTip = "Matur oder Berufsmatur: Abschlussnoten aus Zeugnis- und Prüfungsnoten"
+            };
+            System.Windows.Automation.AutomationProperties.SetName(addFinal, "Abschluss hinzufügen");
+            addFinal.Click += (_, _) => ShowAddFinalDialog();
+            FinalTab.Children.Add(addFinal);
+        }
+    }
+
+    private void ShowAddFinalDialog()
+    {
+        OpenDialog("Abschluss hinzufügen",
+            "Semestria rechnet deine Abschlussnoten aus den Zeugnissen deiner Semester oder Jahre und den Prüfungsnoten, " +
+            "so wie es deine Schule macht.");
+
+        var cards = new UniformGrid { Columns = 2 };
+        foreach (var (title, text, method) in new[]
+        {
+            ("Kanti Aarau · Matur",
+             "Vorschlagsnote aus dem letzten Jahreszeugnis, Prüfung schriftlich und mündlich, Maturnote auf halbe Noten.",
+             FinalMethod.KantiMatur),
+            ("IMS Aarau · BM",
+             "Erfahrungsnote aus allen Semesterzeugnissen, Prüfung schriftlich und mündlich, Fachnote auf halbe Noten.",
+             FinalMethod.ImsBm)
+        })
+        {
+            var panel = new StackPanel();
+            panel.Children.Add(new WpfTextBlock { Text = title, FontSize = 15, FontWeight = FontWeights.SemiBold });
+            panel.Children.Add(new WpfTextBlock { Text = text, FontSize = 12, Opacity = 0.7, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) });
+            var card = new WpfButton
+            {
+                Content = panel, Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 8),
+                HorizontalContentAlignment = WpfHA.Left, VerticalContentAlignment = VerticalAlignment.Top,
+                Padding = new Thickness(14, 12, 14, 12)
+            };
+            System.Windows.Automation.AutomationProperties.SetName(card, $"Abschluss {title}");
+            card.Click += (_, _) =>
+            {
+                CloseDialog();
+                _finalMode       = true;
+                _selectedSubject = null;
+                AppState.AddFinal(method);   // fires Notify, which rebuilds the page
+            };
+            cards.Children.Add(card);
+        }
+        DialogContent.Children.Add(cards);
+
+        var cancel = new WpfButton { Content = "Abbrechen", Style = (Style)FindResource("SecondaryButton"), HorizontalAlignment = WpfHA.Right, Margin = new Thickness(0, 8, 0, 0) };
+        cancel.Click += (_, _) => CloseDialog();
+        DialogContent.Children.Add(cancel);
+    }
+
+    /// <summary>First visit: choose how the school computes, before any grade.</summary>
+    private void BuildSetup()
+    {
+        SetupPane.Children.Clear();
+        SetupPane.Children.Add(new WpfTextBlock
+        {
+            Text = "Wähle zuerst die Regel deiner Schule. Danach kannst du Noten eintragen. " +
+                   "Ändern geht später jederzeit über «Regel».",
+            FontSize = 14, Opacity = 0.8, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 18), MaxWidth = 760,
+            HorizontalAlignment = WpfHA.Left
+        });
+
+        var schools = new UniformGrid { Columns = 2, MaxWidth = 900, HorizontalAlignment = WpfHA.Left };
+        schools.Children.Add(SetupCard("Kanti Aarau · Matur", "KANTI-STANDARD",
+            "Pluspunkte mindestens 0, wobei Minuspunkte doppelt zählen, und höchstens 4 Noten unter 4.",
+            PromotionRule.KantiMatur));
+        schools.Children.Add(SetupCard("IMS Aarau · BM", "IMS-STANDARD",
+            "Gesamtnote mindestens 4.0, höchstens 2 ungenügend, höchstens 2 Minuspunkte und Informatik mindestens 4.",
+            PromotionRule.ImsBm));
+        SetupPane.Children.Add(new WpfTextBlock { Text = "VORLAGE DEINER SCHULE", Style = (Style)FindResource("SectionLabel"), Margin = new Thickness(0, 0, 0, 8) });
+        SetupPane.Children.Add(schools);
+
+        var generic = new UniformGrid { Columns = 3, MaxWidth = 900, HorizontalAlignment = WpfHA.Left };
+        generic.Children.Add(SetupCard("Pluspunkte", null, "Pluspunkte mindestens 0, höchstens 2 Fächer ungenügend.", PromotionRule.PlusPointsSystem));
+        generic.Children.Add(SetupCard("Gesamtschnitt", null, "Schnitt mindestens 4, höchstens 2 Fächer ungenügend.", PromotionRule.AverageSystem));
+        generic.Children.Add(SetupCard("Eigene Regel", null, "Selbst zusammenstellen aus Pluspunkten, Schnitt, Minuspunkten und Mindestnoten.", null));
+        SetupPane.Children.Add(new WpfTextBlock { Text = "ANDERE SCHULE", Style = (Style)FindResource("SectionLabel"), Margin = new Thickness(0, 12, 0, 8) });
+        SetupPane.Children.Add(generic);
+    }
+
+    private UIElement SetupCard(string title, string? badge, string text, PromotionRule? rule)
+    {
+        var panel = new StackPanel();
+        if (badge is not null)
+            panel.Children.Add(new WpfBorder
+            {
+                CornerRadius = new CornerRadius(4), Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(0, 0, 0, 8),
+                HorizontalAlignment = WpfHA.Left,
+                Background = new SolidColorBrush(Color.FromArgb(40, _accent.R, _accent.G, _accent.B)),
+                Child = new WpfTextBlock { Text = badge, FontSize = 10, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(_accent) }
+            });
+        panel.Children.Add(new WpfTextBlock { Text = title, FontSize = 17, FontWeight = FontWeights.SemiBold });
+        panel.Children.Add(new WpfTextBlock { Text = text, FontSize = 13, Opacity = 0.7, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) });
+
+        var card = new WpfButton
+        {
+            Content = panel, Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 12, 12),
+            HorizontalContentAlignment = WpfHA.Left, VerticalContentAlignment = VerticalAlignment.Top,
+            Padding = new Thickness(18, 16, 18, 16), MinHeight = 120
+        };
+        System.Windows.Automation.AutomationProperties.SetName(card, $"Regel {title} wählen");
+        card.Click += (_, _) =>
+        {
+            if (rule is null)
+            {
+                // Own rule: the editor; saving it counts as choosing
+                LoadDraft(new PromotionRule("Eigene Regel", []));
+                ShowRuleDialog();
+                return;
+            }
+            AppState.PromotionRule = rule;   // fires Notify, which rebuilds the page
+            if (!AppState.Config.GradesTutorialSeen)
+                Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, () => StartTutorial());
+        };
+        return card;
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -212,6 +387,26 @@ public partial class GradesPage : WpfPage
             FontSize = 12, Opacity = 0.65, TextWrapping = TextWrapping.Wrap, MaxWidth = 560,
             VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 6, 0, 0)
         });
+
+        var remove = new WpfButton
+        {
+            Content = "Abschluss entfernen", Style = RowButtonStyle(), Padding = new Thickness(10, 6, 10, 6),
+            Foreground = new SolidColorBrush(_danger), Margin = new Thickness(8, 0, 0, 0),
+            ToolTip = "Den Abschluss mit allen eingetragenen Prüfungsnoten entfernen"
+        };
+        System.Windows.Automation.AutomationProperties.SetName(remove, "Abschluss entfernen");
+        remove.Click += (_, _) =>
+        {
+            int exams = AppState.FinalExams.Exams.Count;
+            var text = exams == 0
+                ? "Abschluss entfernen? Deine Semester- und Jahresnoten bleiben."
+                : $"Abschluss mit {Count(exams, "Prüfung", "Prüfungen")} entfernen? Deine Semester- und Jahresnoten bleiben.";
+            if (MessageBox.Show(text, "Abschluss entfernen", MessageBoxButton.YesNo, MessageBoxImage.Warning,
+                    MessageBoxResult.No) != MessageBoxResult.Yes) return;
+            _finalMode = false;
+            AppState.RemoveFinal();
+        };
+        PeriodBar.Children.Add(remove);
     }
 
     private static string BaseName(FinalMethod method)
@@ -595,46 +790,36 @@ public partial class GradesPage : WpfPage
         PeriodBar.Children.Clear();
         var state  = AppState.GradePeriods;
         var viewId = ViewPeriodId;
+        var period = state.Periods.First(p => p.Id == viewId);
 
-        var cmb = new WpfComboBox
+        var delete = new WpfButton
         {
-            Height = 34, FontSize = 13, MinWidth = 220, Margin = new Thickness(0, 0, 8, 0),
-            VerticalAlignment = VerticalAlignment.Center
+            Content = $"«{period.Name}» löschen", Style = RowButtonStyle(), Padding = new Thickness(10, 6, 10, 6),
+            Foreground = new SolidColorBrush(_danger), ToolTip = "Dieses Semester bzw. Jahr mit allen Noten löschen"
         };
-        System.Windows.Automation.AutomationProperties.SetName(cmb, "Semester oder Schuljahr");
-        foreach (var p in state.Periods.OrderByDescending(p => p.StartedAt))
+        System.Windows.Automation.AutomationProperties.SetName(delete, "Abschnitt löschen");
+        delete.Click += (_, _) =>
         {
-            var item = new ComboBoxItem
-            {
-                Content = p.Id == state.CurrentId ? $"{p.Name}  ·  aktuell" : p.Name,
-                Tag     = p.Id
-            };
-            cmb.Items.Add(item);
-            if (p.Id == viewId) cmb.SelectedItem = item;
-        }
-        cmb.SelectionChanged += (_, _) =>
-        {
-            if (cmb.SelectedItem is not ComboBoxItem { Tag: Guid id }) return;
-            _viewPeriodId    = id == state.CurrentId ? null : id;
+            int count = AppState.GradesIn(period.Id).Count;
+            var text = count == 0
+                ? $"«{period.Name}» löschen?"
+                : $"«{period.Name}» mit {Count(count, "Note", "Noten")} löschen? Das lässt sich nicht rückgängig machen.";
+            if (state.Periods.Count == 1)
+                text += "\n\nEs ist der einzige Abschnitt; danach beginnt ein neuer, leerer.";
+            if (MessageBox.Show(text, "Abschnitt löschen", MessageBoxButton.YesNo, MessageBoxImage.Warning,
+                    MessageBoxResult.No) != MessageBoxResult.Yes) return;
+
+            _viewPeriodId    = null;
             _selectedSubject = null;
-            Refresh();
+            AppState.DeleteGradePeriod(period.Id);   // fires Notify, which rebuilds the page
         };
-        PeriodBar.Children.Add(cmb);
-
-        var btnNew = new WpfButton
-        {
-            Content = "Neues Semester / Jahr", Style = (Style)FindResource("SecondaryButton"),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        System.Windows.Automation.AutomationProperties.SetName(btnNew, "Neues Semester oder Jahr");
-        btnNew.Click += (_, _) => ShowNewPeriodDialog();
-        PeriodBar.Children.Add(btnNew);
+        PeriodBar.Children.Add(delete);
 
         bool old = viewId != state.CurrentId;
         PeriodBanner.Visibility = old ? Visibility.Visible : Visibility.Collapsed;
         if (old)
             TxtPeriodBanner.Text =
-                $"Du siehst «{state.Periods.First(p => p.Id == viewId).Name}», einen früheren Abschnitt. " +
+                $"Du siehst «{period.Name}», einen früheren Abschnitt. " +
                 $"Noten, die du jetzt einträgst oder änderst, gehören dazu. Laufend ist «{state.Current.Name}».";
     }
 
@@ -1463,10 +1648,10 @@ public partial class GradesPage : WpfPage
     [
         new(() => BtnAddGrade, "Note eintragen",
             "Hier trägst du eine Note ein: Fach, Note und Gewicht. Eine halbe Prüfung zählt 0.5, eine Viertelprüfung 0.25."),
-        new(() => PeriodBar, "Semester und Schuljahre",
-            "Deine Noten gehören zu einem Semester oder Schuljahr. Mit «Neues Semester / Jahr» beginnst du frisch, frühere bleiben hier auswählbar."),
-        new(() => ModeBar, "Abschluss",
-            "Unter «Abschluss» rechnet Semestria deine Matur- oder BM-Noten aus Zeugnis- und Prüfungsnoten, nach den Regeln der Kanti Aarau oder der IMS Aarau."),
+        new(() => PeriodTabs, "Semester und Schuljahre",
+            "Jedes Semester oder Schuljahr ist ein Tab. Mit «+ Semester / Jahr» beginnst du frisch, frühere bleiben hier. Löschen geht über den Knopf darunter."),
+        new(() => FinalTab, "Abschluss",
+            "Hier fügst du deinen Abschluss hinzu: Matur an der Kanti Aarau oder BM an der IMS Aarau. Semestria rechnet die Noten aus Zeugnissen und Prüfungen."),
         new(() => KpiStrip, "Dein Überblick",
             "Promotion, Gesamtschnitt, Pluspunkte und ungenügende Fächer auf einen Blick. Rot heisst: hier aufpassen."),
         new(() => BtnRule, "Die Regel deiner Schule",
