@@ -49,6 +49,17 @@ public partial class GradesPage : WpfPage
 
     private string? _selectedSubject;
 
+    /// <summary>The period on screen; null means the running one.</summary>
+    private Guid? _viewPeriodId;
+
+    /// <summary>The grades of the period on screen, set by <see cref="Refresh"/>.</summary>
+    private IReadOnlyList<GradeEntry> _viewGrades = [];
+
+    private Guid ViewPeriodId
+        => _viewPeriodId is Guid id && AppState.GradePeriods.Periods.Any(p => p.Id == id)
+            ? id
+            : AppState.GradePeriods.CurrentId;
+
     // Target calculator input; survives a rebuild of the page
     private double _targetGrade  = 4.0;
     private string _targetWeight = "1";
@@ -80,7 +91,8 @@ public partial class GradesPage : WpfPage
 
     private void Refresh()
     {
-        var standings = Grading.Summarize(AppState.Grades);
+        _viewGrades   = AppState.GradesIn(ViewPeriodId);
+        var standings = Grading.Summarize(_viewGrades);
         var rule      = AppState.PromotionRule;
         var result    = rule.Evaluate(standings);
 
@@ -89,10 +101,11 @@ public partial class GradesPage : WpfPage
 
         TxtSummary.Text = standings.Count == 0
             ? "Trag deine Noten ein. Semestria rechnet Schnitte, Pluspunkte und sagt dir, ob die Promotion reicht."
-            : $"{Count(AppState.Grades.Count, "Note", "Noten")} in {Count(standings.Count, "Fach", "Fächern")}  ·  " +
+            : $"{Count(_viewGrades.Count, "Note", "Noten")} in {Count(standings.Count, "Fach", "Fächern")}  ·  " +
               "Fachnoten auf halbe Noten gerundet";
         BtnRule.Content = $"Regel: {rule.Name}";
 
+        BuildPeriodBar();
         BuildKpis(standings, result, rule);
         BuildConditionChips(result);
         BuildSubjectTable(standings);
@@ -110,6 +123,107 @@ public partial class GradesPage : WpfPage
         Grid.SetRow(DetailPane, narrow ? 1 : 0);
         DetailPane.Margin = narrow ? new Thickness(0, 4, 0, 0) : new Thickness(0);
         KpiStrip.Columns  = ActualWidth > 0 && ActualWidth < 760 ? 2 : 4;
+    }
+
+    // ── Semester / school year ───────────────────────────────────────────────
+
+    private void BuildPeriodBar()
+    {
+        PeriodBar.Children.Clear();
+        var state  = AppState.GradePeriods;
+        var viewId = ViewPeriodId;
+
+        var cmb = new WpfComboBox
+        {
+            Height = 34, FontSize = 13, MinWidth = 220, Margin = new Thickness(0, 0, 8, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        System.Windows.Automation.AutomationProperties.SetName(cmb, "Semester oder Schuljahr");
+        foreach (var p in state.Periods.OrderByDescending(p => p.StartedAt))
+        {
+            var item = new ComboBoxItem
+            {
+                Content = p.Id == state.CurrentId ? $"{p.Name}  ·  aktuell" : p.Name,
+                Tag     = p.Id
+            };
+            cmb.Items.Add(item);
+            if (p.Id == viewId) cmb.SelectedItem = item;
+        }
+        cmb.SelectionChanged += (_, _) =>
+        {
+            if (cmb.SelectedItem is not ComboBoxItem { Tag: Guid id }) return;
+            _viewPeriodId    = id == state.CurrentId ? null : id;
+            _selectedSubject = null;
+            Refresh();
+        };
+        PeriodBar.Children.Add(cmb);
+
+        var btnNew = new WpfButton
+        {
+            Content = "Neues Semester / Jahr", Style = (Style)FindResource("SecondaryButton"),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        System.Windows.Automation.AutomationProperties.SetName(btnNew, "Neues Semester oder Jahr");
+        btnNew.Click += (_, _) => ShowNewPeriodDialog();
+        PeriodBar.Children.Add(btnNew);
+
+        bool old = viewId != state.CurrentId;
+        PeriodBanner.Visibility = old ? Visibility.Visible : Visibility.Collapsed;
+        if (old)
+            TxtPeriodBanner.Text =
+                $"Du siehst «{state.Periods.First(p => p.Id == viewId).Name}», einen früheren Abschnitt. " +
+                $"Noten, die du jetzt einträgst oder änderst, gehören dazu. Laufend ist «{state.Current.Name}».";
+    }
+
+    private void ShowNewPeriodDialog()
+    {
+        var current = AppState.GradePeriods.Current;
+        OpenDialog("Neues Semester oder Schuljahr",
+            $"Du startest mit leeren Noten. «{current.Name}» bleibt gespeichert und lässt sich oben jederzeit wieder auswählen.");
+
+        var kind = current.Kind;
+        bool ownName = false;
+
+        var txtName = new WpfTextBox { Height = 36, FontSize = 14, MaxLength = GradePeriod.MaxNameLength };
+        System.Windows.Automation.AutomationProperties.SetName(txtName, "Name");
+
+        var btnSemester = new WpfButton { Content = "Semester",  Height = 36, Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(16, 0, 16, 0) };
+        var btnYear     = new WpfButton { Content = "Schuljahr", Height = 36, Padding = new Thickness(16, 0, 16, 0) };
+
+        void ShowKind()
+        {
+            btnSemester.Style = (Style)FindResource(kind == PeriodKind.Semester ? "PrimaryButton" : "SecondaryButton");
+            btnYear.Style     = (Style)FindResource(kind == PeriodKind.Year     ? "PrimaryButton" : "SecondaryButton");
+            // The suggestion follows the kind until someone types a name of their own
+            if (!ownName) txtName.Text = GradePeriods.SuggestNext(AppState.GradePeriods, kind, DateTimeOffset.Now);
+        }
+        btnSemester.Click += (_, _) => { kind = PeriodKind.Semester; ShowKind(); };
+        btnYear.Click     += (_, _) => { kind = PeriodKind.Year;     ShowKind(); };
+        ShowKind();
+        txtName.TextChanged += (_, _) => { if (txtName.IsKeyboardFocusWithin) ownName = true; };
+
+        var kinds = new StackPanel { Orientation = WpfOrientation.Horizontal };
+        kinds.Children.Add(btnSemester);
+        kinds.Children.Add(btnYear);
+        DialogContent.Children.Add(Labeled("Art", kinds));
+        DialogContent.Children.Add(new WpfTextBlock
+        {
+            Text = "Semester: zwei Zeugnisse pro Jahr, wie an der IMS. Schuljahr: ein Jahreszeugnis, wie an der Kanti.",
+            Style = (Style)FindResource("NoteText"), Margin = new Thickness(0, -6, 0, 14)
+        });
+        DialogContent.Children.Add(Labeled("Name", txtName, stretch: true));
+
+        var start = new WpfButton { Content = "Beginnen", Style = (Style)FindResource("PrimaryButton") };
+        void Start()
+        {
+            CloseDialog();
+            _viewPeriodId    = null;
+            _selectedSubject = null;
+            AppState.StartGradePeriod(kind, txtName.Text);   // fires Notify, which rebuilds the page
+        }
+        start.Click += (_, _) => Start();
+        DialogContent.Children.Add(DialogButtons(start));
+        txtName.KeyDown += (_, e) => { if (e.Key == Key.Enter) Start(); };
     }
 
     // ── Overview tiles ───────────────────────────────────────────────────────
@@ -132,11 +246,22 @@ public partial class GradesPage : WpfPage
             standings.Count == 0 ? "noch keine Noten" : $"aus {Count(standings.Count, "Fachnote", "Fachnoten")}",
             avg is double v && v < GradeEntry.Sufficient ? _danger : null));
 
-        double points = Grading.PlusPoints(standings);
-        KpiStrip.Children.Add(Kpi("PLUSPUNKTE",
-            standings.Count == 0 ? "–" : SignedPoints(points),
-            "+0.5 je halbe Note über 4, −1 darunter",
-            standings.Count > 0 && points < 0 ? _danger : null));
+        if (rule.Conditions.OfType<MaxDeficitPoints>().FirstOrDefault() is { } deficitRule)
+        {
+            double deficit = standings.Where(s => s.IsInsufficient).Sum(s => GradeEntry.Sufficient - s.Grade);
+            KpiStrip.Children.Add(Kpi("MINUSPUNKTE",
+                standings.Count == 0 ? "–" : deficit.ToString("0.#", _deCH),
+                $"höchstens {deficitRule.Max.ToString("0.#", _deCH)} erlaubt, 3.5 zählt 0.5",
+                deficit > deficitRule.Max ? _danger : null));
+        }
+        else
+        {
+            double points = Grading.PlusPoints(standings);
+            KpiStrip.Children.Add(Kpi("PLUSPUNKTE",
+                standings.Count == 0 ? "–" : SignedPoints(points),
+                "+0.5 je halbe Note über 4, −1 darunter",
+                standings.Count > 0 && points < 0 ? _danger : null));
+        }
 
         var insufficient = standings.Where(s => s.IsInsufficient).Select(s => s.Subject).ToList();
         KpiStrip.Children.Add(Kpi("UNGENÜGEND",
@@ -631,7 +756,8 @@ public partial class GradesPage : WpfPage
             Value:   v,
             Weight:  w,
             Title:   title.Trim(),
-            Date:    DateOnly.FromDateTime(date ?? DateTime.Today)));   // fires Notify, which rebuilds the page
+            Date:    DateOnly.FromDateTime(date ?? DateTime.Today),
+            PeriodId: editing?.PeriodId ?? ViewPeriodId));   // fires Notify, which rebuilds the page
         return null;
     }
 
@@ -657,6 +783,7 @@ public partial class GradesPage : WpfPage
             MaxInsufficientSubjects m => new DraftCondition { Kind = "maxInsu", Value = m.Max.ToString(CultureInfo.InvariantCulture) },
             MinOverallAverage a       => new DraftCondition { Kind = "average", Value = Num(a.Min) },
             MinSubjectGrade s         => new DraftCondition { Kind = "subject", Value = Num(s.Min), Subject = s.Subject },
+            MaxDeficitPoints d        => new DraftCondition { Kind = "deficit", Value = Num(d.Max) },
             _                         => throw new InvalidOperationException($"Unknown condition {c.GetType().Name}")
         }).ToList();
 
@@ -667,11 +794,18 @@ public partial class GradesPage : WpfPage
     {
         OpenDialog("Promotionsregel", "Wähle das System deiner Schule und pass es an. Alle Bedingungen müssen erfüllt sein.");
 
-        var templates = new UniformGrid { Columns = 3, Margin = new Thickness(0, 0, 0, 16) };
-        templates.Children.Add(TemplateCard("Pluspunkte", "Pluspunkte ≥ 0, höchstens 2 ungenügend", PromotionRule.PlusPointsSystem));
-        templates.Children.Add(TemplateCard("Gesamtschnitt", "Schnitt ≥ 4, höchstens 2 ungenügend", PromotionRule.AverageSystem));
-        templates.Children.Add(TemplateCard("Eigene", "Leer beginnen und selbst bauen", new PromotionRule("Eigene Regel", [])));
-        DialogContent.Children.Add(Labeled("Vorlage", templates, stretch: true));
+        var schools = new UniformGrid { Columns = 2, Margin = new Thickness(0, 0, 0, 8) };
+        schools.Children.Add(TemplateCard("Kanti Aarau · Matur",
+            "Pluspunkte ≥ 0 (Minus doppelt), höchstens 4 unter 4", PromotionRule.KantiMatur, "KANTI-STANDARD"));
+        schools.Children.Add(TemplateCard("IMS Aarau · BM",
+            "Gesamtnote ≥ 4.0, höchstens 2 ungenügend, höchstens 2 Minuspunkte, INF ≥ 4", PromotionRule.ImsBm, "IMS-STANDARD"));
+        DialogContent.Children.Add(Labeled("Vorlage deiner Schule", schools, stretch: true));
+
+        var generic = new UniformGrid { Columns = 3, Margin = new Thickness(0, 0, 0, 16) };
+        generic.Children.Add(TemplateCard("Pluspunkte", "Pluspunkte ≥ 0, höchstens 2 ungenügend", PromotionRule.PlusPointsSystem));
+        generic.Children.Add(TemplateCard("Gesamtschnitt", "Schnitt ≥ 4, höchstens 2 ungenügend", PromotionRule.AverageSystem));
+        generic.Children.Add(TemplateCard("Eigene", "Leer beginnen und selbst bauen", new PromotionRule("Eigene Regel", [])));
+        DialogContent.Children.Add(Labeled("Allgemeine Vorlagen", generic, stretch: true));
 
         var txtName = new WpfTextBox { Height = 34, FontSize = 13, Text = _draftName ?? "" };
         txtName.TextChanged += (_, _) => _draftName = txtName.Text;
@@ -690,6 +824,7 @@ public partial class GradesPage : WpfPage
         adders.Children.Add(AddConditionButton("+ Pluspunkte",          new DraftCondition { Kind = "plus",    Value = "0" }));
         adders.Children.Add(AddConditionButton("+ Ungenügende Fächer",  new DraftCondition { Kind = "maxInsu", Value = "2" }));
         adders.Children.Add(AddConditionButton("+ Gesamtschnitt",       new DraftCondition { Kind = "average", Value = "4" }));
+        adders.Children.Add(AddConditionButton("+ Minuspunkte unter 4", new DraftCondition { Kind = "deficit", Value = "2" }));
         adders.Children.Add(AddConditionButton("+ Mindestnote in Fach", new DraftCondition { Kind = "subject", Value = "4", Subject = _selectedSubject ?? "" }));
         DialogContent.Children.Add(adders);
 
@@ -718,14 +853,25 @@ public partial class GradesPage : WpfPage
         DialogContent.Children.Add(DialogButtons(save));
     }
 
-    private UIElement TemplateCard(string title, string text, PromotionRule template)
+    private UIElement TemplateCard(string title, string text, PromotionRule template, string? badge = null)
     {
         var panel = new StackPanel();
+        if (badge is not null)
+            panel.Children.Add(new WpfBorder
+            {
+                CornerRadius = new CornerRadius(4), Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(0, 0, 0, 6),
+                HorizontalAlignment = WpfHA.Left,
+                Background = new SolidColorBrush(Color.FromArgb(40, _accent.R, _accent.G, _accent.B)),
+                Child = new WpfTextBlock
+                {
+                    Text = badge, FontSize = 10, FontWeight = FontWeights.Bold, Foreground = new SolidColorBrush(_accent)
+                }
+            });
         panel.Children.Add(new WpfTextBlock { Text = title, FontSize = 13, FontWeight = FontWeights.SemiBold });
         panel.Children.Add(new WpfTextBlock { Text = text, FontSize = 11, Opacity = 0.65, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) });
         var btn = new WpfButton
         {
-            Content = panel, Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0),
+            Content = panel, Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 8),
             HorizontalContentAlignment = WpfHA.Left, VerticalContentAlignment = VerticalAlignment.Top,
             Padding = new Thickness(10, 8, 10, 8)
         };
@@ -771,6 +917,11 @@ public partial class GradesPage : WpfPage
                 row.Children.Add(Text("Gesamtschnitt mindestens"));
                 row.Children.Add(Box(d.Value, 60, v => d.Value = v));
                 break;
+            case "deficit":
+                row.Children.Add(Text("Höchstens"));
+                row.Children.Add(Box(d.Value, 50, v => d.Value = v));
+                row.Children.Add(Text("Minuspunkte unter 4"));
+                break;
             case "subject":
                 row.Children.Add(Text("Fach"));
                 row.Children.Add(Box(d.Subject, 70, v => d.Subject = v));
@@ -809,6 +960,12 @@ public partial class GradesPage : WpfPage
                 case "plus":
                     conditions.Add(new MinPlusPoints(value));
                     break;
+                case "deficit" when value < 0:
+                    problem = "Minuspunkte können nicht negativ sein.";
+                    return false;
+                case "deficit":
+                    conditions.Add(new MaxDeficitPoints(value));
+                    break;
                 case "average" when value is < GradeEntry.Min or > GradeEntry.Max:
                 case "subject" when value is < GradeEntry.Min or > GradeEntry.Max:
                     problem = "Noten in einer Regel müssen zwischen 1 und 6 liegen.";
@@ -839,10 +996,12 @@ public partial class GradesPage : WpfPage
     [
         new(() => BtnAddGrade, "Note eintragen",
             "Hier trägst du eine Note ein: Fach, Note und Gewicht. Eine halbe Prüfung zählt 0.5, eine Viertelprüfung 0.25."),
+        new(() => PeriodBar, "Semester und Schuljahre",
+            "Deine Noten gehören zu einem Semester oder Schuljahr. Mit «Neues Semester / Jahr» beginnst du frisch, frühere bleiben hier auswählbar."),
         new(() => KpiStrip, "Dein Überblick",
             "Promotion, Gesamtschnitt, Pluspunkte und ungenügende Fächer auf einen Blick. Rot heisst: hier aufpassen."),
         new(() => BtnRule, "Die Regel deiner Schule",
-            "Pluspunkte oder Gesamtschnitt? Hier wählst du das System. Schlüsselfächer wie Informatik an der IMS legst du ebenfalls hier fest."),
+            "Hier wählst du, wie deine Schule rechnet. Für die Kanti Aarau und die IMS Aarau gibt es fertige Vorlagen, alles andere lässt sich selbst zusammenstellen."),
         new(() => SubjectCard, "Deine Fächer",
             "Jede Zeile ist ein Fach: alle Noten, der genaue Schnitt und die auf halbe Noten gerundete Fachnote. Klick auf ein Fach für Details."),
         new(() => _calculatorCard, "Zielrechner",
@@ -1025,8 +1184,8 @@ public partial class GradesPage : WpfPage
     // Small helpers
     // ══════════════════════════════════════════════════════════════════════
 
-    private static IEnumerable<GradeEntry> GradesOf(string subject)
-        => AppState.Grades
+    private IEnumerable<GradeEntry> GradesOf(string subject)
+        => _viewGrades
             .Where(g => string.Equals(g.Subject, subject, StringComparison.OrdinalIgnoreCase))
             .OrderBy(g => g.Date);
 

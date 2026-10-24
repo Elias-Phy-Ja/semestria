@@ -31,6 +31,7 @@ public sealed record ConditionResult(string Label, ConditionStatus Status, strin
 [JsonDerivedType(typeof(MaxInsufficientSubjects), "maxInsufficient")]
 [JsonDerivedType(typeof(MinOverallAverage),       "minOverallAverage")]
 [JsonDerivedType(typeof(MinSubjectGrade),         "minSubjectGrade")]
+[JsonDerivedType(typeof(MaxDeficitPoints),        "maxDeficit")]
 public abstract record RuleCondition
 {
     public abstract ConditionResult Evaluate(IReadOnlyList<SubjectStanding> standings);
@@ -68,7 +69,10 @@ public sealed record MaxInsufficientSubjects(int Max) : RuleCondition
     }
 }
 
-/// <summary>The average of the report grades must reach a minimum, usually 4.</summary>
+/// <summary>
+/// The average of the report grades must reach a minimum, usually 4. Like the «Gesamtnote»
+/// in the IMS sheet, the average counts rounded to a tenth: 3.96 is a 4.0.
+/// </summary>
 public sealed record MinOverallAverage(double Min) : RuleCondition
 {
     public override ConditionResult Evaluate(IReadOnlyList<SubjectStanding> standings)
@@ -77,9 +81,24 @@ public sealed record MinOverallAverage(double Min) : RuleCondition
         if (Grading.OverallAverage(standings) is not double avg)
             return new(label, ConditionStatus.Open, "noch keine Noten");
 
-        // Compare on two decimals, so 3.9999… from floating point does not fail a clean 4
-        return new(label, Math.Round(avg, 2) >= Min ? ConditionStatus.Met : ConditionStatus.Failed,
-                   avg.ToString("0.00", CultureInfo.InvariantCulture));
+        double rounded = Math.Round(Math.Round(avg, 6), 1, MidpointRounding.AwayFromZero);
+        return new(label, rounded >= Min ? ConditionStatus.Met : ConditionStatus.Failed,
+                   rounded.ToString("0.0", CultureInfo.InvariantCulture));
+    }
+}
+
+/// <summary>
+/// The grades below 4 may together miss 4 by at most this much: 3.5 costs 0.5, 3 costs 1.
+/// The IMS calls these «Minuspunkte unter 4» and allows 2.
+/// </summary>
+public sealed record MaxDeficitPoints(double Max) : RuleCondition
+{
+    public override ConditionResult Evaluate(IReadOnlyList<SubjectStanding> standings)
+    {
+        string label = $"Höchstens {Format(Max)} Minuspunkte unter 4";
+        double deficit = standings.Where(s => s.IsInsufficient).Sum(s => GradeEntry.Sufficient - s.Grade);
+        return new(label, deficit <= Max + 1e-9 ? ConditionStatus.Met : ConditionStatus.Failed,
+                   deficit == 0 ? "keine" : $"{Format(deficit)} Minuspunkte");
     }
 }
 
@@ -117,6 +136,30 @@ public sealed record PromotionRule(string Name, IReadOnlyList<RuleCondition> Con
     [
         new MinOverallAverage(4),
         new MaxInsufficientSubjects(2)
+    ]);
+
+    /// <summary>
+    /// Alte Kantonsschule Aarau, Matur (Bestehensnorm, «Allgemeine Informationen zur Matur
+    /// 2026»): twice the sum of the shortfalls below 4 must not exceed the sum of the marks
+    /// above 4, which is exactly the plus-point saldo ≥ 0, and at most four grades below 4.
+    /// </summary>
+    public static PromotionRule KantiMatur { get; } = new("Kanti Aarau · Matur",
+    [
+        new MinPlusPoints(0),
+        new MaxInsufficientSubjects(4)
+    ]);
+
+    /// <summary>
+    /// IMS Aarau, Berufsmaturität (school's grade calculator 2026): overall grade at least
+    /// 4.0, at most two insufficient subject grades, at most two «Minuspunkte unter 4»,
+    /// plus Informatik at least 4 for the IMS diploma.
+    /// </summary>
+    public static PromotionRule ImsBm { get; } = new("IMS Aarau · BM",
+    [
+        new MinOverallAverage(4),
+        new MaxInsufficientSubjects(2),
+        new MaxDeficitPoints(2),
+        new MinSubjectGrade("INF", 4)
     ]);
 
     public PromotionResult Evaluate(IReadOnlyList<SubjectStanding> standings)

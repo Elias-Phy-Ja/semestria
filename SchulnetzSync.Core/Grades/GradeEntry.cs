@@ -7,13 +7,19 @@ namespace SchulnetzSync.Core.Grades;
 /// <param name="Weight">Weight within the subject; 1 is a normal exam, 0.5 a half one.</param>
 /// <param name="Title">What it was for, e.g. "Prüfung 1.1". May be empty.</param>
 /// <param name="Date">When it was written.</param>
+/// <param name="PeriodId">
+/// The semester or school year the grade belongs to (see <see cref="GradePeriod"/>).
+/// Null only for grades saved before periods existed; <see cref="GradePeriods.Migrate"/>
+/// assigns those to the first period.
+/// </param>
 public sealed record GradeEntry(
     Guid     Id,
     string   Subject,
     double   Value,
     double   Weight,
     string   Title,
-    DateOnly Date)
+    DateOnly Date,
+    Guid?    PeriodId = null)
 {
     public const double Min = 1.0;
     public const double Max = 6.0;

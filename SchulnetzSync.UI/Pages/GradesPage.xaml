@@ -25,6 +25,13 @@
                         <TextBlock Text="Noten" FontSize="26" FontWeight="Bold"/>
                         <TextBlock x:Name="TxtSummary" FontSize="13" Opacity="0.65" Margin="0,2,0,0"
                                    TextWrapping="Wrap"/>
+                        <!-- Semester / school year picker and «Neues Semester/Jahr», filled in code -->
+                        <WrapPanel x:Name="PeriodBar" Margin="0,12,0,0"/>
+                        <!-- Shown while an earlier period is selected -->
+                        <Border x:Name="PeriodBanner" Style="{StaticResource InfoBox}"
+                                Margin="0,12,0,0" Padding="12,8" Visibility="Collapsed">
+                            <TextBlock x:Name="TxtPeriodBanner" FontSize="12" TextWrapping="Wrap"/>
+                        </Border>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
                         <Button x:Name="BtnHelp" Content="?" MinWidth="38" Padding="12,6" FontWeight="SemiBold" Margin="0,0,8,0"

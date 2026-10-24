@@ -719,6 +719,49 @@ public static class AppState
 
     public static IReadOnlyList<GradeEntry> Grades => _grades;
 
+    // ── Grade periods: semesters or school years ─────────────────────────────
+
+    private static readonly string _gradePeriodsPath = DataPaths.ProfileFile("grade-periods.json");
+
+    // Declared after _grades on purpose: the migration below sorts the existing grades in.
+    private static GradePeriodState _gradePeriods = LoadGradePeriods();
+
+    /// <summary>All periods and the running one.</summary>
+    public static GradePeriodState GradePeriods => _gradePeriods;
+
+    /// <summary>The grades of one period.</summary>
+    public static IReadOnlyList<GradeEntry> GradesIn(Guid periodId) => _grades.In(periodId).ToList();
+
+    /// <summary>
+    /// Starts a new semester or school year. New grades go there; the old period and its
+    /// grades stay and can be looked at in the period picker.
+    /// </summary>
+    public static void StartGradePeriod(PeriodKind kind, string name)
+    {
+        _gradePeriods = Core.Grades.GradePeriods.Start(_gradePeriods, kind, name, DateTimeOffset.Now);
+        SaveJson(_gradePeriodsPath, _gradePeriods);
+        Notify();
+    }
+
+    /// <summary>
+    /// Loads the periods, creating the first one on the first start of a version with
+    /// periods and putting every existing grade into it.
+    /// </summary>
+    private static GradePeriodState LoadGradePeriods()
+    {
+        var stored = LoadJson<GradePeriodState>(_gradePeriodsPath);
+        var (state, grades) = Core.Grades.GradePeriods.Migrate(stored, _grades, DateTimeOffset.Now);
+
+        if (stored != state) SaveJson(_gradePeriodsPath, state);
+        if (!grades.SequenceEqual(_grades))
+        {
+            _grades.Clear();
+            _grades.AddRange(grades);
+            SaveJson(_gradesPath, _grades);
+        }
+        return state;
+    }
+
     /// <summary>The rule the grade page checks against.</summary>
     public static PromotionRule PromotionRule
     {
