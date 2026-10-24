@@ -1,0 +1,52 @@
+Semestria bringt deinen Schulkalender in Outlook und behält deine Noten im Blick.
+
+Semestria liest den persönlichen Kalender-Feed deiner Schule und zeigt Prüfungen, Termine und deinen Stundenplan in einem übersichtlichen Kalender in der App. Auf Wunsch überträgt Semestria Prüfungen und Termine zusätzlich als echte Einträge in einen Kalender deines Microsoft-Kontos. Einmal eingerichtet, hältst du deinen Schulkalender mit einem Klick aktuell, und zwar überall dort, wo dein Outlook-Konto synchronisiert: am PC, auf dem Handy, auf dem Tablet. Dazu kommen Noten, Aufgaben und mehrere Profile, alles an einem Ort.
+
+Warum nicht einfach den Abo-Link in Outlook eintragen?
+
+Ein abonnierter Feed landet in Outlook als schreibgeschützter Fremdkalender. Du kannst keine eigenen Erinnerungen setzen, nichts ergänzen, nichts einfärben, und auf dem iPhone aktualisiert er sich oft nur unzuverlässig oder gar nicht. Semestria geht den anderen Weg: Die Termine werden als reguläre Kalendereinträge in deinen eigenen Kalender geschrieben. Damit verhalten sie sich wie alle anderen Termine auch.
+
+In zwei Schritten eingerichtet
+
+Kalender-Adresse aus dem Schulportal kopieren und in Semestria einfügen
+Optional: mit dem Microsoft-Konto anmelden für Outlook
+
+Schon nach dem ersten Schritt siehst du deinen ganzen Stundenplan in der App. Die Outlook-Verknüpfung kannst du jederzeit nachholen. Ein kurzer Rundgang zeigt dir beim ersten Start, wo was ist, und jede Seite erklärt sich beim ersten Besuch selbst. Unter «Hilfe» kannst du jede Anleitung erneut ansehen.
+
+Dein Schultag auf einen Blick
+
+Das Dashboard zeigt dir, was heute läuft: die Stunden des Tages, die nächsten Prüfungen und Termine und deine offenen Aufgaben. Der Kalender lässt sich als Woche oder als Monat anzeigen. Ausgefallene Lektionen erkennt Semestria und zeigt sie grau und durchgestrichen mit dem Hinweis «Ausfall». Eigene Einträge legst du direkt im Kalender an und kannst sie jederzeit bearbeiten.
+
+Noten und Promotion
+
+Trage deine Noten mit Gewicht ein, Semestria rechnet die Fachnoten und deinen Schnitt aus, nach Semestern oder Schuljahren getrennt. Zuerst wählst du die Promotionsregel deiner Schule: Vorlagen für die Kantonsschule Aarau (Matur) und die IMS Aarau (BM) sind dabei, oder du stellst dir eine eigene Regel zusammen, etwa Pluspunkte, Mindestschnitt, Anzahl ungenügender Fächer oder eine Mindestnote in einem bestimmten Fach. Der Zielrechner sagt dir, welche Note du an der nächsten Prüfung brauchst. Im Bereich «Abschluss» rechnest du aus Zeugnis- und Prüfungsnoten deine Matur- oder BM-Noten aus und siehst, was du an der Abschlussprüfung noch erreichen musst.
+
+Aufgaben und Erinnerungen
+
+Hausaufgaben, Abgaben und Vorbereitungen trägst du in eigenen Listen ein, nach Fach sortiert und mit Abgabetermin. Auf Wunsch erinnert dich Semestria rechtzeitig.
+
+Mehrere Profile
+
+Du willst auch den Stundenplan deines Kumpels oder deiner Geschwister auf demselben PC im Blick haben? Lege dafür ein eigenes Profil an und wechsle oben links mit einem Klick. Jedes Profil hat eigene Daten und eine eigene Microsoft-Anmeldung, und kein Profil verändert die Outlook-Einträge eines anderen.
+
+Ordnung im Kalender
+
+Prüfungen und Termine werden automatisch unterschieden und mit eigenen Kategorien versehen. So siehst du auf einen Blick, was eine Prüfung ist und was ein regulärer Anlass. In den Einstellungen legst du fest, welche Art nach Outlook übernommen wird; standardmässig sind es die Prüfungen. Fehlende Raumangaben bei Prüfungen ergänzt Semestria, sofern die Information im Feed vorhanden ist.
+
+Farben bestimmst du selbst: ganze Fächer, einzelne Stunden oder einzelne Termine, aus 28 Farben oder frei gemischt. Zu jedem Fach kannst du Kommentare festhalten, etwa Material, Abmachungen oder Tipps. Sie erscheinen bei jeder Stunde und jeder Prüfung dieses Fachs.
+
+Zuverlässig bei Änderungen
+
+Verschobene Prüfungen, geänderte Räume oder abgesagte Anlässe erkennt Semestria und aktualisiert die betroffenen Einträge, statt Duplikate anzulegen. Gelöscht wird nur, was Semestria selbst angelegt hat, und auch das erst 24 Stunden nachdem ein Eintrag aus dem Feed verschwunden ist. Sollen auf einmal auffällig viele Einträge verschwinden, stoppt Semestria und fragt nach. Deine eigenen Termine im Kalender bleiben unangetastet.
+
+Datenschutz
+
+Semestria läuft vollständig auf deinem Gerät. Es gibt kein Benutzerkonto bei uns, keine Werbung und kein Tracking. Deine Kalender-Adresse, deine Noten und deine Zugangsdaten verlassen dein Gerät nicht und werden nirgends protokolliert. Die Verbindung zu deinem Kalender (soweit eingerichtet) läuft direkt über die offizielle Microsoft-Anmeldung. Ab und zu lädt Semestria kurze Nachrichten des Entwicklers von dessen Website, dabei werden keine persönlichen Daten übermittelt; in den Einstellungen lässt sich das abschalten. Ohne Internet zeigt Semestria die zuletzt geladenen Daten weiter an.
+
+Kostenlos
+
+Semestria ist ein nicht-kommerzielles Projekt eines Schülers und kostenlos. Keine Werbung, keine In-App-Käufe, kein Abo.
+
+Hinweis
+
+Semestria ist ein unabhängiges Projekt und steht in keiner Verbindung zur Centerboard AG, zu Microsoft oder zu einzelnen Schulen. Die Notenregeln sind nach den öffentlich zugänglichen Reglementen nachgebildet, verbindlich ist immer das Reglement deiner Schule. Für den Betrieb wird ein gültiger Kalender-Feed der eigenen Schule (und optional ein Microsoft-Konto) benötigt.
