@@ -78,6 +78,12 @@ public sealed class SyncConfig
     /// <remarks>From before <see cref="SeenTours"/>; still read, so nobody sees that tour twice.</remarks>
     public bool GradesTutorialSeen { get; set; }
 
+    /// <summary>
+    /// How often the app was opened with a window (background starts do not count). The
+    /// first starts stay free of developer news, so a new user is not swamped.
+    /// </summary>
+    public int StartCount { get; set; }
+
     /// <summary>The pages whose short tour was shown or skipped, by key ("dashboard", "tasks" …).</summary>
     public HashSet<string> SeenTours { get; set; } = [];
 

@@ -124,6 +124,11 @@ public partial class App : Application
 
     private void OpenMainWindow()
     {
+        // Counts the starts with a window; the news stay away for the first few
+        var config = AppState.Config;
+        config.StartCount++;
+        ConfigManager.Save(config);
+
         var main = new MainWindow();
         MainWindow = main;
         ShutdownMode = ShutdownMode.OnMainWindowClose;
@@ -282,9 +287,16 @@ public partial class App : Application
     /// on purpose so it never competes with the update check or the first paint.
     /// Offline or a broken file is logged, never shown.
     /// </summary>
+    /// <summary>
+    /// The first starts are for finding one's way around: no developer news before the
+    /// fourth start, not even quietly in the background.
+    /// </summary>
+    private const int QuietStarts = 3;
+
     private static async Task ShowNewsLaterAsync(Window owner)
     {
         if (!AppState.Config.ShowNews) return;
+        if (!_fakeNews && AppState.Config.StartCount <= QuietStarts) return;
 
         await Task.Delay(TimeSpan.FromSeconds(10));
         if (!AppState.Config.ShowNews || !owner.IsVisible) return;

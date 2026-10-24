@@ -319,11 +319,6 @@ public partial class MainWindow : Window
     /// </summary>
     private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
-        if (args.InvokedItemContainer is NavigationViewItem { Tag: "Tour" })
-        {
-            if (ContentFrame.Content is ITourPage page) StartTour(page);
-            return;
-        }
         if (args.InvokedItemContainer is not NavigationViewItem { Tag: "Synapkey" }) return;
 
         try
@@ -353,6 +348,7 @@ public partial class MainWindow : Window
                 case "Grades":    ContentFrame.Navigate(new GradesPage());    break;
                 case "Settings":  ContentFrame.Navigate(new SettingsPage());  break;
                 case "About":     ContentFrame.Navigate(new AboutPage());     break;
+                case "Help":      ContentFrame.Navigate(new HelpPage());      break;
             }
         }
     }
@@ -367,6 +363,8 @@ public partial class MainWindow : Window
             case "Tasks":     NavView.SelectedItem = NavTasks;     break;
             case "Grades":    NavView.SelectedItem = NavGrades;    break;
             case "Settings":  NavView.SelectedItem = NavSettings;  break;
+            case "About":     NavView.SelectedItem = NavAbout;     break;
+            case "Help":      NavView.SelectedItem = NavHelp;      break;
         }
     }
 }

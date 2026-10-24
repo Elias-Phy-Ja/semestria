@@ -25,21 +25,35 @@ public partial class DashboardPage : ITourPage
 {
     public string TourKey => "dashboard";
 
-    public IReadOnlyList<TourStep> TourSteps() =>
-    [
-        new(() => BtnSync.Parent as FrameworkElement, "Laden und synchronisieren",
-            "«Feed laden» holt deinen Stundenplan aus dem Schulnetz. «Mit Outlook synchronisieren» schreibt Prüfungen zusätzlich in deinen Outlook-Kalender, das ist freiwillig."),
-        new(() => StatGrid, "Auf einen Blick",
-            "Kommende Prüfungen, Termine, deine Stunden heute und offene Aufgaben."),
-        new(() => UpcomingCard, "Als Nächstes",
-            "Die Prüfungen der nächsten sieben Tage. Ein Klick auf «Kalender» zeigt alles."),
-        new(() => SidePanel, "Heute",
-            "Dein Stundenplan für heute oder den nächsten Schultag, darunter die offenen Aufgaben."),
-        new(() => MainWindow.Current?.BtnProfile, "Dein Profil",
-            "Hier wechselst du das Profil oder legst ein neues an, etwa wenn Geschwister den PC teilen. Jedes Profil hat seine eigenen Daten."),
-        new(() => MainWindow.Current?.NavTour, "Anleitung",
-            "Jede Seite hat eine kurze Anleitung wie diese. Hier startest du sie jederzeit wieder."),
-    ];
+    /// <summary>
+    /// The first tour of all: a quick look at every area in the sidebar, without opening
+    /// them (each explains itself on its first visit), then the dashboard in two steps.
+    /// </summary>
+    public IReadOnlyList<TourStep> TourSteps()
+    {
+        var main = MainWindow.Current;
+        return
+        [
+            new(() => null, "Willkommen bei Semestria",
+                "Ein kurzer Überblick über die Bereiche. Jeder Bereich zeigt dir beim ersten Öffnen selbst, wie er funktioniert."),
+            new(() => main?.NavEvents, "Prüfungen & Termine",
+                "Dein Kalender: Stundenplan, Prüfungen und Schultermine, dazu eigene Einträge."),
+            new(() => main?.NavTasks, "Aufgaben",
+                "Hausaufgaben und Abgaben, mit Erinnerung."),
+            new(() => main?.NavGrades, "Noten",
+                "Noten eintragen, Schnitt ausrechnen und sehen, ob die Promotion reicht."),
+            new(() => main?.NavSettings, "Einstellungen",
+                "Schulnetz-Link, Outlook und Darstellung."),
+            new(() => main?.BtnProfile, "Profile",
+                "Hier wechselst du das Profil oder legst ein neues an, zum Beispiel um auch den Stundenplan deines Kumpels anzuzeigen. Jedes Profil hat seine eigenen Daten."),
+            new(() => main?.NavHelp, "Hilfe",
+                "Alle Anleitungen findest du hier wieder."),
+            new(() => BtnSync.Parent as FrameworkElement, "Laden",
+                "«Feed laden» holt deinen Stundenplan aus dem Schulnetz. Mit Outlook synchronisieren ist freiwillig."),
+            new(() => StatGrid, "Dein Tag auf einen Blick",
+                "Oben die Zahlen, darunter die nächsten Prüfungen, dein Stundenplan und die offenen Aufgaben."),
+        ];
+    }
 }
 
 public partial class EventsPage : ITourPage

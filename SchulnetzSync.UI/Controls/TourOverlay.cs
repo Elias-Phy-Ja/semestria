@@ -173,12 +173,19 @@ public sealed class TourOverlay
         bubble.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         var size = bubble.DesiredSize;
 
-        // Below the element when there is room, else above, else right of it, else centred
+        // Elements in the sidebar get the bubble to their right, so it does not cover the
+        // next entries. Everything else: below when there is room, else above, else right.
+        bool sidebar = !hole.IsEmpty && hole.Left < w * 0.25 && hole.Right + 12 + size.Width <= w - 16;
         double x, y;
         if (hole.IsEmpty)
         {
             x = (w - size.Width) / 2;
             y = (h - size.Height) / 2;
+        }
+        else if (sidebar)
+        {
+            x = hole.Right + 12;
+            y = Math.Clamp(hole.Y, 16, Math.Max(16, h - size.Height - 16));
         }
         else if (hole.Bottom + 12 + size.Height <= h - 16)
         {

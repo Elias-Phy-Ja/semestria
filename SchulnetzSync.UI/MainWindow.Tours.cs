@@ -21,14 +21,34 @@ public partial class MainWindow
 
     public TourOverlay Tour => _tour ??= new TourOverlay(TourLayer);
 
+    /// <summary>Set by the help page: the next page shown starts its tour, seen or not.</summary>
+    private bool _tourRequested;
+
     /// <summary>Hooks every newly shown page, so its tour can start once it has loaded.</summary>
     private void HookTours()
         => ContentFrame.Navigated += (_, e) =>
         {
-            if (e.Content is not (FrameworkElement element and ITourPage page)) return;
             if (_tour?.IsActive == true) _tour.Close();
-            element.Loaded += (_, _) => MaybeStartTour(page);
+            if (e.Content is not (FrameworkElement element and ITourPage page))
+            {
+                _tourRequested = false;
+                return;
+            }
+            element.Loaded += (_, _) =>
+            {
+                if (!_tourRequested) { MaybeStartTour(page); return; }
+                _tourRequested = false;
+                Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, () => StartTour(page));
+            };
         };
+
+    /// <summary>Opens a page and runs its tour, e.g. from the help page.</summary>
+    /// <param name="tag">The page's navigation tag: "Dashboard", "Events", "Tasks" …</param>
+    public void ShowTourOf(string tag)
+    {
+        _tourRequested = true;
+        NavigateTo(tag);
+    }
 
     /// <summary>Starts the page's tour unless it was seen before or the page is not ready.</summary>
     public void MaybeStartTour(ITourPage page)

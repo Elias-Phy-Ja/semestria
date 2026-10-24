@@ -163,15 +163,13 @@
         </ui:NavigationView.MenuItems>
 
         <ui:NavigationView.FooterMenuItems>
-            <!-- Starts the short tour of the page on screen; not a page itself -->
-            <ui:NavigationViewItem x:Name="NavTour"
-                                   Tag="Tour"
-                                   Content="Anleitung"
-                                   SelectsOnInvoked="False"
-                                   ToolTipService.ToolTip="Kurze Anleitung zu dieser Seite">
+            <!-- Every short tour of the app, to be shown again -->
+            <ui:NavigationViewItem x:Name="NavHelp"
+                                   Tag="Help"
+                                   Content="Hilfe"
+                                   ToolTipService.ToolTip="Anleitungen noch einmal ansehen">
                 <ui:NavigationViewItem.Icon>
-                    <!-- Segoe MDL2 "Lightbulb" -->
-                    <ui:FontIcon Glyph="&#xEA80;"/>
+                    <ui:SymbolIcon Symbol="Help"/>
                 </ui:NavigationViewItem.Icon>
             </ui:NavigationViewItem>
 
@@ -194,7 +192,8 @@
                                    Tag="About"
                                    Content="Über &amp; Rechtliches">
                 <ui:NavigationViewItem.Icon>
-                    <ui:SymbolIcon Symbol="Help"/>
+                    <!-- Segoe MDL2 "Info"; the question mark belongs to «Hilfe» -->
+                    <ui:FontIcon Glyph="&#xE946;"/>
                 </ui:NavigationViewItem.Icon>
             </ui:NavigationViewItem>
         </ui:NavigationView.FooterMenuItems>

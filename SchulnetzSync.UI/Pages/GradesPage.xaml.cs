@@ -1696,7 +1696,7 @@ public partial class GradesPage : WpfPage, ITourPage
         new(() => _calculatorCard, "Zielrechner",
             "Wähl eine Ziel-Fachnote und das Gewicht der nächsten Prüfung. Semestria sagt dir, welche Note du dafür brauchst."),
         new(() => BtnHelp, "Jederzeit wieder",
-            "Mit dem Fragezeichen oder «Anleitung» unten links startest du diese Anleitung noch einmal."),
+            "Mit dem Fragezeichen hier oder unter «Hilfe» unten links startest du diese Anleitung noch einmal."),
     ];
 
     private void BtnHelp_Click(object sender, RoutedEventArgs e)
