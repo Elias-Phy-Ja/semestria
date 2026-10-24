@@ -74,6 +74,9 @@ public sealed class SyncConfig
     /// </summary>
     public bool ShowNews { get; set; } = true;
 
+    /// <summary>True once the short tour of the grade page was shown (or skipped).</summary>
+    public bool GradesTutorialSeen { get; set; }
+
     /// <summary>Hands the diff engine the parts of the config it cares about.</summary>
     public SyncOptions ToSyncOptions() => new()
     {

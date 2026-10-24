@@ -3,34 +3,87 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       Title="Noten">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="36,28,36,28">
+    <!-- Three layers: the page, a dialog for entering grades and rules, and the tutorial -->
+    <Grid x:Name="Root">
 
-            <!-- Header -->
-            <TextBlock Text="Noten" FontSize="26" FontWeight="Bold"/>
-            <TextBlock x:Name="TxtSummary" FontSize="13" Opacity="0.65" Margin="0,2,0,20"/>
+        <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto">
+            <Grid Margin="36,28,36,32">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>  <!-- header -->
+                    <RowDefinition Height="Auto"/>  <!-- overview tiles -->
+                    <RowDefinition Height="Auto"/>  <!-- rule conditions -->
+                    <RowDefinition Height="Auto"/>  <!-- subjects and detail -->
+                </Grid.RowDefinitions>
 
-            <!-- Promotion check against the chosen rule, filled in code -->
-            <Border Style="{StaticResource Card}" Margin="0,0,0,20">
-                <StackPanel x:Name="PromotionCard"/>
-            </Border>
+                <!-- Header -->
+                <Grid Grid.Row="0" Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Noten" FontSize="26" FontWeight="Bold"/>
+                        <TextBlock x:Name="TxtSummary" FontSize="13" Opacity="0.65" Margin="0,2,0,0"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                        <Button x:Name="BtnHelp" Content="?" MinWidth="38" Padding="12,6" FontWeight="SemiBold" Margin="0,0,8,0"
+                                Style="{StaticResource SecondaryButton}"
+                                ToolTip="Anleitung zeigen"
+                                AutomationProperties.Name="Anleitung zeigen"
+                                Click="BtnHelp_Click"/>
+                        <Button x:Name="BtnRule" Margin="0,0,8,0"
+                                Style="{StaticResource SecondaryButton}"
+                                ToolTip="Promotionsregel wählen oder anpassen"
+                                AutomationProperties.Name="Regel ändern"
+                                Click="BtnRule_Click"/>
+                        <Button x:Name="BtnAddGrade" Content="+  Note eintragen"
+                                Style="{StaticResource PrimaryButton}"
+                                AutomationProperties.Name="Note eintragen"
+                                Click="BtnAddGrade_Click"/>
+                    </StackPanel>
+                </Grid>
 
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="280"/>
-                    <ColumnDefinition Width="20"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+                <!-- Overview: promotion, overall average, plus points, insufficient subjects -->
+                <UniformGrid x:Name="KpiStrip" Grid.Row="1" Columns="4" Margin="-6,0,-6,8"/>
 
-                <!-- One tile per subject, filled in code -->
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="FÄCHER" Style="{StaticResource SectionLabel}" Margin="0,0,0,8"/>
-                    <StackPanel x:Name="SubjectList"/>
-                </StackPanel>
+                <!-- The conditions of the rule, one chip each -->
+                <WrapPanel x:Name="ConditionChips" Grid.Row="2" Margin="0,0,0,20"/>
 
-                <!-- Subject detail, grade form, target calculator or rule editor -->
-                <StackPanel x:Name="RightPane" Grid.Column="2"/>
+                <!-- Subjects on the left, the selected one in detail on the right -->
+                <Grid x:Name="MainArea" Grid.Row="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition x:Name="GapColumn" Width="20"/>
+                        <ColumnDefinition x:Name="DetailColumn" Width="360"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Border x:Name="SubjectCard" Style="{StaticResource Card}" Padding="0" VerticalAlignment="Top">
+                        <StackPanel x:Name="SubjectTable"/>
+                    </Border>
+
+                    <StackPanel x:Name="DetailPane" Grid.Column="2"/>
+                </Grid>
             </Grid>
-        </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+
+        <!-- Dialog layer: entering a grade, choosing the rule -->
+        <Grid x:Name="DialogLayer" Visibility="Collapsed" Background="#99000000">
+            <Border x:Name="DialogCard" Style="{StaticResource Card}"
+                    Width="520" MaxHeight="640" Margin="16"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Padding="24">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="DialogContent"/>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Tutorial layer: dims the page, highlights one element, explains it in a bubble -->
+        <Canvas x:Name="TutorialLayer" Visibility="Collapsed" Background="Transparent"/>
+    </Grid>
 </Page>
