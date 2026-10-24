@@ -14,9 +14,27 @@ namespace SchulnetzSync.Core.Profiles;
 /// </summary>
 public static class DataPaths
 {
-    /// <summary>The app folder that holds everything.</summary>
-    public static string Root { get; } = Path.Combine(
+    /// <summary>
+    /// The app folder that holds everything. %LOCALAPPDATA%\Semestria, unless the Store build
+    /// points it at its package folder with <see cref="UseRoot"/>.
+    /// </summary>
+    public static string Root { get; private set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Semestria");
+
+    /// <summary>
+    /// Sets the app folder. Must run first, before anything reads a path.
+    ///
+    /// The Store build passes its package's own folder. Left to Windows, a packaged app's
+    /// writes to %LOCALAPPDATA% are redirected into that folder only for paths that do not
+    /// exist outside it; where %LOCALAPPDATA%\Semestria exists for real (a development
+    /// machine, an earlier unpackaged install) files would end up split between both places.
+    /// </summary>
+    public static void UseRoot(string root)
+    {
+        if (_profileDirectory is not null)
+            throw new InvalidOperationException("UseRoot must run before UseProfile.");
+        Root = root;
+    }
 
     /// <summary>Files and folders in <see cref="Root"/> that belong to no single person.</summary>
     public static readonly IReadOnlySet<string> GlobalNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)

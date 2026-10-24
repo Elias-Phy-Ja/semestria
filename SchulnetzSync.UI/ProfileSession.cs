@@ -25,7 +25,28 @@ public static class ProfileSession
 
     /// <summary>Must be the very first thing at start-up: every file path depends on it.</summary>
     public static void Initialize()
-        => _registry = ProfileBootstrap.Initialize(DefaultName(), DateTimeOffset.Now);
+    {
+        if (PackagedDataRoot() is { } packaged) DataPaths.UseRoot(packaged);
+        _registry = ProfileBootstrap.Initialize(DefaultName(), DateTimeOffset.Now);
+    }
+
+    /// <summary>
+    /// The Store build's own data folder, addressed directly: the place where version 2.3
+    /// and earlier ended up through Windows' redirection of %LOCALAPPDATA%. Null without a
+    /// package identity (dotnet run, the command line), which keeps %LOCALAPPDATA%\Semestria.
+    /// </summary>
+    private static string? PackagedDataRoot()
+    {
+        try
+        {
+            return Path.Combine(Windows.Storage.ApplicationData.Current.LocalCacheFolder.Path, "Local", "Semestria");
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.Runtime.InteropServices.COMException)
+        {
+            // No package identity: running unpackaged, which is a normal case, not an error
+            return null;
+        }
+    }
 
     /// <summary>The Windows user name with a capital letter, e.g. "elias" → "Elias".</summary>
     private static string DefaultName()
