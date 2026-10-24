@@ -49,6 +49,9 @@ public partial class GradesPage : WpfPage
 
     private string? _selectedSubject;
 
+    /// <summary>True while the page shows the final certificate (Matur / BM) instead of a period.</summary>
+    private bool _finalMode;
+
     /// <summary>The period on screen; null means the running one.</summary>
     private Guid? _viewPeriodId;
 
@@ -91,6 +94,12 @@ public partial class GradesPage : WpfPage
 
     private void Refresh()
     {
+        BuildModeBar();
+        BtnRule.Visibility  = _finalMode ? Visibility.Collapsed : Visibility.Visible;
+        BtnAddGrade.Content = _finalMode ? "+  Prüfung eintragen" : "+  Note eintragen";
+        System.Windows.Automation.AutomationProperties.SetName(BtnAddGrade, _finalMode ? "Prüfung eintragen" : "Note eintragen");
+        if (_finalMode) { RefreshFinal(); return; }
+
         _viewGrades   = AppState.GradesIn(ViewPeriodId);
         var standings = Grading.Summarize(_viewGrades);
         var rule      = AppState.PromotionRule;
@@ -124,6 +133,460 @@ public partial class GradesPage : WpfPage
         DetailPane.Margin = narrow ? new Thickness(0, 4, 0, 0) : new Thickness(0);
         KpiStrip.Columns  = ActualWidth > 0 && ActualWidth < 760 ? 2 : 4;
     }
+
+    // ── Mode: periods or final certificate ───────────────────────────────────
+
+    private void BuildModeBar()
+    {
+        ModeBar.Children.Clear();
+        foreach (var (label, final) in new[] { ("Semester / Jahr", false), ("Abschluss · Matur / BM", true) })
+        {
+            var btn = new WpfButton
+            {
+                Content = label, Margin = new Thickness(0, 0, 8, 0),
+                Style = (Style)FindResource(final == _finalMode ? "PrimaryButton" : "SecondaryButton")
+            };
+            System.Windows.Automation.AutomationProperties.SetName(btn, final ? "Abschluss" : "Semester und Jahr");
+            btn.Click += (_, _) =>
+            {
+                if (_finalMode == final) return;
+                _finalMode       = final;
+                _selectedSubject = null;
+                Refresh();
+            };
+            ModeBar.Children.Add(btn);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Final certificate: Matur (Kanti) or Berufsmatur (IMS)
+    // ══════════════════════════════════════════════════════════════════════
+
+    private IReadOnlyList<FinalSubject> _finals = [];
+
+    private void RefreshFinal()
+    {
+        var state     = AppState.FinalExams;
+        _finals       = FinalGrades.Compute(state.Method, AppState.ReportCards(), state.Exams);
+        var standings = FinalGrades.AsStandings(_finals);
+        var rule      = FinalGrades.RuleFor(state.Method);
+        var result    = rule.Evaluate(standings);
+
+        if (_selectedSubject is null || _finals.All(f => f.Subject != _selectedSubject))
+            _selectedSubject = _finals.FirstOrDefault()?.Subject;
+
+        int incomplete = _finals.Count(f => !f.IsComplete);
+        TxtSummary.Text = _finals.Count == 0
+            ? "Hier rechnet Semestria deine Abschlussnoten aus Zeugnis- und Prüfungsnoten."
+            : $"{Count(_finals.Count, "Fach", "Fächer")}  ·  {Count(state.Exams.Count, "Prüfung", "Prüfungen")} eingetragen" +
+              (incomplete > 0 ? $"  ·  {incomplete} ohne Zeugnisnote" : "");
+
+        PeriodBanner.Visibility = Visibility.Collapsed;
+        BuildMethodBar(state.Method);
+        BuildKpis(standings, result, rule);
+        BuildConditionChips(result);
+        BuildFinalTable(state.Method);
+        BuildFinalDetail(state.Method);
+        ApplyLayoutWidth();
+    }
+
+    private void BuildMethodBar(FinalMethod method)
+    {
+        PeriodBar.Children.Clear();
+        foreach (var (label, m) in new[] { ("Kanti Aarau · Matur", FinalMethod.KantiMatur), ("IMS Aarau · BM", FinalMethod.ImsBm) })
+        {
+            var btn = new WpfButton
+            {
+                Content = label, Margin = new Thickness(0, 0, 8, 0),
+                Style = (Style)FindResource(m == method ? "PrimaryButton" : "SecondaryButton")
+            };
+            System.Windows.Automation.AutomationProperties.SetName(btn, $"Rechnung {label}");
+            btn.Click += (_, _) => { if (m != method) AppState.SetFinalMethod(m); };
+            PeriodBar.Children.Add(btn);
+        }
+        PeriodBar.Children.Add(new WpfTextBlock
+        {
+            Text = method == FinalMethod.KantiMatur
+                ? "Vorschlagsnote = Zeugnis des letzten Jahres, Prüfung = Mittel schriftlich/mündlich, Maturnote = Mittel, auf halbe Noten gerundet."
+                : "Erfahrungsnote = Mittel aller Semesterzeugnisse (Zehntel), Prüfung = Mittel schriftlich/mündlich (Zehntel), Fachnote = Mittel, auf halbe Noten gerundet.",
+            FontSize = 12, Opacity = 0.65, TextWrapping = TextWrapping.Wrap, MaxWidth = 560,
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 6, 0, 0)
+        });
+    }
+
+    private static string BaseName(FinalMethod method)
+        => method == FinalMethod.KantiMatur ? "Vorschlagsnote" : "Erfahrungsnote";
+
+    private static string FinalName(FinalMethod method)
+        => method == FinalMethod.KantiMatur ? "Maturnote" : "Fachnote";
+
+    // Columns of the final table: subject, base, exam, final
+    private static readonly GridLength[] _finalCols =
+    [
+        new(72), new(1, GridUnitType.Star), new(190), new(86)
+    ];
+
+    private void BuildFinalTable(FinalMethod method)
+    {
+        SubjectTable.Children.Clear();
+
+        if (_finals.Count == 0)
+        {
+            var panel = new StackPanel { Margin = new Thickness(32, 40, 32, 44), HorizontalAlignment = WpfHA.Center };
+            panel.Children.Add(new WpfTextBlock
+            {
+                Text = "Noch nichts zum Rechnen", FontSize = 18, FontWeight = FontWeights.SemiBold,
+                HorizontalAlignment = WpfHA.Center, Margin = new Thickness(0, 0, 0, 4)
+            });
+            panel.Children.Add(new WpfTextBlock
+            {
+                Text = $"Die {BaseName(method)} kommt aus deinen Semestern und Jahren. Trag dort Noten ein, " +
+                       "oder füge hier direkt eine Prüfung mit eigenem Wert hinzu.",
+                FontSize = 13, Opacity = 0.7, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center,
+                MaxWidth = 380, HorizontalAlignment = WpfHA.Center
+            });
+            var add = new WpfButton
+            {
+                Content = "+  Prüfung eintragen", Style = (Style)FindResource("PrimaryButton"),
+                HorizontalAlignment = WpfHA.Center, Margin = new Thickness(0, 18, 0, 0)
+            };
+            add.Click += (_, _) => ShowExamDialog(null);
+            panel.Children.Add(add);
+            SubjectTable.Children.Add(panel);
+            return;
+        }
+
+        var header = FinalGrid(new Thickness(18, 14, 18, 10));
+        AddCell(header, 0, HeaderText("FACH"));
+        AddCell(header, 1, HeaderText(BaseName(method).ToUpperInvariant()));
+        AddCell(header, 2, HeaderText("PRÜFUNG", right: true));
+        AddCell(header, 3, HeaderText(FinalName(method).ToUpperInvariant(), right: true));
+        SubjectTable.Children.Add(header);
+        SubjectTable.Children.Add(Divider());
+
+        foreach (var f in _finals)
+            SubjectTable.Children.Add(FinalRow(f, method));
+    }
+
+    private static Grid FinalGrid(Thickness margin)
+    {
+        var grid = new Grid { Margin = margin };
+        foreach (var w in _finalCols) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = w });
+        return grid;
+    }
+
+    private UIElement FinalRow(FinalSubject f, FinalMethod method)
+    {
+        bool isSel = f.Subject == _selectedSubject;
+        var grid = FinalGrid(new Thickness(0));
+
+        AddCell(grid, 0, new WpfTextBlock
+        {
+            Text = f.Subject, FontSize = 14, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center
+        });
+
+        var basePanel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        basePanel.Children.Add(new WpfTextBlock
+        {
+            Text = f.Base is double b ? FormatTenth(b) : "–", FontSize = 14, FontWeight = FontWeights.SemiBold
+        });
+        basePanel.Children.Add(new WpfTextBlock
+        {
+            Text = f.BaseSource, FontSize = 11, Opacity = 0.6, TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        AddCell(grid, 1, basePanel);
+
+        var exam = AppState.FinalExams.Exams.FirstOrDefault(e => string.Equals(e.Subject, f.Subject, StringComparison.OrdinalIgnoreCase));
+        var examPanel = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = WpfHA.Right };
+        examPanel.Children.Add(new WpfTextBlock
+        {
+            Text = f.Exam is double p ? FormatExam(p) : "keine", FontSize = 14,
+            FontWeight = f.Exam is null ? FontWeights.Normal : FontWeights.SemiBold,
+            Opacity = f.Exam is null ? 0.5 : 1, HorizontalAlignment = WpfHA.Right
+        });
+        if (ExamParts(exam) is { Length: > 0 } parts)
+            examPanel.Children.Add(new WpfTextBlock
+            {
+                Text = parts, FontSize = 11, Opacity = 0.6, HorizontalAlignment = WpfHA.Right
+            });
+        AddCell(grid, 2, examPanel);
+
+        AddCell(grid, 3, f.Final is double fin
+            ? GradeBadge(fin, large: false)
+            : new WpfTextBlock { Text = "offen", Opacity = 0.5, HorizontalAlignment = WpfHA.Right, VerticalAlignment = VerticalAlignment.Center });
+
+        var row = new WpfButton
+        {
+            Content = grid, Style = RowButtonStyle(), Padding = new Thickness(18, 10, 18, 10),
+            Background = isSel ? new SolidColorBrush(Color.FromArgb(30, _accent.R, _accent.G, _accent.B))
+                               : System.Windows.Media.Brushes.Transparent,
+            ToolTip = $"{f.Subject}: Details und Prüfungsziel"
+        };
+        System.Windows.Automation.AutomationProperties.SetName(row, $"Abschluss {f.Subject}");
+        row.Click += (_, _) => { _selectedSubject = f.Subject; Refresh(); };
+        return row;
+    }
+
+    /// <summary>"schriftlich 4 · mündlich 4.5", or empty when there is no exam.</summary>
+    private static string ExamParts(ExamEntry? exam)
+    {
+        if (exam is null) return "";
+        var parts = new List<string>();
+        if (exam.Written is double w) parts.Add($"schriftlich {FormatGrade(w)}");
+        if (exam.Oral    is double o) parts.Add($"mündlich {FormatGrade(o)}");
+        return string.Join("  ·  ", parts);
+    }
+
+    private void BuildFinalDetail(FinalMethod method)
+    {
+        DetailPane.Children.Clear();
+        var f = _finals.FirstOrDefault(x => x.Subject == _selectedSubject);
+        if (f is null)
+        {
+            _calculatorCard = new WpfBorder
+            {
+                Style = (Style)FindResource("Card"),
+                Child = new WpfTextBlock
+                {
+                    Text = "Wähle ein Fach, dann siehst du, wie die Note entsteht und was du in der Prüfung brauchst.",
+                    Style = (Style)FindResource("NoteText")
+                }
+            };
+            DetailPane.Children.Add(_calculatorCard);
+            return;
+        }
+
+        var exam  = AppState.FinalExams.Exams.FirstOrDefault(e => string.Equals(e.Subject, f.Subject, StringComparison.OrdinalIgnoreCase));
+        var panel = new StackPanel();
+
+        var head = new Grid { Margin = new Thickness(0, 0, 0, 12) };
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var title = new StackPanel();
+        title.Children.Add(new WpfTextBlock { Text = f.Subject, FontSize = 20, FontWeight = FontWeights.Bold });
+        title.Children.Add(new WpfTextBlock { Text = FinalName(method), FontSize = 12, Opacity = 0.65 });
+        head.Children.Add(title);
+        if (f.Final is double fin)
+        {
+            var badge = GradeBadge(fin, large: true);
+            Grid.SetColumn(badge, 1);
+            head.Children.Add(badge);
+        }
+        panel.Children.Add(head);
+
+        panel.Children.Add(DetailLine(BaseName(method), f.Base is double b ? FormatTenth(b) : "fehlt", f.BaseSource));
+        panel.Children.Add(DetailLine("Prüfungsnote", f.Exam is double p ? FormatExam(p) : "keine Prüfung",
+            ExamParts(exam) is { Length: > 0 } parts ? parts : "nur die " + BaseName(method) + " zählt"));
+        if (f.Unrounded is double u && f.Exam is not null)
+            panel.Children.Add(DetailLine("Mittel", u.ToString("0.###", _deCH), $"auf halbe Noten gerundet: {FormatGrade(f.Final!.Value)}"));
+
+        var edit = new WpfButton
+        {
+            Content = exam is null ? $"+  Prüfung in {f.Subject}" : "Prüfung bearbeiten",
+            Style = (Style)FindResource("SecondaryButton"), HorizontalAlignment = WpfHA.Left, Margin = new Thickness(0, 12, 0, 0)
+        };
+        edit.Click += (_, _) => ShowExamDialog(f.Subject);
+        panel.Children.Add(edit);
+        DetailPane.Children.Add(new WpfBorder { Style = (Style)FindResource("Card"), Child = panel });
+
+        _calculatorCard = BuildExamTarget(f, method);
+        DetailPane.Children.Add(_calculatorCard);
+    }
+
+    private static UIElement DetailLine(string label, string value, string hint)
+    {
+        var grid = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var left = new StackPanel();
+        left.Children.Add(new WpfTextBlock { Text = label, FontSize = 13 });
+        left.Children.Add(new WpfTextBlock { Text = hint, FontSize = 11, Opacity = 0.6, TextWrapping = TextWrapping.Wrap });
+        grid.Children.Add(left);
+        var right = new WpfTextBlock { Text = value, FontSize = 15, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Top };
+        Grid.SetColumn(right, 1);
+        grid.Children.Add(right);
+        return grid;
+    }
+
+    /// <summary>What the exam has to bring for a target final grade.</summary>
+    private FrameworkElement BuildExamTarget(FinalSubject f, FinalMethod method)
+    {
+        var panel = new StackPanel();
+        panel.Children.Add(new WpfTextBlock
+        {
+            Text = "PRÜFUNGSZIEL", Style = (Style)FindResource("SectionLabel"), Margin = new Thickness(0, 0, 0, 6)
+        });
+
+        if (f.Base is not double baseGrade)
+        {
+            panel.Children.Add(new WpfTextBlock
+            {
+                Text = $"Dafür braucht es eine {BaseName(method)}. Trag Noten in den Semestern ein oder einen eigenen Wert in der Prüfung.",
+                Style = (Style)FindResource("NoteText")
+            });
+            return new WpfBorder { Style = (Style)FindResource("Card"), Child = panel };
+        }
+
+        panel.Children.Add(new WpfTextBlock
+        {
+            Text = $"Welchen Prüfungsschnitt brauchst du in {f.Subject}?", FontSize = 13,
+            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10)
+        });
+
+        var cmbTarget = new WpfComboBox { Height = 34, FontSize = 13, Width = 90 };
+        for (double t = 3.5; t <= 6.0; t += 0.5) cmbTarget.Items.Add(FormatGrade(t));
+        cmbTarget.SelectedItem = FormatGrade(_targetGrade);
+        System.Windows.Automation.AutomationProperties.SetName(cmbTarget, $"Ziel-{FinalName(method)}");
+        panel.Children.Add(Labeled($"Ziel-{FinalName(method)}", cmbTarget));
+
+        var resultBox  = new WpfBorder { CornerRadius = new CornerRadius(8), Padding = new Thickness(14, 10, 14, 12) };
+        var resultText = new WpfTextBlock { FontSize = 14, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
+        resultBox.Child = resultText;
+        panel.Children.Add(resultBox);
+
+        void Update()
+        {
+            if (cmbTarget.SelectedItem is string t && TryParseNumber(t, out var target)) _targetGrade = target;
+
+            double needed = FinalGrades.NeededExam(method, baseGrade, _targetGrade);
+            // Written and oral are half grades, so their mean moves in quarters
+            double shown = Math.Ceiling(Math.Round(needed * 4, 6)) / 4;
+            Color tone;
+            (resultText.Text, tone) = needed switch
+            {
+                <= GradeEntry.Min => ($"Sicher: Selbst mit einer 1 in der Prüfung erreichst du eine {FormatGrade(_targetGrade)}.", _success),
+                > GradeEntry.Max  => ($"Nicht erreichbar: Die Prüfung müsste im Schnitt {shown.ToString("0.0#", _deCH)} geben.", _danger),
+                _                 => ($"Du brauchst in der Prüfung im Schnitt mindestens {shown.ToString("0.0#", _deCH)}.", _accent)
+            };
+            resultBox.Background  = new SolidColorBrush(Color.FromArgb(28, tone.R, tone.G, tone.B));
+            resultText.Foreground = new SolidColorBrush(tone);
+        }
+        cmbTarget.SelectionChanged += (_, _) => Update();
+        Update();
+
+        panel.Children.Add(new WpfTextBlock
+        {
+            Text = "Schnitt aus schriftlicher und mündlicher Prüfung; mit nur einer Prüfung zählt diese.",
+            Style = (Style)FindResource("NoteText"), Margin = new Thickness(0, 8, 0, 0)
+        });
+        return new WpfBorder { Style = (Style)FindResource("Card"), Child = panel };
+    }
+
+    private void ShowExamDialog(string? subject)
+    {
+        var state  = AppState.FinalExams;
+        var method = state.Method;
+        var exam   = subject is null ? null
+                   : state.Exams.FirstOrDefault(e => string.Equals(e.Subject, subject, StringComparison.OrdinalIgnoreCase));
+        var final  = subject is null ? null : _finals.FirstOrDefault(f => f.Subject == subject);
+
+        OpenDialog(exam is null ? "Prüfung eintragen" : $"Prüfung in {subject}",
+            "Prüfungsnoten in ganzen oder halben Noten. Leer lassen, was es nicht gibt.");
+
+        var cmbSubject = new WpfComboBox { IsEditable = true, Height = 36, FontSize = 14, Width = 140 };
+        foreach (var code in AppState.GradeSubjectSuggestions().Union(_finals.Select(f => f.Subject)).Distinct().OrderBy(c => c))
+            cmbSubject.Items.Add(code);
+        cmbSubject.Text = subject ?? "";
+        cmbSubject.IsEnabled = exam is null;
+        System.Windows.Automation.AutomationProperties.SetName(cmbSubject, "Fach");
+
+        WpfTextBox Box(string name, double? value)
+        {
+            var box = new WpfTextBox { Height = 36, FontSize = 14, Width = 90, Text = value is double v ? FormatGrade(v) : "" };
+            System.Windows.Automation.AutomationProperties.SetName(box, name);
+            return box;
+        }
+        var txtWritten = Box("Schriftlich", exam?.Written);
+        var txtOral    = Box("Mündlich", exam?.Oral);
+        var txtOwn     = new WpfTextBox
+        {
+            Height = 36, FontSize = 14, Width = 90,
+            Text = exam?.BaseOverride is double own ? own.ToString("0.##", _deCH) : ""
+        };
+        System.Windows.Automation.AutomationProperties.SetName(txtOwn, $"Eigene {BaseName(method)}");
+
+        var top = new WrapPanel();
+        top.Children.Add(Labeled("Fach", cmbSubject));
+        top.Children.Add(Labeled("Schriftlich", txtWritten));
+        top.Children.Add(Labeled("Mündlich", txtOral));
+        DialogContent.Children.Add(top);
+
+        var computed = final?.Base is double b && exam?.BaseOverride is null
+            ? $"Berechnet: {FormatTenth(b)} ({final.BaseSource}). "
+            : "";
+        DialogContent.Children.Add(Labeled($"Eigene {BaseName(method)} (optional)", txtOwn));
+        DialogContent.Children.Add(new WpfTextBlock
+        {
+            Text = computed + "Nur ausfüllen, wenn die Zeugnisse nicht in Semestria stehen oder für Sonderfälle wie IDPA/IDAF.",
+            Style = (Style)FindResource("NoteText"), Margin = new Thickness(0, -8, 0, 12)
+        });
+
+        var error = ErrorText();
+        DialogContent.Children.Add(error);
+
+        var save = new WpfButton { Content = "Speichern", Style = (Style)FindResource("PrimaryButton") };
+        void Save()
+        {
+            var code = cmbSubject.Text.Trim().ToUpperInvariant();
+            string? problem = null;
+            double? Parse(WpfTextBox box, bool examGrade)
+            {
+                if (string.IsNullOrWhiteSpace(box.Text)) return null;
+                if (!TryParseNumber(box.Text, out var v) || v < GradeEntry.Min || v > GradeEntry.Max)
+                { problem ??= "Noten müssen zwischen 1 und 6 liegen."; return null; }
+                if (examGrade && !FinalGrades.IsValidExamGrade(v))
+                { problem ??= "Prüfungsnoten gibt es nur ganz oder halb, zum Beispiel 4 oder 4.5."; return null; }
+                return v;
+            }
+            var written = Parse(txtWritten, true);
+            var oral    = Parse(txtOral, true);
+            var ownBase = Parse(txtOwn, false);
+            if (code.Length == 0) problem ??= "Wähle oder tippe ein Fach.";
+            if (problem is null && written is null && oral is null && ownBase is null)
+                problem = "Trag mindestens eine Prüfungsnote oder einen eigenen Wert ein.";
+
+            if (problem is not null)
+            {
+                error.Text = problem;
+                error.Visibility = Visibility.Visible;
+                return;
+            }
+            CloseDialog();
+            _selectedSubject = code;
+            AppState.SaveExam(new ExamEntry(code, written, oral, ownBase));   // fires Notify, which rebuilds the page
+        }
+        save.Click += (_, _) => Save();
+        foreach (var box in new UIElement[] { cmbSubject, txtWritten, txtOral, txtOwn })
+            box.KeyDown += (_, e) => { if (e.Key == Key.Enter) Save(); };
+
+        if (exam is not null)
+        {
+            var remove = new WpfButton { Content = "Prüfung entfernen", Style = (Style)FindResource("SecondaryButton"), Margin = new Thickness(0, 0, 8, 0) };
+            remove.Click += (_, _) => { CloseDialog(); AppState.RemoveExam(exam.Subject); };
+            var row = new Grid();
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            remove.VerticalAlignment = VerticalAlignment.Bottom;
+            row.Children.Add(remove);
+            var buttons = DialogButtons(save);
+            Grid.SetColumn(buttons, 1);
+            row.Children.Add(buttons);
+            DialogContent.Children.Add(row);
+        }
+        else
+        {
+            DialogContent.Children.Add(DialogButtons(save));
+        }
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+        {
+            if (cmbSubject.Text.Length == 0) cmbSubject.Focus(); else txtWritten.Focus();
+        });
+    }
+
+    private static string FormatTenth(double value) => value.ToString("0.0##", _deCH);
+
+    private static string FormatExam(double value) => value.ToString("0.0##", _deCH);
 
     // ── Semester / school year ───────────────────────────────────────────────
 
@@ -621,7 +1084,11 @@ public partial class GradesPage : WpfPage
     // Dialogs
     // ══════════════════════════════════════════════════════════════════════
 
-    private void BtnAddGrade_Click(object sender, RoutedEventArgs e) => ShowGradeDialog(null, _selectedSubject);
+    private void BtnAddGrade_Click(object sender, RoutedEventArgs e)
+    {
+        if (_finalMode) ShowExamDialog(_selectedSubject);
+        else            ShowGradeDialog(null, _selectedSubject);
+    }
 
     private void BtnRule_Click(object sender, RoutedEventArgs e)
     {
@@ -998,6 +1465,8 @@ public partial class GradesPage : WpfPage
             "Hier trägst du eine Note ein: Fach, Note und Gewicht. Eine halbe Prüfung zählt 0.5, eine Viertelprüfung 0.25."),
         new(() => PeriodBar, "Semester und Schuljahre",
             "Deine Noten gehören zu einem Semester oder Schuljahr. Mit «Neues Semester / Jahr» beginnst du frisch, frühere bleiben hier auswählbar."),
+        new(() => ModeBar, "Abschluss",
+            "Unter «Abschluss» rechnet Semestria deine Matur- oder BM-Noten aus Zeugnis- und Prüfungsnoten, nach den Regeln der Kanti Aarau oder der IMS Aarau."),
         new(() => KpiStrip, "Dein Überblick",
             "Promotion, Gesamtschnitt, Pluspunkte und ungenügende Fächer auf einen Blick. Rot heisst: hier aufpassen."),
         new(() => BtnRule, "Die Regel deiner Schule",
@@ -1017,6 +1486,7 @@ public partial class GradesPage : WpfPage
     private void StartTutorial()
     {
         CloseDialog();
+        if (_finalMode) { _finalMode = false; Refresh(); }
         _tourIndex = 0;
         TutorialLayer.Visibility = Visibility.Visible;
         ShowTourStep();

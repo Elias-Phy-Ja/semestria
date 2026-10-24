@@ -25,6 +25,8 @@
                         <TextBlock Text="Noten" FontSize="26" FontWeight="Bold"/>
                         <TextBlock x:Name="TxtSummary" FontSize="13" Opacity="0.65" Margin="0,2,0,0"
                                    TextWrapping="Wrap"/>
+                        <!-- «Semester / Jahr» or «Abschluss», filled in code -->
+                        <StackPanel x:Name="ModeBar" Orientation="Horizontal" Margin="0,12,0,0"/>
                         <!-- Semester / school year picker and «Neues Semester/Jahr», filled in code -->
                         <WrapPanel x:Name="PeriodBar" Margin="0,12,0,0"/>
                         <!-- Shown while an earlier period is selected -->

@@ -719,6 +719,57 @@ public static class AppState
 
     public static IReadOnlyList<GradeEntry> Grades => _grades;
 
+    // ── Final exams: Matur or Berufsmatur ────────────────────────────────────
+
+    private static readonly string _finalExamsPath = DataPaths.ProfileFile("final-exams.json");
+
+    private static FinalExamState? _finalExams = LoadJson<FinalExamState>(_finalExamsPath);
+
+    /// <summary>
+    /// The exam grades and the way the school computes final grades. Without a stored
+    /// choice the method follows the promotion rule: IMS for the IMS preset, Kanti otherwise.
+    /// </summary>
+    public static FinalExamState FinalExams
+        => _finalExams ?? FinalExamState.Empty(
+            _promotionRule.Name == PromotionRule.ImsBm.Name ? FinalMethod.ImsBm : FinalMethod.KantiMatur);
+
+    public static void SetFinalMethod(FinalMethod method)
+    {
+        _finalExams = FinalExams with { Method = method };
+        SaveJson(_finalExamsPath, _finalExams);
+        Notify();
+    }
+
+    /// <summary>Stores the exam of one subject, replacing an earlier entry for it.</summary>
+    public static void SaveExam(ExamEntry exam)
+    {
+        var exams = FinalExams.Exams
+            .Where(e => !string.Equals(e.Subject, exam.Subject, StringComparison.OrdinalIgnoreCase))
+            .Append(exam)
+            .ToList();
+        _finalExams = FinalExams with { Exams = exams };
+        SaveJson(_finalExamsPath, _finalExams);
+        Notify();
+    }
+
+    public static void RemoveExam(string subject)
+    {
+        _finalExams = FinalExams with
+        {
+            Exams = FinalExams.Exams.Where(e => !string.Equals(e.Subject, subject, StringComparison.OrdinalIgnoreCase)).ToList()
+        };
+        SaveJson(_finalExamsPath, _finalExams);
+        Notify();
+    }
+
+    /// <summary>One report card per period, oldest first: the input for the final grades.</summary>
+    public static IReadOnlyList<ReportCard> ReportCards()
+        => _gradePeriods.Periods
+            .OrderBy(p => p.StartedAt)
+            .Select(p => new ReportCard(p.Name, Grading.Summarize(_grades.In(p.Id))))
+            .Where(r => r.Standings.Count > 0)
+            .ToList();
+
     // ── Grade periods: semesters or school years ─────────────────────────────
 
     private static readonly string _gradePeriodsPath = DataPaths.ProfileFile("grade-periods.json");
