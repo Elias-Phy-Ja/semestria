@@ -41,8 +41,15 @@ $msixPath = "$outDir\$msixName"
 
 # makeappx und signtool aus dem NuGet-Cache
 $sdkTools = "$env:USERPROFILE\.nuget\packages\microsoft.windows.sdk.buildtools"
-$sdkVer   = (Get-ChildItem $sdkTools | Sort-Object Name -Descending | Select-Object -First 1).Name
-$toolsDir = "$sdkTools\$sdkVer\bin\10.0.26100.0\x64"
+# Neuestes Paket, und darin den bin-Ordner, den es tatsächlich mitbringt (die Ordnernamen
+# wechseln mit der SDK-Version, z. B. bin\10.0.26100.0 oder bin\10.0.28000.0)
+$toolsDir = Get-ChildItem $sdkTools -Directory |
+    Sort-Object { [version]$_.Name } -Descending |
+    ForEach-Object { Get-ChildItem "$($_.FullName)\bin" -Directory -ErrorAction SilentlyContinue |
+                     Sort-Object { [version]$_.Name } -Descending |
+                     ForEach-Object { "$($_.FullName)\x64" } } |
+    Where-Object { Test-Path "$_\makeappx.exe" } |
+    Select-Object -First 1
 $makeappx = "$toolsDir\makeappx.exe"
 $makepri  = "$toolsDir\makepri.exe"
 $signtool = "$toolsDir\signtool.exe"
