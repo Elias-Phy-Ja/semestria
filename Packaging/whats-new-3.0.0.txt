@@ -1,0 +1,10 @@
+Das grösste Update bisher: Semestria wird zum Schulbegleiter.
+
+- Noten: Noten mit Gewicht eintragen, Semester und Schuljahre, Promotionsregeln (Kanti Aarau, IMS Aarau oder eigene), Zielrechner und Abschlussnoten
+- Kalender: ausgefallene Lektionen werden markiert, eigene Einträge lassen sich bearbeiten
+- Profile: mehrere Personen auf einem PC, jede mit eigenen Daten und eigener Microsoft-Anmeldung
+- Kurze Anleitung auf jeder Seite und neue Seite «Hilfe»
+- Nachrichten vom Entwickler, in den Einstellungen abschaltbar
+- Neue Nutzungsbedingungen und Datenschutzerklärung (Version 2.0)
+
+Alle Daten bleiben weiterhin lokal auf deinem Gerät.
