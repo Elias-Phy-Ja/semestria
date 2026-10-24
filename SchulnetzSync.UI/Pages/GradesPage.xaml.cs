@@ -838,7 +838,7 @@ public partial class GradesPage : WpfPage
                 ? $"«{period.Name}» löschen?"
                 : $"«{period.Name}» mit {Count(count, "Note", "Noten")} löschen? Das lässt sich nicht rückgängig machen.";
             if (state.Periods.Count == 1)
-                text += "\n\nEs ist der einzige Abschnitt; danach beginnt ein neuer, leerer.";
+                text += "\n\nEs ist der einzige Abschnitt. Danach gibt es keinen mehr, bis du einen neuen startest.";
             if (MessageBox.Show(text, "Abschnitt löschen", MessageBoxButton.YesNo, MessageBoxImage.Warning,
                     MessageBoxResult.No) != MessageBoxResult.Yes) return;
 
