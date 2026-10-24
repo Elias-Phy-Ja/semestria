@@ -48,6 +48,8 @@ public partial class DashboardPage : ITourPage
                 "Hier wechselst du das Profil oder legst ein neues an, zum Beispiel um auch den Stundenplan deines Kumpels anzuzeigen. Jedes Profil hat seine eigenen Daten."),
             new(() => main?.NavHelp, "Hilfe",
                 "Alle Anleitungen findest du hier wieder."),
+            new(() => main?.NavSynapkey, "Synapkey",
+                "Synapkey ist eine weitere Web-App des Entwicklers. Der Eintrag öffnet sie im Browser; Semestria gibt dabei nichts von dir weiter."),
             new(() => BtnSync.Parent as FrameworkElement, "Laden",
                 "«Feed laden» holt deinen Stundenplan aus dem Schulnetz. Mit Outlook synchronisieren ist freiwillig."),
             new(() => StatGrid, "Dein Tag auf einen Blick",

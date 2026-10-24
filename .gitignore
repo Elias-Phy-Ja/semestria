@@ -492,3 +492,20 @@ Packaging/helper.csproj
 # News admin on Hostinger: secrets and runtime data stay on the server
 docs/admin/config.php
 docs/admin/data/*.json
+
+# Cloud mode (Firebase): secrets and local state never go into the repo.
+# The web config with the public apiKey is NOT secret and may be committed;
+# protection comes from Firestore security rules and end-to-end encryption.
+.env.*
+!.env.example
+*serviceAccount*.json
+*-firebase-adminsdk-*.json
+.firebase/
+.firebaserc.local
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+emulator-data/
+*.p12
+*.key
+*.pem
