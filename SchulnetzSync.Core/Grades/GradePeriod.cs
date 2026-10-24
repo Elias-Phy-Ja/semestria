@@ -76,13 +76,18 @@ public static class GradePeriods
     }
 
     /// <summary>
-    /// Brings data from before periods into shape: with no period yet, one is created for
-    /// now and every grade without a period goes into it. Grades pointing at a period that
-    /// no longer exists go to the current one. Idempotent.
+    /// Brings data from before periods into shape. A new user starts without any period:
+    /// the first one is started on purpose. Only grades from before periods get a period
+    /// made for them, so nothing is lost. Grades pointing at a period that no longer exists
+    /// go to the current one. Idempotent.
     /// </summary>
-    public static (GradePeriodState State, IReadOnlyList<GradeEntry> Grades) Migrate(
+    /// <returns>The state, null while there is no period at all, and the grades.</returns>
+    public static (GradePeriodState? State, IReadOnlyList<GradeEntry> Grades) Migrate(
         GradePeriodState? state, IReadOnlyList<GradeEntry> grades, DateTimeOffset now)
     {
+        if (state is { Periods.Count: 0 }) state = null;
+        if (state is null && grades.Count == 0) return (null, grades);
+
         state ??= Start(null, PeriodKind.Semester, SuggestName(PeriodKind.Semester, now), now);
         if (state.Periods.All(p => p.Id != state.CurrentId))
             state = state with { CurrentId = state.Periods[^1].Id };
@@ -107,18 +112,14 @@ public static class GradePeriods
 
     /// <summary>
     /// Removes a period. If it was the running one, the most recently started remaining
-    /// period takes over; removing the only period leaves a fresh, empty one for now.
-    /// The caller deletes the grades that belonged to it.
+    /// period takes over; removing the only period leaves none (null) until a new one is
+    /// started. The caller deletes the grades that belonged to it.
     /// </summary>
-    public static GradePeriodState Remove(GradePeriodState state, Guid id, DateTimeOffset now)
+    public static GradePeriodState? Remove(GradePeriodState state, Guid id)
     {
         var rest = state.Periods.Where(p => p.Id != id).ToList();
         if (rest.Count == state.Periods.Count) return state;
-        if (rest.Count == 0)
-        {
-            var kind = state.Periods[0].Kind;
-            return Start(null, kind, SuggestName(kind, now), now);
-        }
+        if (rest.Count == 0) return null;
 
         var current = state.CurrentId != id ? state.CurrentId : rest.OrderBy(p => p.StartedAt).Last().Id;
         return new GradePeriodState(rest, current);

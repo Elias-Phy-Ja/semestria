@@ -159,7 +159,8 @@ public class SchoolRulesTests
 
         var (state, grades) = GradePeriods.Migrate(null, old, now);
 
-        Assert.Single(state.Periods);
+        Assert.NotNull(state);
+        Assert.Single(state!.Periods);
         Assert.Equal("1. Semester 2026/27", state.Current.Name);
         Assert.All(grades, g => Assert.Equal(state.CurrentId, g.PeriodId));
     }
@@ -170,7 +171,7 @@ public class SchoolRulesTests
         var now = new DateTimeOffset(2026, 10, 24, 12, 0, 0, TimeSpan.FromHours(2));
         var (state, grades) = GradePeriods.Migrate(null, [G("DEU", 5)], now);
 
-        var (again, gradesAgain) = GradePeriods.Migrate(state, grades, now.AddDays(30));
+        var (again, gradesAgain) = GradePeriods.Migrate(state!, grades, now.AddDays(30));
 
         Assert.Equal(state, again);
         Assert.Equal(grades, gradesAgain);
@@ -180,7 +181,8 @@ public class SchoolRulesTests
     public void StartingANewPeriod_KeepsTheOldGrades_ButStartsEmpty()
     {
         var now = new DateTimeOffset(2026, 10, 24, 12, 0, 0, TimeSpan.FromHours(2));
-        var (state, grades) = GradePeriods.Migrate(null, [G("DEU", 5), G("MAT", 4)], now);
+        var (migrated, grades) = GradePeriods.Migrate(null, [G("DEU", 5), G("MAT", 4)], now);
+        var state = migrated!;
         var first = state.CurrentId;
 
         state = GradePeriods.Start(state, PeriodKind.Semester, "  2. Semester 2026/27 ", now.AddMonths(4));
@@ -200,7 +202,7 @@ public class SchoolRulesTests
         var first = state.CurrentId;
         state = GradePeriods.Start(state, PeriodKind.Semester, "2. Semester 2026/27", t.AddMonths(4));
 
-        state = GradePeriods.Remove(state, state.CurrentId, t.AddMonths(5));
+        state = GradePeriods.Remove(state, state.CurrentId)!;
 
         Assert.Single(state.Periods);
         Assert.Equal(first, state.CurrentId);
@@ -215,24 +217,36 @@ public class SchoolRulesTests
         state = GradePeriods.Start(state, PeriodKind.Semester, "2. Semester 2026/27", t.AddMonths(4));
         var second = state.CurrentId;
 
-        state = GradePeriods.Remove(state, first, t.AddMonths(5));
+        state = GradePeriods.Remove(state, first)!;
 
         Assert.Equal(second, state.CurrentId);
         Assert.Single(state.Periods);
     }
 
     [Fact]
-    public void RemovingTheOnlyPeriod_LeavesAFreshOne()
+    public void RemovingTheOnlyPeriod_LeavesNone()
     {
         var t = new DateTimeOffset(2026, 10, 24, 12, 0, 0, TimeSpan.FromHours(2));
         var state = GradePeriods.Start(null, PeriodKind.Year, "Schuljahr 2026/27", t);
-        var old = state.CurrentId;
 
-        state = GradePeriods.Remove(state, old, t);
+        Assert.Null(GradePeriods.Remove(state, state.CurrentId));
+    }
 
-        Assert.Single(state.Periods);
-        Assert.NotEqual(old, state.CurrentId);
-        Assert.Equal(PeriodKind.Year, state.Current.Kind);
+    [Fact]
+    public void NewUser_StartsWithoutAnyPeriod()
+    {
+        var (state, grades) = GradePeriods.Migrate(null, [], DateTimeOffset.Now);
+
+        Assert.Null(state);
+        Assert.Empty(grades);
+    }
+
+    [Fact]
+    public void EmptyStoredState_CountsAsNoPeriod()
+    {
+        var (state, _) = GradePeriods.Migrate(new GradePeriodState([], Guid.NewGuid()), [], DateTimeOffset.Now);
+
+        Assert.Null(state);
     }
 
     [Fact]

@@ -58,10 +58,11 @@ public partial class GradesPage : WpfPage
     /// <summary>The grades of the period on screen, set by <see cref="Refresh"/>.</summary>
     private IReadOnlyList<GradeEntry> _viewGrades = [];
 
-    private Guid ViewPeriodId
-        => _viewPeriodId is Guid id && AppState.GradePeriods.Periods.Any(p => p.Id == id)
-            ? id
-            : AppState.GradePeriods.CurrentId;
+    /// <summary>The period on screen; null while no semester or year has been started.</summary>
+    private Guid? ViewPeriodId
+        => AppState.GradePeriods is not { } state ? null
+         : _viewPeriodId is Guid id && state.Periods.Any(p => p.Id == id) ? id
+         : state.CurrentId;
 
     // Target calculator input; survives a rebuild of the page
     private double _targetGrade  = 4.0;
@@ -115,7 +116,7 @@ public partial class GradesPage : WpfPage
         System.Windows.Automation.AutomationProperties.SetName(BtnAddGrade, _finalMode ? "Prüfung eintragen" : "Note eintragen");
         if (_finalMode) { RefreshFinal(); return; }
 
-        _viewGrades   = AppState.GradesIn(ViewPeriodId);
+        _viewGrades   = ViewPeriodId is Guid viewId ? AppState.GradesIn(viewId) : [];
         var standings = Grading.Summarize(_viewGrades);
         var rule      = AppState.PromotionRule;
         var result    = rule.Evaluate(standings);
@@ -161,12 +162,12 @@ public partial class GradesPage : WpfPage
         FinalTab.Children.Clear();
         var state = AppState.GradePeriods;
 
-        foreach (var p in state.Periods.OrderBy(p => p.StartedAt))
+        foreach (var p in (state?.Periods ?? []).OrderBy(p => p.StartedAt))
         {
             bool selected = !_finalMode && p.Id == ViewPeriodId;
             var tab = new WpfButton
             {
-                Content = p.Id == state.CurrentId ? $"{p.Name}  ·  aktuell" : p.Name,
+                Content = p.Id == state!.CurrentId ? $"{p.Name}  ·  aktuell" : p.Name,
                 Style   = (Style)FindResource(selected ? "PrimaryButton" : "SecondaryButton"),
                 Margin  = new Thickness(0, 0, 8, 8)
             };
@@ -174,21 +175,30 @@ public partial class GradesPage : WpfPage
             tab.Click += (_, _) =>
             {
                 _finalMode       = false;
-                _viewPeriodId    = p.Id == state.CurrentId ? null : p.Id;
+                _viewPeriodId    = p.Id == state!.CurrentId ? null : p.Id;
                 _selectedSubject = null;
                 Refresh();
             };
             PeriodTabs.Children.Add(tab);
         }
 
-        var add = new WpfButton
-        {
-            Content = "+  Semester / Jahr", Style = RowButtonStyle(), Padding = new Thickness(12, 8, 12, 8),
-            Margin = new Thickness(0, 0, 8, 8), ToolTip = "Ein neues Semester oder Schuljahr beginnen"
-        };
+        // Without any period this is the first thing to do, so it looks like it
+        var add = state is null
+            ? new WpfButton
+              {
+                  Content = "+  Semester / Jahr starten", Style = (Style)FindResource("SecondaryButton"),
+                  Margin = new Thickness(0, 0, 8, 8)
+              }
+            : new WpfButton
+              {
+                  Content = "+  Semester / Jahr", Style = RowButtonStyle(), Padding = new Thickness(12, 8, 12, 8),
+                  Margin = new Thickness(0, 0, 8, 8)
+              };
+        add.ToolTip = "Ein neues Semester oder Schuljahr beginnen";
         System.Windows.Automation.AutomationProperties.SetName(add, "Neues Semester oder Jahr");
         add.Click += (_, _) => ShowNewPeriodDialog();
         PeriodTabs.Children.Add(add);
+        _addPeriodButton = add;
 
         // The final certificate sits apart on the right
         FinalTab.Children.Add(new WpfBorder
@@ -221,6 +231,26 @@ public partial class GradesPage : WpfPage
             addFinal.Click += (_, _) => ShowAddFinalDialog();
             FinalTab.Children.Add(addFinal);
         }
+    }
+
+    /// <summary>«+ Semester / Jahr», for the hint that points at it.</summary>
+    private WpfButton? _addPeriodButton;
+
+    /// <summary>
+    /// Adding a grade without a running period: a bubble at «+ Semester / Jahr» says why
+    /// and offers to start one.
+    /// </summary>
+    private void ShowPeriodHint()
+    {
+        CloseDialog();
+        _hintSteps =
+        [
+            new(() => _addPeriodButton, "Zuerst ein Semester oder Schuljahr",
+                "Noten gehören immer zu einem Semester oder Schuljahr. Starte es hier, danach kannst du eintragen.")
+        ];
+        _tourIndex = 0;
+        TutorialLayer.Visibility = Visibility.Visible;
+        ShowTourStep();
     }
 
     private void ShowAddFinalDialog()
@@ -788,8 +818,11 @@ public partial class GradesPage : WpfPage
     private void BuildPeriodBar()
     {
         PeriodBar.Children.Clear();
-        var state  = AppState.GradePeriods;
-        var viewId = ViewPeriodId;
+        if (AppState.GradePeriods is not { } state || ViewPeriodId is not Guid viewId)
+        {
+            PeriodBanner.Visibility = Visibility.Collapsed;
+            return;
+        }
         var period = state.Periods.First(p => p.Id == viewId);
 
         var delete = new WpfButton
@@ -825,11 +858,15 @@ public partial class GradesPage : WpfPage
 
     private void ShowNewPeriodDialog()
     {
-        var current = AppState.GradePeriods.Current;
-        OpenDialog("Neues Semester oder Schuljahr",
-            $"Du startest mit leeren Noten. «{current.Name}» bleibt gespeichert und lässt sich oben jederzeit wieder auswählen.");
+        var current = AppState.GradePeriods?.Current;
+        OpenDialog(current is null ? "Semester oder Schuljahr starten" : "Neues Semester oder Schuljahr",
+            current is null
+                ? "Deine Noten gehören zu einem Semester oder Schuljahr. Wähle, wie deine Schule die Zeugnisse macht."
+                : $"Du startest mit leeren Noten. «{current.Name}» bleibt gespeichert und lässt sich oben jederzeit wieder auswählen.");
 
-        var kind = current.Kind;
+        // The first period follows the school: the Kanti gives yearly reports, the others semesters
+        var kind = current?.Kind
+            ?? (AppState.PromotionRule.Name == PromotionRule.KantiMatur.Name ? PeriodKind.Year : PeriodKind.Semester);
         bool ownName = false;
 
         var txtName = new WpfTextBox { Height = 36, FontSize = 14, MaxLength = GradePeriod.MaxNameLength };
@@ -1305,6 +1342,8 @@ public partial class GradesPage : WpfPage
 
     private void ShowGradeDialog(GradeEntry? editing, string? presetSubject)
     {
+        if (editing is null && ViewPeriodId is null) { ShowPeriodHint(); return; }
+
         OpenDialog(editing is null ? "Note eintragen" : "Note bearbeiten",
                    editing is null ? "Eine Note pro Prüfung. Eine halbe Prüfung zählt 0.5, eine Viertelprüfung 0.25." : null);
 
@@ -1409,7 +1448,7 @@ public partial class GradesPage : WpfPage
             Weight:  w,
             Title:   title.Trim(),
             Date:    DateOnly.FromDateTime(date ?? DateTime.Today),
-            PeriodId: editing?.PeriodId ?? ViewPeriodId));   // fires Notify, which rebuilds the page
+            PeriodId: editing?.PeriodId ?? ViewPeriodId!.Value));   // fires Notify, which rebuilds the page
         return null;
     }
 
@@ -1666,12 +1705,18 @@ public partial class GradesPage : WpfPage
 
     private int _tourIndex = -1;
 
+    /// <summary>A single hint instead of the tour; null while the tour (or nothing) runs.</summary>
+    private IReadOnlyList<TourStep>? _hintSteps;
+
+    private IReadOnlyList<TourStep> CurrentSteps() => _hintSteps ?? TourSteps();
+
     private void BtnHelp_Click(object sender, RoutedEventArgs e) => StartTutorial();
 
     private void StartTutorial()
     {
         CloseDialog();
         if (_finalMode) { _finalMode = false; Refresh(); }
+        _hintSteps = null;
         _tourIndex = 0;
         TutorialLayer.Visibility = Visibility.Visible;
         ShowTourStep();
@@ -1679,11 +1724,14 @@ public partial class GradesPage : WpfPage
 
     private void EndTutorial()
     {
+        bool wasHint = _hintSteps is not null;
         _tourIndex = -1;
+        _hintSteps = null;
         TutorialLayer.Visibility = Visibility.Collapsed;
         TutorialLayer.Children.Clear();
 
-        if (!AppState.Config.GradesTutorialSeen)
+        // A hint is not the tour: the tour still comes once
+        if (!wasHint && !AppState.Config.GradesTutorialSeen)
         {
             AppState.Config.GradesTutorialSeen = true;
             ConfigManager.Save(AppState.Config);
@@ -1692,7 +1740,7 @@ public partial class GradesPage : WpfPage
 
     private void ShowTourStep()
     {
-        var steps = TourSteps();
+        var steps = CurrentSteps();
         if (_tourIndex < 0 || _tourIndex >= steps.Count) { EndTutorial(); return; }
 
         // Scroll the element into view first, then measure once the layout has settled
@@ -1705,7 +1753,7 @@ public partial class GradesPage : WpfPage
     {
         if (_tourIndex < 0 || TutorialLayer.Visibility != Visibility.Visible) return;
 
-        var steps  = TourSteps();
+        var steps  = CurrentSteps();
         var step   = steps[_tourIndex];
         var target = step.Target();
         double w = TutorialLayer.ActualWidth, h = TutorialLayer.ActualHeight;
@@ -1768,7 +1816,7 @@ public partial class GradesPage : WpfPage
         var panel = new StackPanel();
         panel.Children.Add(new WpfTextBlock
         {
-            Text = $"{index + 1} VON {count}", FontSize = 11, FontWeight = FontWeights.Bold,
+            Text = _hintSteps is not null ? "HINWEIS" : $"{index + 1} VON {count}", FontSize = 11, FontWeight = FontWeights.Bold,
             Foreground = new SolidColorBrush(_accent)
         });
         panel.Children.Add(new WpfTextBlock
@@ -1783,6 +1831,27 @@ public partial class GradesPage : WpfPage
         var buttons = new Grid { Margin = new Thickness(0, 14, 0, 0) };
         buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        if (_hintSteps is not null)
+        {
+            var later = new WpfButton { Content = "Später", Style = (Style)FindResource("SecondaryButton"), HorizontalAlignment = WpfHA.Left };
+            later.Click += (_, _) => EndTutorial();
+            buttons.Children.Add(later);
+            var start = new WpfButton { Content = "Jetzt starten", Style = (Style)FindResource("PrimaryButton") };
+            start.Click += (_, _) => { EndTutorial(); ShowNewPeriodDialog(); };
+            Grid.SetColumn(start, 1);
+            buttons.Children.Add(start);
+            panel.Children.Add(buttons);
+            start.Loaded += (_, _) => start.Focus();
+            return new WpfBorder
+            {
+                Width = 340, Padding = new Thickness(20, 16, 20, 16), CornerRadius = new CornerRadius(12),
+                Background = (Brush)FindResource("SystemControlBackgroundChromeMediumBrush"),
+                BorderBrush = new SolidColorBrush(_accent), BorderThickness = new Thickness(1),
+                Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 24, ShadowDepth = 4, Opacity = 0.35 },
+                Child = panel
+            };
+        }
 
         bool last = index == count - 1;
         if (!last)

@@ -789,7 +789,7 @@ public static class AppState
 
     /// <summary>One report card per period, oldest first: the input for the final grades.</summary>
     public static IReadOnlyList<ReportCard> ReportCards()
-        => _gradePeriods.Periods
+        => (_gradePeriods?.Periods ?? [])
             .OrderBy(p => p.StartedAt)
             .Select(p => new ReportCard(p.Name, Grading.Summarize(_grades.In(p.Id))))
             .Where(r => r.Standings.Count > 0)
@@ -800,10 +800,13 @@ public static class AppState
     private static readonly string _gradePeriodsPath = DataPaths.ProfileFile("grade-periods.json");
 
     // Declared after _grades on purpose: the migration below sorts the existing grades in.
-    private static GradePeriodState _gradePeriods = LoadGradePeriods();
+    private static GradePeriodState? _gradePeriods = LoadGradePeriods();
 
     /// <summary>All periods and the running one.</summary>
-    public static GradePeriodState GradePeriods => _gradePeriods;
+    public static GradePeriodState? GradePeriods => _gradePeriods;
+
+    /// <summary>False until the first semester or school year is started.</summary>
+    public static bool HasPeriods => _gradePeriods is not null;
 
     /// <summary>The grades of one period.</summary>
     public static IReadOnlyList<GradeEntry> GradesIn(Guid periodId) => _grades.In(periodId).ToList();
@@ -823,9 +826,11 @@ public static class AppState
     public static void DeleteGradePeriod(Guid id)
     {
         _grades.RemoveAll(g => g.PeriodId == id);
-        _gradePeriods = Core.Grades.GradePeriods.Remove(_gradePeriods, id, DateTimeOffset.Now);
+        if (_gradePeriods is null) return;
+        _gradePeriods = Core.Grades.GradePeriods.Remove(_gradePeriods, id);
         SaveJson(_gradesPath, _grades);
-        SaveJson(_gradePeriodsPath, _gradePeriods);
+        if (_gradePeriods is null) { try { File.Delete(_gradePeriodsPath); } catch (IOException) { } }
+        else SaveJson(_gradePeriodsPath, _gradePeriods);
         Notify();
     }
 
@@ -833,12 +838,12 @@ public static class AppState
     /// Loads the periods, creating the first one on the first start of a version with
     /// periods and putting every existing grade into it.
     /// </summary>
-    private static GradePeriodState LoadGradePeriods()
+    private static GradePeriodState? LoadGradePeriods()
     {
         var stored = LoadJson<GradePeriodState>(_gradePeriodsPath);
         var (state, grades) = Core.Grades.GradePeriods.Migrate(stored, _grades, DateTimeOffset.Now);
 
-        if (stored != state) SaveJson(_gradePeriodsPath, state);
+        if (state is not null && stored != state) SaveJson(_gradePeriodsPath, state);
         if (!grades.SequenceEqual(_grades))
         {
             _grades.Clear();
