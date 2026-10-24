@@ -182,7 +182,7 @@
                               Margin="0,0,0,10" IsChecked="True"/>
                     <CheckBox x:Name="ChkTermine"
                               Content="Schultermine synchronisieren"
-                              Margin="0,0,0,10" IsChecked="True"/>
+                              Margin="0,0,0,10" IsChecked="False"/>
                     <Separator Style="{StaticResource Divider}"/>
                     <CheckBox x:Name="ChkCancel" IsChecked="True"
                               Margin="0,6,0,4"

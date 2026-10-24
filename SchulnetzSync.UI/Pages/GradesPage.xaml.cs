@@ -529,7 +529,7 @@ public partial class GradesPage : WpfPage
     private void ShowGradeDialog(GradeEntry? editing, string? presetSubject)
     {
         OpenDialog(editing is null ? "Note eintragen" : "Note bearbeiten",
-                   editing is null ? "Eine Note pro Prüfung. Halbe Prüfungen bekommen Gewicht ½." : null);
+                   editing is null ? "Eine Note pro Prüfung. Eine halbe Prüfung zählt 0.5, eine Viertelprüfung 0.25." : null);
 
         var cmbSubject = new WpfComboBox { IsEditable = true, Height = 36, FontSize = 14, Width = 140 };
         foreach (var code in AppState.GradeSubjectSuggestions()) cmbSubject.Items.Add(code);
@@ -554,7 +554,7 @@ public partial class GradesPage : WpfPage
         };
         System.Windows.Automation.AutomationProperties.SetName(txtWeight, "Gewicht");
         var weightRow = new StackPanel { Orientation = WpfOrientation.Horizontal };
-        foreach (var (label, value) in new[] { ("½", "0.5"), ("1", "1"), ("2", "2") })
+        foreach (var (label, value) in new[] { ("0.25", "0.25"), ("0.5", "0.5"), ("1", "1") })
         {
             var chip = new WpfButton
             {
@@ -838,7 +838,7 @@ public partial class GradesPage : WpfPage
     private IReadOnlyList<TourStep> TourSteps() =>
     [
         new(() => BtnAddGrade, "Note eintragen",
-            "Hier trägst du eine Note ein: Fach, Note und Gewicht. Eine halbe Prüfung bekommt Gewicht ½."),
+            "Hier trägst du eine Note ein: Fach, Note und Gewicht. Eine halbe Prüfung zählt 0.5, eine Viertelprüfung 0.25."),
         new(() => KpiStrip, "Dein Überblick",
             "Promotion, Gesamtschnitt, Pluspunkte und ungenügende Fächer auf einen Blick. Rot heisst: hier aufpassen."),
         new(() => BtnRule, "Die Regel deiner Schule",
@@ -1058,7 +1058,7 @@ public partial class GradesPage : WpfPage
     private UIElement GradeChip(GradeEntry g)
     {
         bool low = g.Value < GradeEntry.Sufficient;
-        var text = FormatGrade(g.Value) + (g.Weight == 1 ? "" : g.Weight == 0.5 ? " ½" : $" ×{g.Weight.ToString("0.##", _deCH)}");
+        var text = FormatGrade(g.Value) + WeightMark(g.Weight);
         return new WpfBorder
         {
             CornerRadius = new CornerRadius(6), Padding = new Thickness(7, 2, 7, 3), Margin = new Thickness(0, 2, 6, 2),
@@ -1072,6 +1072,15 @@ public partial class GradesPage : WpfPage
             }
         };
     }
+
+    /// <summary>Short weight marker for a chip: nothing for 1, ½ and ¼ for the usual halves and quarters.</summary>
+    private static string WeightMark(double weight) => weight switch
+    {
+        1    => "",
+        0.5  => " ½",
+        0.25 => " ¼",
+        _    => $" ×{weight.ToString("0.##", _deCH)}"
+    };
 
     /// <summary>The rounded subject grade as a coloured badge: green from 5, red below 4.</summary>
     private FrameworkElement GradeBadge(double grade, bool large)

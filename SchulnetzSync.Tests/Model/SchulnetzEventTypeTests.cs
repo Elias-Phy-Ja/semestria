@@ -35,12 +35,13 @@ public class SchulnetzEventTypeTests
     }
 
     [Fact]
-    public void SyncOptions_Defaults_ExcludeLektion()
+    public void SyncOptions_Defaults_ExamsOnly()
     {
         var opts = new SyncOptions();
 
+        // Termine are opt-in: hundreds of them would flood the calendar unasked
         Assert.Contains(SchulnetzEventType.Pruefung, opts.EnabledTypes);
-        Assert.Contains(SchulnetzEventType.Termin, opts.EnabledTypes);
+        Assert.DoesNotContain(SchulnetzEventType.Termin, opts.EnabledTypes);
         Assert.DoesNotContain(SchulnetzEventType.Lektion, opts.EnabledTypes);
     }
 

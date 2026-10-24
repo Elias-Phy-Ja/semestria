@@ -106,7 +106,8 @@
                 <Popup x:Name="ProfilePopup"
                        PlacementTarget="{Binding ElementName=BtnProfile}"
                        Placement="Bottom" VerticalOffset="4"
-                       StaysOpen="False" AllowsTransparency="True">
+                       StaysOpen="False" AllowsTransparency="True"
+                       KeyDown="ProfilePopup_KeyDown">
                     <Border Width="264" CornerRadius="10" Padding="8"
                             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
                             BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"

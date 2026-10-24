@@ -5,10 +5,12 @@ public sealed class SyncOptions
 {
     /// <summary>
     /// Types to sync on this run. Only Pruefung and Termin mean anything here —
-    /// Lektion is dropped no matter what the caller passes in.
+    /// Lektion is dropped no matter what the caller passes in. Exams only by default,
+    /// the same as <see cref="Configuration.SyncConfig.EnabledTypes"/>: the feed carries
+    /// hundreds of Termine and would flood the calendar unasked.
     /// </summary>
     public IReadOnlySet<SchulnetzEventType> EnabledTypes { get; init; }
-        = new HashSet<SchulnetzEventType> { SchulnetzEventType.Pruefung, SchulnetzEventType.Termin };
+        = new HashSet<SchulnetzEventType> { SchulnetzEventType.Pruefung };
 
     /// <summary>Target calendar. Null means the primary calendar of the account.</summary>
     public string? CalendarId { get; init; }

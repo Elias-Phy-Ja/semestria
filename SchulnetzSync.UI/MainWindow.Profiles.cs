@@ -40,6 +40,15 @@ public partial class MainWindow
         ProfilePopup.IsOpen = true;
     }
 
+    /// <summary>Escape closes the menu, or steps back from the name form first.</summary>
+    private void ProfilePopup_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape) return;
+        if (_profileMenuMode != "List") { _profileMenuMode = "List"; BuildProfileMenu(); }
+        else ProfilePopup.IsOpen = false;
+        e.Handled = true;
+    }
+
     private void BuildProfileMenu()
     {
         ProfileMenu.Children.Clear();
@@ -65,7 +74,7 @@ public partial class MainWindow
             case "Add":
                 ProfileMenu.Children.Add(NameForm(
                     "Name des neuen Profils", "",
-                    "Erstellen und wechseln",
+                    "Erstellen",
                     "Semestria startet neu und richtet das Profil ein, wie bei der ersten Installation.",
                     name => ProfileSession.AddAndSwitch(name)));
                 break;
@@ -199,14 +208,15 @@ public partial class MainWindow
                 Margin = new Thickness(0, 6, 0, 0)
             });
 
-        var buttons = new StackPanel
-        {
-            Orientation = System.Windows.Controls.Orientation.Horizontal,
-            Margin = new Thickness(0, 10, 0, 0)
-        };
+        // Two equal halves, so neither button gets cut off in the narrow menu
+        var buttons = new Grid { Margin = new Thickness(0, 10, 0, 0) };
+        buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+        buttons.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var ok = new WpfButton
         {
-            Content = confirm, Style = (Style)FindResource("PrimaryButton"), Margin = new Thickness(0, 0, 8, 0)
+            Content = confirm, Style = (Style)FindResource("PrimaryButton"),
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch
         };
         void Confirm()
         {
@@ -214,7 +224,12 @@ public partial class MainWindow
             onConfirm(box.Text);
         }
         ok.Click += (_, _) => Confirm();
-        var back = new WpfButton { Content = "Zurück", Style = (Style)FindResource("SecondaryButton") };
+        var back = new WpfButton
+        {
+            Content = "Zurück", Style = (Style)FindResource("SecondaryButton"),
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch
+        };
+        Grid.SetColumn(back, 2);
         back.Click += (_, _) => { _profileMenuMode = "List"; BuildProfileMenu(); };
         buttons.Children.Add(ok);
         buttons.Children.Add(back);
@@ -223,7 +238,6 @@ public partial class MainWindow
         box.KeyDown += (_, e) =>
         {
             if (e.Key == Key.Enter)  Confirm();
-            if (e.Key == Key.Escape) { _profileMenuMode = "List"; BuildProfileMenu(); }
         };
         box.Loaded += (_, _) => { box.Focus(); box.SelectAll(); };
         return panel;

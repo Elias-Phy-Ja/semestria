@@ -67,7 +67,12 @@ public class SyncEngineTests
             Start:           ev.Start,
             MissingSince:    missingSince);
 
-    private static SyncOptions DefaultOptions => new();
+    // Both types on, so the rules for Termine are exercised too; the shipped default
+    // (exams only) is pinned down in SchulnetzEventTypeTests.
+    private static SyncOptions DefaultOptions => new()
+    {
+        EnabledTypes = new HashSet<SchulnetzEventType> { SchulnetzEventType.Pruefung, SchulnetzEventType.Termin }
+    };
 
     private static SyncPlan Run(
         IReadOnlyList<SchulnetzEvent> feed,
