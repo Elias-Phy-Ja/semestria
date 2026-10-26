@@ -7,7 +7,7 @@ namespace SchulnetzSync.UI.Update;
 /// <summary>
 /// Loads and saves the snooze state.
 ///
-/// Sits in %LOCALAPPDATA%\Semestria next to profiles.json, shared by all profiles —
+/// Sits in %LOCALAPPDATA%\Semestria next to profiles.json, shared by all profiles,
 /// deliberately not in ApplicationData.Current.LocalFolder, which throws for unpackaged
 /// starts and therefore on every "dotnet run" during development.
 /// </summary>

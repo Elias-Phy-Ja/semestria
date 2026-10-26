@@ -60,7 +60,7 @@ public class UpdateDecisionTests
     [Fact]
     public async Task Pruefung_ueberschreitet_Timeout_startet_direkt()
     {
-        // A source that ignores its cancellation token on purpose — the hard limit
+        // A source that ignores its cancellation token on purpose: the hard limit
         // has to bite even then.
         var gate = new UpdateGate(
             new StubSource(async _ =>
@@ -206,7 +206,7 @@ public class UpdateDecisionTests
     [Fact]
     public async Task Waehrend_der_Snooze_wird_trotzdem_beim_Store_geprueft()
     {
-        // A postponement may silence the question, never the check itself —
+        // A postponement may silence the question, never the check itself;
         // otherwise a mandatory update would sit there unnoticed.
         bool asked = false;
         var gate = new UpdateGate(

@@ -37,7 +37,7 @@ public partial class TasksPage : Page
     private static readonly string[] TimeSuggestions =
         ["07:30", "08:00", "09:00", "10:00", "12:00", "13:30", "16:00", "18:00", "20:00", "23:59"];
 
-    /// <summary>A due date without a time means end of day — at 00:00 it would be overdue immediately.</summary>
+    /// <summary>A due date without a time means end of day; at 00:00 it would be overdue immediately.</summary>
     private static readonly TimeSpan DefaultDueTime = new(23, 59, 0);
 
     /// <summary>
@@ -603,7 +603,7 @@ public partial class TasksPage : Page
 
         if (date.SelectedDate is not { } day)
         {
-            // Something typed that is not a date — say so rather than dropping it.
+            // Something typed that is not a date; say so rather than dropping it.
             if (!string.IsNullOrWhiteSpace(date.Text))
             {
                 error = $"{field}: «{date.Text.Trim()}» ist kein gültiges Datum.";
@@ -815,7 +815,7 @@ public partial class TasksPage : Page
             BorderBrush     = overdue ? Tint(OverdueColor, 0x70) : Brushes.Transparent,
         };
 
-        // ModernWpf theme brushes cannot be resolved statically — FindResource throws on
+        // ModernWpf theme brushes cannot be resolved statically; FindResource throws on
         // them. A dynamic reference also follows along when the theme changes.
         card.SetResourceReference(Border.BackgroundProperty,
             "SystemControlBackgroundChromeMediumLowBrush");

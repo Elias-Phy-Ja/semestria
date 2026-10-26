@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- ================================================================
-         COLOURS — the accent palette
+         COLOURS: the accent palette
          ================================================================ -->
     <Color x:Key="AccentColor">#5C6EF7</Color>
     <Color x:Key="AccentDarkColor">#3D50D9</Color>
@@ -22,7 +22,7 @@
     <SolidColorBrush x:Key="TerminBrush"     Color="{StaticResource TerminColor}"/>
 
     <!-- ================================================================
-         CARDS — a touch more contrast than the background
+         CARDS: a touch more contrast than the background
          ================================================================ -->
     <Style x:Key="Card" TargetType="Border">
         <Setter Property="Background"      Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"/>
@@ -67,7 +67,7 @@
     </Style>
 
     <!-- ================================================================
-         TYPOGRAPHY — keep the contrast up, no faint opacity tricks
+         TYPOGRAPHY: keep the contrast up, no faint opacity tricks
          ================================================================ -->
     <Style x:Key="TitleText" TargetType="TextBlock">
         <Setter Property="FontSize"   Value="22"/>

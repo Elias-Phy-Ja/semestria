@@ -6,8 +6,8 @@ using SchulnetzSync.Core.Model;
 namespace SchulnetzSync.Core.Sync;
 
 /// <summary>
-/// The diff: feed events plus calendar state in, action plan out. A pure function —
-/// no network, no clock, no files — which is what makes every rule below testable.
+/// The diff: feed events plus calendar state in, action plan out. A pure function
+/// (no network, no clock, no files), which is what makes every rule below testable.
 /// </summary>
 public static class SyncEngine
 {
@@ -32,7 +32,7 @@ public static class SyncEngine
         FeedHealth                    feedHealth,
         DateTimeOffset                now)
     {
-        // Step 1 — fill in missing exam rooms first, so the room is part of the hash.
+        // Step 1: fill in missing exam rooms first, so the room is part of the hash.
         var effective = options.EnrichExamLocationFromLesson
             ? EnrichExamLocations(feedEvents)
             : feedEvents;
@@ -63,7 +63,7 @@ public static class SyncEngine
             foreach (var surplus in group.Skip(1))
                 actions.Add(new SyncAction(SyncActionKind.DeleteDuplicate, null, surplus,
                     "Doppelter Eintrag mit gleichem Schlüssel"));
-        // ── Step 2 — feed to calendar: create, update, clear the missing flag ──
+        // ── Step 2: feed to calendar (create, update, clear the missing flag) ──
         foreach (var ev in effective)
         {
             // Lektionen and switched-off types never get this far.
@@ -74,7 +74,7 @@ public static class SyncEngine
 
             if (!trackedByKey.TryGetValue(ev.Key, out var existing))
             {
-                // Rule 3 — key we have never seen.
+                // Rule 3: key we have never seen.
                 actions.Add(new SyncAction(SyncActionKind.Create, ev, null,
                     "Neuer Termin im Feed"));
             }
@@ -82,21 +82,21 @@ public static class SyncEngine
             {
                 if (existing.Hash != hash)
                 {
-                    // Rule 4a — known key, content moved.
+                    // Rule 4a: known key, content moved.
                     actions.Add(new SyncAction(SyncActionKind.Update, ev, existing,
                         "Inhalt hat sich geändert"));
                 }
                 else if (existing.MissingSince.HasValue)
                 {
-                    // Rule 4b — unchanged, and it is back after having been flagged.
+                    // Rule 4b: unchanged, and it is back after having been flagged.
                     actions.Add(new SyncAction(SyncActionKind.ClearMissing, ev, existing,
                         "Termin ist wieder im Feed aufgetaucht"));
                 }
-                // Rule 4c — unchanged and never flagged: nothing to do.
+                // Rule 4c: unchanged and never flagged, nothing to do.
             }
         }
 
-        // ── Step 3 — calendar to feed: flag, delete, mark cancelled ──
+        // ── Step 3: calendar to feed (flag, delete, mark cancelled) ──
         foreach (var tr in canonical)
         {
             if (!IsSyncable(tr.Type, tr.Key))
@@ -106,7 +106,7 @@ public static class SyncEngine
             if (feedByKey.ContainsKey(tr.Key))
                 continue;
 
-            // Rule 5e — for hand-made entries the local list is the only source. Gone from
+            // Rule 5e: for hand-made entries the local list is the only source. Gone from
             // there means the user deleted it. The safeguards below exist for a broken feed
             // and make no sense here, so remove it right away.
             if (EventKeys.IsManual(tr.Key))
@@ -116,39 +116,39 @@ public static class SyncEngine
                 continue;
             }
 
-            // Rule 5a — outside the window the feed covers, so its absence means nothing.
+            // Rule 5a: outside the window the feed covers, so its absence means nothing.
             if (feedMin.HasValue && feedMax.HasValue)
             {
                 if (tr.Start < feedMin.Value || tr.Start > feedMax.Value)
                     continue;
             }
 
-            // Rule 5b — never touch events that already happened.
+            // Rule 5b: never touch events that already happened.
             if (tr.Start < now)
                 continue;
 
             if (!tr.MissingSince.HasValue)
             {
-                // Rule 5c — first time it is gone. Only make a note of it; feeds hiccup.
+                // Rule 5c: first time it is gone. Only make a note of it; feeds hiccup.
                 actions.Add(new SyncAction(SyncActionKind.FlagMissing, null, tr,
-                    "Nicht mehr im Feed — warte auf nächsten Lauf"));
+                    "Nicht mehr im Feed, warte auf nächsten Lauf"));
             }
             else if ((now - tr.MissingSince.Value).TotalHours >= MissingGracePeriodH)
             {
-                // Rule 5d — gone long enough to believe it. Exams get retitled instead of
+                // Rule 5d: gone long enough to believe it. Exams get retitled instead of
                 // deleted, so a cancelled exam is still visible in the calendar.
                 bool cancel = options.CancelInsteadOfDelete
                            && tr.Type == SchulnetzEventType.Pruefung;
 
                 actions.Add(cancel
                     ? new SyncAction(SyncActionKind.MarkCancelled, null, tr,
-                        $"Seit {MissingGracePeriodH}h nicht im Feed — als Abgesagt markiert")
+                        $"Seit {MissingGracePeriodH}h nicht im Feed, als Abgesagt markiert")
                     : new SyncAction(SyncActionKind.Delete, null, tr,
-                        $"Seit {MissingGracePeriodH}h nicht im Feed — wird gelöscht"));
+                        $"Seit {MissingGracePeriodH}h nicht im Feed, wird gelöscht"));
             }
             // Otherwise it is missing but still inside the grace period: wait.
         }
-        // ── Step 4 — blockers. Actions stay in the plan so the dry-run can show
+        // ── Step 4: blockers. Actions stay in the plan so the dry-run can show
         //    what would have happened, but CanExecute turns false.
 
         // A: the feed itself looks wrong.
@@ -164,7 +164,7 @@ public static class SyncEngine
             int feedCount    = effective.Count(e => e.Type == type && !EventKeys.IsManual(e.Key));
             if (trackedCount > 0 && feedCount == 0)
                 blockers.Add(
-                    $"Kalender hat {trackedCount} {type}-Einträge, Feed enthält aber keine — " +
+                    $"Kalender hat {trackedCount} {type}-Einträge, Feed enthält aber keine, " +
                     "möglicher Feed-Fehler.");
         }
 
@@ -185,7 +185,7 @@ public static class SyncEngine
             {
                 blockers.Add(
                     $"Würde {deletions}/{managed} {type}-Einträge löschen " +
-                    $"({deletions * 100 / managed}% > {MaxDeleteFraction * 100:0}%) — " +
+                    $"({deletions * 100 / managed}% > {MaxDeleteFraction * 100:0}%), " +
                     "Sicherheitsstopp.");
             }
         }

@@ -11,13 +11,13 @@ namespace SchulnetzSync.UI;
 ///
 /// WPF treats every wheel event the same: however small the movement, it scrolls three
 /// lines. A mouse sends exactly one event per notch, but a precision touchpad sends many
-/// small ones per swipe — each of which then triggers a full jump, and the page bolts.
+/// small ones per swipe, each of which then triggers a full jump, and the page bolts.
 /// </summary>
 public static class SmoothScroll
 {
     /// <summary>
     /// Pixels per delta unit. One mouse notch (120) comes to 48 px, which is exactly the
-    /// three lines Windows uses by default — so nothing changes for a mouse.
+    /// three lines Windows uses by default, so nothing changes for a mouse.
     /// </summary>
     private const double PixelsPerUnit = 0.4;
 
@@ -78,7 +78,7 @@ public static class SmoothScroll
     }
 
     /// <summary>
-    /// Visual parent for visuals, logical parent otherwise — the OriginalSource of a wheel
+    /// Visual parent for visuals, logical parent otherwise; the OriginalSource of a wheel
     /// event can be a text element that has no visual parent at all.
     /// </summary>
     private static DependencyObject? ParentOf(DependencyObject element)

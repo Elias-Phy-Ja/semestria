@@ -163,7 +163,7 @@ public partial class DashboardPage : Page
 
     /// <summary>
     /// The refresh at start runs quietly in the background, so the state change is written
-    /// to the log on screen — otherwise nothing at all seems to be happening.
+    /// to the log on screen, otherwise nothing at all seems to be happening.
     /// </summary>
     private void LogAutoRefreshTransition(SyncConfig config)
     {
@@ -277,8 +277,8 @@ public partial class DashboardPage : Page
     // ── "Als Nächstes" ──────────────────────────────────────────────────
 
     /// <summary>
-    /// Shows the same thing that gets synced — exams and appointments according to
-    /// <see cref="SyncConfig.EnabledTypes"/> — grouped by day.
+    /// Shows the same thing that gets synced, exams and appointments according to
+    /// <see cref="SyncConfig.EnabledTypes"/>, grouped by day.
     /// </summary>
     private void BuildUpcoming(SyncConfig config, DateTimeOffset now)
     {
@@ -411,7 +411,7 @@ public partial class DashboardPage : Page
 
     /// <summary>
     /// Shows today for as long as there are lessons left. After that, and on days off,
-    /// it shows the next school day — so in the evening you already see tomorrow.
+    /// it shows the next school day, so in the evening you already see tomorrow.
     /// </summary>
     private void BuildSchedule(DateTimeOffset now)
     {

@@ -54,7 +54,7 @@ public sealed record NewsFeed(int Version, IReadOnlyList<NewsItem> Items)
 
     /// <summary>
     /// Reads news.json. A file in a newer format, or one that does not parse, is reported
-    /// as an exception — the caller logs it, the user is not bothered.
+    /// as an exception; the caller logs it, the user is not bothered.
     /// </summary>
     public static NewsFeed Parse(string json)
     {

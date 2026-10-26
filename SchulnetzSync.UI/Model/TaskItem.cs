@@ -3,7 +3,7 @@ namespace SchulnetzSync.UI.Model;
 /// <summary>
 /// A single to-do: homework, a paper to hand in, something to prepare.
 ///
-/// Local only. Tasks never go into the Outlook calendar — a calendar is about points in
+/// Local only. Tasks never go into the Outlook calendar; a calendar is about points in
 /// time, while a task is about a state that lasts until someone ticks it off.
 /// </summary>
 /// <param name="Id">Stable identity, also used as the reminder key.</param>
@@ -17,7 +17,7 @@ namespace SchulnetzSync.UI.Model;
 /// <param name="RemindAt">
 /// When to remind, or null for no reminder. Once the time has come and the app is
 /// running, a notification appears in the tray and <see cref="ReminderShown"/> is set.
-/// Nothing happens while the app is closed — this is not a background service.
+/// Nothing happens while the app is closed; this is not a background service.
 /// </param>
 /// <param name="ReminderShown">True once the reminder has been displayed.</param>
 /// <param name="IsImportant">Starred by the user; sorts to the top of its list.</param>

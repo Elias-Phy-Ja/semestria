@@ -5,7 +5,7 @@ namespace SchulnetzSync.Core.Calendar;
 
 /// <summary>
 /// The Outlook calendar as far as the rest of the app is concerned.
-/// <see cref="GraphCalendarTarget"/> in production, in-memory fakes in the tests —
+/// <see cref="GraphCalendarTarget"/> in production, in-memory fakes in the tests,
 /// which is what lets the whole sync run without a Microsoft account.
 /// </summary>
 public interface ICalendarTarget

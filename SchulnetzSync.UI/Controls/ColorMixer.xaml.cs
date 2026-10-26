@@ -13,7 +13,7 @@ namespace SchulnetzSync.UI.Controls;
 /// Free colour picker: a saturation/brightness field, a hue slider and a hex box.
 ///
 /// Works in HSV internally (see <see cref="HsvColor"/>). The hue is kept separately so it
-/// survives a drag through grey or black — from plain RGB it could not be recovered there,
+/// survives a drag through grey or black; from plain RGB it could not be recovered there,
 /// and the slider would jump back to red the moment you let go.
 /// </summary>
 public partial class ColorMixer : UserControl

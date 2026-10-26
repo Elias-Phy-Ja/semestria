@@ -2,7 +2,7 @@ namespace SchulnetzSync.Core.Update;
 
 /// <summary>
 /// Decides whether to bother the user about an update. Pure functions: no clock,
-/// no files, no network — the time comes in as a parameter so the rules are testable.
+/// no files, no network; the time comes in as a parameter so the rules are testable.
 /// </summary>
 public static class UpdatePolicy
 {
@@ -10,7 +10,7 @@ public static class UpdatePolicy
     /// Days to wait after "Später erinnern".
     ///
     /// Short and always the same on purpose, so an update cannot quietly be forgotten.
-    /// An urgent one does not wait for this anyway — the mandatory check in
+    /// An urgent one does not wait for this anyway; the mandatory check in
     /// <see cref="Decide"/> runs before the deadline is even looked at.
     /// </summary>
     private const int SnoozeDays = 1;
@@ -75,7 +75,7 @@ public static class UpdatePolicy
     /// <summary>
     /// The state after the user picked "Später erinnern": ask again tomorrow.
     ///
-    /// The counter comes along but does not steer the deadline — every postponement
+    /// The counter comes along but does not steer the deadline; every postponement
     /// costs the same. A new version number resets it, so it always says how often
     /// this particular version was pushed away.
     /// </summary>

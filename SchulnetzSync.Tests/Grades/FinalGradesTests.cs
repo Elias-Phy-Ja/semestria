@@ -128,7 +128,7 @@ public class FinalGradesTests
     ];
 
     [Theory]
-    //               Erfahrungsnote, Prüfungsnote, Fachnote — columns K, L, M of the sheet
+    //               Erfahrungsnote, Prüfungsnote, Fachnote: columns K, L, M of the sheet
     [InlineData("DEU", 4.6, 3.8,  4.0)]
     [InlineData("FRA", 3.9, 3.5,  3.5)]
     [InlineData("ENG", 5.1, 5.0,  5.0)]

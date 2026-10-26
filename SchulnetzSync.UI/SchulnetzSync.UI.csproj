@@ -13,7 +13,7 @@
     <!--
       Die Windows-Version im TFM schaltet die WinRT-Projektion frei, ohne die
       es Windows.Services.Store nicht gibt. 17763 statt eines höheren Werts,
-      weil Packaging\Package.appxmanifest Windows 10 1809 als Minimum angibt —
+      weil Packaging\Package.appxmanifest Windows 10 1809 als Minimum angibt,
       ein höheres TFM würde Geräte zwischen 1809 und 1909 beim Start abstürzen
       lassen, obwohl der Store ihnen die App anbietet.
     -->

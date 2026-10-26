@@ -250,7 +250,7 @@ public sealed class GraphCalendarTarget : ICalendarTarget
             ev.Type.ToString(), hash, missingSince: null);
 
         // Without the target calendar everything lands in the primary one while reading
-        // looks in the chosen calendar — the app would never find its own entries again.
+        // looks in the chosen calendar; the app would never find its own entries again.
         if (opts.CalendarId is { Length: > 0 } calendarId)
             await _graph.Me.Calendars[calendarId].Events.PostAsync(body, cancellationToken: ct);
         else
@@ -405,7 +405,7 @@ public sealed class GraphCalendarTarget : ICalendarTarget
     }
 }
 
-/// <summary>Hands out one fixed access token — all the Kiota auth pipeline needs here.</summary>
+/// <summary>Hands out one fixed access token: all the Kiota auth pipeline needs here.</summary>
 file sealed class StaticTokenProvider(string token) : IAccessTokenProvider
 {
     public Task<string> GetAuthorizationTokenAsync(

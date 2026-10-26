@@ -26,7 +26,7 @@ public partial class OnboardingWindow : Window
     private bool _skipSignIn = false;
 
     /// <summary>
-    /// Step 4 comes in two halves: first the question, then — only on a yes — the actual
+    /// Step 4 comes in two halves: first the question, then, only on a yes, the actual
     /// setup. That setup is by far the most complicated part of the app, and nobody who
     /// does not need it should be made to walk through it.
     /// </summary>
@@ -470,7 +470,7 @@ public partial class OnboardingWindow : Window
     // ── Keeping the token out of sight ──────────────────────────────────
 
     /// <summary>
-    /// Shows the host of a feed URL and nothing else — no query string, so no token.
+    /// Shows the host of a feed URL and nothing else: no query string, so no token.
     /// The URL ends up on screen in a few places, and this is what makes that safe.
     /// </summary>
     private static string SafeDisplayUrl(string url)

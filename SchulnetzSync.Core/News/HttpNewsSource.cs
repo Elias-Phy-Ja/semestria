@@ -8,7 +8,7 @@ public interface INewsSource
 
 /// <summary>
 /// Downloads the public news.json. A plain GET without cookies, query string or anything
-/// that identifies the user — the server learns no more than from any page visit.
+/// that identifies the user; the server learns no more than from any page visit.
 /// </summary>
 public sealed class HttpNewsSource : INewsSource
 {

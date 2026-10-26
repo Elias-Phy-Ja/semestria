@@ -372,7 +372,7 @@ public partial class SettingsPage : Page
         if (!string.IsNullOrEmpty(clientId))
             message = message.Replace(clientId, "[App-ID]", StringComparison.OrdinalIgnoreCase);
 
-        // Take out any URL — it could be the feed URL with its token.
+        // Take out any URL; it could be the feed URL with its token.
         message = Regex.Replace(message, @"https?://\S+", "[URL]");
 
         // Turn the AADSTS codes we know about into something a person can act on.

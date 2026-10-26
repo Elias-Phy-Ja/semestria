@@ -11,7 +11,7 @@
 
 .PARAMETER Sign
     Wenn angegeben, wird das MSIX mit einem selbstsignierten Testzertifikat signiert.
-    Nur für lokale Tests — der Microsoft Store signiert selbst.
+    Nur für lokale Tests, der Microsoft Store signiert selbst.
 
 .EXAMPLE
     .\build-msix.ps1            # MSIX ohne Signatur (für Store-Upload)

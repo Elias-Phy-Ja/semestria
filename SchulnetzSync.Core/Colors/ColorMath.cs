@@ -34,7 +34,7 @@ public readonly record struct RgbColor(byte R, byte G, byte B)
     }
 }
 /// <summary>
-/// A colour as hue, saturation and value — the model behind the colour mixer.
+/// A colour as hue, saturation and value: the model behind the colour mixer.
 ///
 /// The mixer works in HSV rather than RGB because that is how people actually mix:
 /// one slider for the hue, one surface for how strong and how bright it should be.

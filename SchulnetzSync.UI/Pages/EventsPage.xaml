@@ -148,7 +148,7 @@
         </Grid.RowDefinitions>
 
         <!-- ══════════════════════════════════════════════════════════════
-             TOOLBAR — two rows: the main bar and a compact filter bar
+             TOOLBAR: two rows, the main bar and a compact filter bar
              ══════════════════════════════════════════════════════════════ -->
         <Grid Grid.Row="0" Margin="20,10,20,0">
             <Grid.RowDefinitions>

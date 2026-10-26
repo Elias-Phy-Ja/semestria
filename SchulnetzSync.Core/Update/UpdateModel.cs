@@ -9,7 +9,7 @@ namespace SchulnetzSync.Core.Update;
 public sealed record UpdateInfo(string Version, bool IsMandatory);
 
 /// <summary>
-/// Persisted snooze state. Deliberately tiny — it is the only thing that survives a
+/// Persisted snooze state. Deliberately tiny; it is the only thing that survives a
 /// restart, and a corrupt file must never be able to block the start.
 /// </summary>
 /// <param name="SkippedVersion">Version the user last postponed, null if never.</param>
@@ -46,7 +46,7 @@ public enum UpdatePrompt
 /// <param name="Prompt">What to show.</param>
 /// <param name="Version">Version to name in the prompt, null when nothing is shown.</param>
 /// <param name="FailureReason">
-/// Why the check produced nothing — timeout, offline, no store context. Belongs in the
+/// Why the check produced nothing: timeout, offline, no store context. Belongs in the
 /// log and never in front of the user: a failed check is not their problem and must not
 /// hold up the start.
 /// </param>

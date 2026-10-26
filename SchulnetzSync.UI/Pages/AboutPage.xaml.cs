@@ -76,6 +76,6 @@ public partial class AboutPage : Page
     private static void OpenUrl(string url)
     {
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch { /* no browser available — not worth an error dialog */ }
+        catch { /* no browser available; not worth an error dialog */ }
     }
 }

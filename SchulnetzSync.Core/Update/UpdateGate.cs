@@ -5,7 +5,7 @@ namespace SchulnetzSync.Core.Update;
 /// "just start the app".
 ///
 /// The start must never hang on the check: offline, no store context when sideloaded,
-/// a WinRT call that never answers — in all of those the app carries on as usual. The
+/// a WinRT call that never answers; in all of those the app carries on as usual. The
 /// reason travels along in <see cref="UpdateDecision.FailureReason"/> so the caller can
 /// log it. Nothing is swallowed silently.
 /// </summary>
@@ -55,7 +55,7 @@ public sealed class UpdateGate(IUpdateSource source, TimeSpan timeout)
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            // The app is shutting down — that is not a failed check, so let it through.
+            // The app is shutting down; that is not a failed check, so let it through.
             throw;
         }
         catch (OperationCanceledException)

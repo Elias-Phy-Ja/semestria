@@ -103,7 +103,7 @@ public sealed class TrayService : IDisposable
             1   => "morgen fällig",
             _   => $"in {days} Tagen fällig",
         };
-        return $"{list}{task.Title} — {when}";
+        return $"{list}{task.Title} · {when}";
     }
 
     public void Dispose() => _trayIcon.Dispose();
@@ -145,7 +145,7 @@ public sealed class TrayService : IDisposable
         if (plainUrl is null)
             throw new InvalidOperationException("Keine Feed-URL konfiguriert.");
 
-        // Feed first — no point asking Microsoft for a token if this fails.
+        // Feed first: no point asking Microsoft for a token if this fails.
         using var http   = new HttpClient();
         var source       = new HttpFeedSource(http, plainUrl);
         var icsContent   = await source.FetchAsync();

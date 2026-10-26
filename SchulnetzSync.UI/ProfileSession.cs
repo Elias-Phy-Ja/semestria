@@ -9,7 +9,7 @@ namespace SchulnetzSync.UI;
 ///
 /// Switching restarts the app in the other profile instead of swapping data at runtime.
 /// Every page, the tray, the timers and AppState then start cleanly from the new folder,
-/// and nothing of the previous person can linger in memory — like two separate apps.
+/// and nothing of the previous person can linger in memory, like two separate apps.
 /// </summary>
 public static class ProfileSession
 {

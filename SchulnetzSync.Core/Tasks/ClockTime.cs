@@ -16,7 +16,7 @@ public static class ClockTime
     /// Takes <c>8:30</c>, <c>08:30</c>, <c>8.30</c>, <c>8h30</c>, <c>830</c>,
     /// <c>0830</c>, <c>8</c> (full hour) and <c>8h</c>.
     /// Refuses anything outside 00:00–23:59, and single-digit minutes such as
-    /// <c>8:5</c> — there is no way to tell 8:05 from 8:50.
+    /// <c>8:5</c>: there is no way to tell 8:05 from 8:50.
     /// </remarks>
     /// <returns>False for empty or unreadable input.</returns>
     public static bool TryParse(string? text, out TimeSpan time)

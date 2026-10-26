@@ -404,7 +404,7 @@ public partial class EventsPage : WpfPage
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // WEEK VIEW — the timetable grid
+    // WEEK VIEW: the timetable grid
     // ══════════════════════════════════════════════════════════════════════
     private void BuildWeekView()
     {
@@ -963,7 +963,7 @@ public partial class EventsPage : WpfPage
         // What kind of entry this is
         var typeHint = isPruefung  ? "Als Prüfung klassifiziert."
                      : isCancelled ? $"Fach: {colorKey}. Diese Stunde ist aus dem Schulnetz verschwunden, " +
-                                     "bevor sie stattfand – sie fällt aus."
+                                     "bevor sie stattfand: sie fällt aus."
                      : isLektion   ? $"Fach: {colorKey}"
                      : isManual   ? "Manuell erstellter Eintrag."
                      :              "Als Schultermin klassifiziert.";

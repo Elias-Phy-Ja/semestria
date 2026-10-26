@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   ╔══════════════════════════════════════════════════════════════════════╗
-  ║  MSIX Package Manifest — Semestria                                  ║
+  ║  MSIX Package Manifest: Semestria                                   ║
   ║                                                                      ║
   ║  VOR DEM STORE-UPLOAD folgende Werte ersetzen:                      ║
   ║                                                                      ║
@@ -10,7 +10,7 @@
   ║       Paketname:        z.B. 12345EliasWyss.Semestria               ║
   ║       Publisher:        z.B. CN=XXXXXXXX-XXXX-XXXX-XXXX-XXXX       ║
   ║                                                                      ║
-  ║  2. Version  (Format: a.b.c.0 — immer vierstellig)                 ║
+  ║  2. Version  (Format: a.b.c.0, immer vierstellig)                  ║
   ║                                                                      ║
   ║  FÜR LOKALE TESTS:                                                  ║
   ║  Publisher = "CN=EliasWyss" mit passendem selbstsignierten Zertif.  ║

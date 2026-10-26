@@ -15,7 +15,7 @@ public sealed record TrackedEvent(
     /// <summary>Type as stored in the schulnetzType property.</summary>
     SchulnetzEventType Type,
 
-    /// <summary>Content hash from the last write — this is how we notice changes.</summary>
+    /// <summary>Content hash from the last write; this is how we notice changes.</summary>
     string Hash,
 
     /// <summary>Start time, needed to decide whether the event is past or inside the feed window.</summary>

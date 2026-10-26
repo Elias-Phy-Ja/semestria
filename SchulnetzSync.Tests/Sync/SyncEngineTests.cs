@@ -110,7 +110,7 @@ public class SyncEngineTests
     [Fact]
     public void RescheduledExam_ProducesExactlyOneUpdate()
     {
-        // Moving the start changes the hash, which has to become an Update — not a delete plus create.
+        // Moving the start changes the hash, which has to become an Update, not a delete plus create.
         var original = MakePruefung(start: T0);
         var shifted  = original with { Start = T0.AddDays(1), End = T0.AddDays(1).AddMinutes(45) };
         var tracked  = Track(original);
@@ -339,7 +339,7 @@ public class SyncEngineTests
     }
 
     /// <summary>
-    /// Removing duplicates must not trip the mass-deletion safeguard —
+    /// Removing duplicates must not trip the mass-deletion safeguard,
     /// it cleans up the app's own mistake, it is not a reaction to the feed.
     /// </summary>
     [Fact]
@@ -362,7 +362,7 @@ public class SyncEngineTests
 
     /// <summary>
     /// A duplicate of an event that vanished from the feed is removed once, and
-    /// the remaining copy is flagged once — not twice.
+    /// the remaining copy is flagged once, not twice.
     /// </summary>
     [Fact]
     public void DuplicateOfMissingEvent_IsNotFlaggedTwice()
@@ -403,7 +403,7 @@ public class SyncEngineTests
         Assert.Single(plan.Actions, a => a.Kind == SyncActionKind.Create);
     }
 
-    /// <summary>Feed events still obey the type switches — only manual ones bypass them.</summary>
+    /// <summary>Feed events still obey the type switches; only manual ones bypass them.</summary>
     [Fact]
     public void FeedEvent_StillRespectsDisabledType()
     {

@@ -11,7 +11,7 @@ public sealed class HttpFeedSource : IFeedSource
     private readonly HttpClient _httpClient;
     private readonly Uri _feedUri;
 
-    /// <summary>URL without its query string — the only form that may show up anywhere.</summary>
+    /// <summary>URL without its query string, the only form that may show up anywhere.</summary>
     private readonly string _safeUriForLogging;
 
     /// <param name="httpClient">Owned by the caller, lifetime managed outside.</param>
@@ -44,7 +44,7 @@ public sealed class HttpFeedSource : IFeedSource
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            // Our own timeout fired, not the caller's token — say so instead of reporting a cancel.
+            // Our own timeout fired, not the caller's token; say so instead of reporting a cancel.
             throw new TimeoutException(
                 $"Feed request timed out after {TimeoutSeconds} s. " +
                 $"URL (path, token omitted): {_safeUriForLogging}");

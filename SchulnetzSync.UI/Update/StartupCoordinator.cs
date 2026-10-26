@@ -16,7 +16,7 @@ public enum StartupOutcome
 }
 
 /// <summary>
-/// Drives the start: config, update check, initialisation — and keeps the loading view on
+/// Drives the start: config, update check, initialisation, and keeps the loading view on
 /// screen long enough that it does not just flash past.
 ///
 /// Knows only <see cref="IUpdateSource"/> and the types from Core, never a WinRT class.
@@ -54,12 +54,12 @@ public sealed class StartupCoordinator(
     {
         var started = DateTimeOffset.UtcNow;
 
-        // Step 1 — config. It is already loaded by the time we get here; this step only
+        // Step 1: config. It is already loaded by the time we get here; this step only
         // gives the progress bar something honest to show.
         _status.Report("Einstellungen werden geladen…");
         _progress.Report(0.20);
 
-        // Step 2 — look for updates.
+        // Step 2: look for updates.
         _status.Report(skipCheck ? "Wird gestartet…" : "Suche nach Updates…");
         _progress.Report(0.45);
 
@@ -77,7 +77,7 @@ public sealed class StartupCoordinator(
 
         _progress.Report(0.80);
 
-        // Step 3 — the rest of the startup work.
+        // Step 3: the rest of the startup work.
         _status.Report("Wird vorbereitet…");
         await EnsureMinimumVisibleAsync(started, ct).ConfigureAwait(false);
         _progress.Report(1.0);

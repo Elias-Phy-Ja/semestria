@@ -10,7 +10,7 @@ namespace SchulnetzSync.Tests.Feed;
 /// </summary>
 public class FeedParserTests
 {
-    // Parsed once for the whole class — the fixture never changes during a run.
+    // Parsed once for the whole class; the fixture never changes during a run.
     private static readonly IReadOnlyList<SchulnetzEvent> s_events = LoadSampleFeed();
     private static readonly string s_rawIcs = ReadFixture();
 
@@ -44,7 +44,7 @@ public class FeedParserTests
         // Numeric UID, so a lesson: 48167 at 13:05 on 2026-08-10.
         var ev = s_events.First(e => e.Type == SchulnetzEventType.Lektion);
         Assert.Equal(SchulnetzEventType.Lektion, ev.Type);
-        // The key is the whole string before the @ — the bare number repeats every week.
+        // The key is the whole string before the @; the bare number repeats every week.
         Assert.Contains("et", ev.Key);
     }
 
@@ -87,23 +87,23 @@ public class FeedParserTests
         Assert.Equal(TimeSpan.FromDays(4), ev.End - ev.Start);
     }
 
-    // ── 4. SUMMARY says "Prüfung", UID says T_ — the UID wins ──────────
+    // ── 4. SUMMARY says "Prüfung", UID says T_: the UID wins ──────────
 
     [Fact]
     public void Parse_TerminUidWithPruefungInSummary_ClassifiedAsTermin()
     {
-        // T_7554: "Prüfungsvorbereitungskurse Gymnasium/WMS/IMS" — T_ UID wins.
+        // T_7554: "Prüfungsvorbereitungskurse Gymnasium/WMS/IMS", T_ UID wins.
         var ev = s_events.Single(e => e.Key == "T_7554");
         Assert.Contains("Prüfung", ev.Summary, StringComparison.Ordinal);
         Assert.Equal(SchulnetzEventType.Termin, ev.Type);
     }
 
-    // ── 5. No "Prüfung" in the title, P_ UID — still an exam ───────────
+    // ── 5. No "Prüfung" in the title, P_ UID: still an exam ───────────
 
     [Fact]
     public void Parse_PruefungUidWithoutPruefungInSummary_ClassifiedAsPruefung()
     {
-        // P_65081: "TEU_I26A Bio" — no "Prüfung" in title, P_ UID wins.
+        // P_65081: "TEU_I26A Bio", no "Prüfung" in title, P_ UID wins.
         var ev = s_events.Single(e => e.Key == "P_65081");
         Assert.DoesNotContain("Prüfung", ev.Summary, StringComparison.Ordinal);
         Assert.Equal(SchulnetzEventType.Pruefung, ev.Type);
@@ -133,7 +133,7 @@ public class FeedParserTests
     public void CheckPlausibility_EmptyContent_ReportsBothProblems()
     {
         var health = FeedParser.CheckPlausibility("BEGIN:VCALENDAR\r\nEND:VCALENDAR");
-        // Well-formed, but empty — so exactly one complaint, not two.
+        // Well-formed, but empty, so exactly one complaint, not two.
         Assert.False(health.IsHealthy);
         Assert.Single(health.Problems);
     }
@@ -161,7 +161,7 @@ public class FeedParserTests
     [Fact]
     public void Parse_TimedEvent_OffsetIsZurichSummerTime()
     {
-        // DTSTART;TZID=Europe/Zurich:20260907T145500 — September is CEST, so +02:00.
+        // DTSTART;TZID=Europe/Zurich:20260907T145500, September is CEST, so +02:00.
         var ev = s_events.Single(e => e.Key == "P_65100");
         Assert.Equal(14, ev.Start.Hour);
         Assert.Equal(55, ev.Start.Minute);

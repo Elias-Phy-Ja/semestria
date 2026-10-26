@@ -26,7 +26,7 @@ public class SubjectCodeTests
                         SubjectCode.FromSummary("TEU_I26A Prüfung 1.1_GEO_TEU"));
 
     [Theory]
-    [InlineData("spm 1.1 IMS", "SPM 1.")]   // ugly, but consistent — six characters is six characters
+    [InlineData("spm 1.1 IMS", "SPM 1.")]   // ugly, but consistent; six characters is six characters
     [InlineData("Sport",       "SPORT")]
     public void WithoutUnderscore_TakesFirstSixCharacters(string summary, string expected)
         => Assert.Equal(expected, SubjectCode.FromSummary(summary));

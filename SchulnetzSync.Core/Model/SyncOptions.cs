@@ -4,7 +4,7 @@ namespace SchulnetzSync.Core.Model;
 public sealed class SyncOptions
 {
     /// <summary>
-    /// Types to sync on this run. Only Pruefung and Termin mean anything here —
+    /// Types to sync on this run. Only Pruefung and Termin mean anything here;
     /// Lektion is dropped no matter what the caller passes in. Exams only by default,
     /// the same as <see cref="Configuration.SyncConfig.EnabledTypes"/>: the feed carries
     /// hundreds of Termine and would flood the calendar unasked.

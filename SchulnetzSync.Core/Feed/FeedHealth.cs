@@ -2,7 +2,7 @@ namespace SchulnetzSync.Core.Feed;
 
 /// <summary>
 /// Outcome of the feed plausibility check. A feed with problems must never trigger
-/// automatic deletions — half a download looks exactly like a pile of cancelled exams.
+/// automatic deletions; half a download looks exactly like a pile of cancelled exams.
 /// </summary>
 public sealed record FeedHealth(IReadOnlyList<string> Problems)
 {

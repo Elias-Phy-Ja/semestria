@@ -5,7 +5,7 @@ namespace SchulnetzSync.UI.Update;
 /// <summary>
 /// Asks Windows to start the app again after it was closed for an update.
 ///
-/// This has to be registered BEFORE the install is kicked off — afterwards Windows ends
+/// This has to be registered BEFORE the install is kicked off; afterwards Windows ends
 /// the process and there is no opportunity left.
 ///
 /// The restart is not guaranteed everywhere (on Windows Server it reportedly never
@@ -29,7 +29,7 @@ public static class ApplicationRestart
     /// <returns>True when Windows accepted the registration.</returns>
     public static bool Register()
     {
-        // Restart after an update only, never after a crash or a hang — a program that
+        // Restart after an update only, never after a crash or a hang; a program that
         // just fell over should not come back on its own.
         const int flags = RestartNoCrash | RestartNoHang;
 

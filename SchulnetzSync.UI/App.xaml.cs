@@ -199,7 +199,7 @@ public partial class App : Application
     /// Writes one line to %LOCALAPPDATA%\Semestria\crash.log.
     ///
     /// For things the user should not be bothered with but that still have to be traceable
-    /// afterwards — an update check that quietly ran into an offline machine, for instance.
+    /// afterwards: an update check that quietly ran into an offline machine, for instance.
     /// </summary>
     public static void LogLine(string message)
         => AppendToLog($"{DateTimeOffset.Now:u}  {message}\n");

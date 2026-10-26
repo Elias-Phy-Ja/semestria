@@ -5,7 +5,7 @@ using Windows.Services.Store;
 namespace SchulnetzSync.UI.Update;
 
 /// <summary>
-/// Talks to the Microsoft Store. A thin adapter on purpose — every rule about when to ask
+/// Talks to the Microsoft Store. A thin adapter on purpose; every rule about when to ask
 /// lives in <see cref="UpdatePolicy"/>, which knows nothing about WinRT.
 ///
 /// Only works in a build installed from the Store. Sideloaded or under "dotnet run" either
@@ -48,7 +48,7 @@ public sealed class StoreUpdateSource(IntPtr windowHandle) : IUpdateSource
         var context   = GetContext();
         var operation = context.RequestDownloadStorePackageUpdatesAsync(_pending);
 
-        // This stage only downloads, it does not replace anything — the app keeps running.
+        // This stage only downloads, it does not replace anything; the app keeps running.
         operation.Progress = (_, status) =>
             progress?.Report(Math.Clamp(status.PackageDownloadProgress, 0.0, 1.0));
 

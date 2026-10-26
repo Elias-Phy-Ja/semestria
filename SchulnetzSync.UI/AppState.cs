@@ -21,7 +21,7 @@ public sealed record ManualEventData(
     string TypeKey);   // "Pruefung" | "Termin"
 
 /// <summary>
-/// Global state — the single source of truth for the config, the cached feed, the tasks,
+/// Global state: the single source of truth for the config, the cached feed, the tasks,
 /// the colours and the comments. Every page reads from here and subscribes to
 /// <see cref="Changed"/> rather than talking to the other pages.
 ///
@@ -259,7 +259,7 @@ public static class AppState
     // It beats both the subject and the category colour.
     //
     // Keyed by the event key. Exams and appointments keep theirs when they move
-    // (P_65100), but a lesson key contains date, time and room — so if that exact
+    // (P_65100), but a lesson key contains date, time and room, so if that exact
     // lesson gets rescheduled, its individual colour falls back to the subject one.
 
     private static readonly string _eventColorsPath = DataPaths.ProfileFile("event-colors.json");
@@ -344,7 +344,7 @@ public static class AppState
 
     /// <summary>
     /// The hand-made entries as <see cref="SchulnetzEvent"/>, for the calendar, the
-    /// dashboard and the sync — one conversion, so all three agree on what they show.
+    /// dashboard and the sync: one conversion, so all three agree on what they show.
     /// </summary>
     public static IEnumerable<SchulnetzEvent> ManualAsEvents()
         => _manualEvents.Select(m => new SchulnetzEvent(
@@ -488,7 +488,7 @@ public static class AppState
     }
 
     /// <summary>
-    /// Removes a list. The tasks in it survive and move to "Ohne Liste" — deleting a
+    /// Removes a list. The tasks in it survive and move to "Ohne Liste"; deleting a
     /// list should never destroy work.
     /// </summary>
     public static void RemoveTaskList(string name)

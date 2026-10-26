@@ -20,7 +20,7 @@ public static class OutlookSetupText
         "deinen Kalender bearbeiten darf. Danach läuft alles automatisch, du musst nichts " +
         "einrichten und nichts eintragen.";
 
-    /// <summary>What happens on a no — and it has to sound like a real option, because it is.</summary>
+    /// <summary>What happens on a no, and it has to sound like a real option, because it is.</summary>
     public const string SkipConsequence =
         "Ohne Outlook funktioniert Semestria vollständig: Prüfungen und Termine erscheinen " +
         "im Kalender in der App. Du kannst Outlook jederzeit später in den Einstellungen verknüpfen.";
@@ -36,7 +36,7 @@ public static class OutlookSetupText
     /// <summary>
     /// The click-by-click walkthrough, advanced path only. Every step names exactly what
     /// to click and quotes the portal labels so they can be found on screen. Registering
-    /// an app is free — no Azure subscription, no credit card.
+    /// an app is free: no Azure subscription, no credit card.
     /// </summary>
     public static string[] Steps { get; } =
     [

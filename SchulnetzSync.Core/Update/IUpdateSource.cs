@@ -12,7 +12,7 @@ public interface IUpdateSource
 {
     /// <summary>
     /// Asks the store what is available. An empty list means the app is current.
-    /// May throw — the caller wraps this in <see cref="UpdateGate"/>.
+    /// May throw; the caller wraps this in <see cref="UpdateGate"/>.
     /// </summary>
     Task<IReadOnlyList<UpdateInfo>> CheckAsync(CancellationToken ct);
 

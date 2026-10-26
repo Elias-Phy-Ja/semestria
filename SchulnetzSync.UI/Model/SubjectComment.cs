@@ -4,7 +4,7 @@ namespace SchulnetzSync.UI.Model;
 /// A free-text note attached to a whole subject, e.g. "TEU".
 ///
 /// Local only, same as the tasks. The note hangs off the subject code rather than off one
-/// lesson, so it shows up at every TEU lesson and every TEU exam — even when the school
+/// lesson, so it shows up at every TEU lesson and every TEU exam, even when the school
 /// moves lessons around.
 /// </summary>
 /// <param name="Id">Stable identity for editing and deleting.</param>

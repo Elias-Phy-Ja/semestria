@@ -19,7 +19,7 @@ public static class LegalTexts
         "werden. Bitte lies die neuen Fassungen und akzeptiere sie.";
 
     public const string Agb = """
-        NUTZUNGSBEDINGUNGEN – Semestria
+        NUTZUNGSBEDINGUNGEN · Semestria
         Version 2.0 · Stand: Oktober 2026
         ════════════════════════════════════
 
@@ -95,7 +95,7 @@ public static class LegalTexts
         """;
 
     public const string Datenschutz = """
-        DATENSCHUTZERKLÄRUNG – Semestria
+        DATENSCHUTZERKLÄRUNG · Semestria
         Version 2.0 · Stand: Oktober 2026
         ════════════════════════════════════
 
@@ -170,10 +170,10 @@ public static class LegalTexts
         Zustimmung bleibt alles wie in Abschnitt 2 beschrieben.
 
         5. DRITTANBIETER-DIENSTE
-        · Microsoft Graph API (microsoft.com) – für Kalender-Zugriff
-        · Microsoft Store – für Updates
-        · Schulnetz/Centerboard – für deinen Stundenplan-Feed
-        · Hostinger – Webhosting der Nachrichtendatei
+        · Microsoft Graph API (microsoft.com): für Kalender-Zugriff
+        · Microsoft Store: für Updates
+        · Schulnetz/Centerboard: für deinen Stundenplan-Feed
+        · Hostinger: Webhosting der Nachrichtendatei
         Für die Datenschutzpraktiken dieser Anbieter sind wir nicht verantwortlich.
 
         6. DEINE RECHTE

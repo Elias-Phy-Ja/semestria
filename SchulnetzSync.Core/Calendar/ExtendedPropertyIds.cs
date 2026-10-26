@@ -2,12 +2,12 @@ namespace SchulnetzSync.Core.Calendar;
 
 /// <summary>
 /// The extended properties we stamp on every event we create. They are how the
-/// app recognises its own entries later — without them a sync could not tell an exam
+/// app recognises its own entries later; without them a sync could not tell an exam
 /// it wrote from an appointment the user typed in by hand.
 ///
 /// Graph wants the id in exactly this shape:
 ///   "&lt;MapiPropertyType&gt; {&lt;namespaceGuid&gt;} Name &lt;propertyName&gt;"
-/// The word "Name" is a literal keyword, not a placeholder — leave it out and Graph
+/// The word "Name" is a literal keyword, not a placeholder; leave it out and Graph
 /// answers with "PropertyId values may only be in one of the following formats...".
 ///
 /// The GUIDs must never change once events exist out there, or the app loses track

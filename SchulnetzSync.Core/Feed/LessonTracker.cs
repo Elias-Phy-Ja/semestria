@@ -13,12 +13,12 @@ public sealed record KnownLesson(SchulnetzEvent Lesson, bool IsCancelled);
 /// <summary>
 /// Works out which lessons were cancelled.
 ///
-/// The feed has no marker for a cancelled lesson — Schulnetz simply drops it. So the only
+/// The feed has no marker for a cancelled lesson; Schulnetz simply drops it. So the only
 /// way to show one is to remember the timetable from the last refresh and compare: a lesson
 /// that was there, has not started yet and is now gone, was cancelled.
 ///
 /// A pure function like <see cref="Sync.SyncEngine"/>: snapshot plus feed plus time in,
-/// new snapshot out. Only call it with a healthy feed — a truncated download would
+/// new snapshot out. Only call it with a healthy feed; a truncated download would
 /// otherwise read like a week of cancellations.
 /// </summary>
 public static class LessonTracker

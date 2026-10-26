@@ -229,7 +229,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Waits for a running sync to finish, but carries on once the time limit is up —
+    /// Waits for a running sync to finish, but carries on once the time limit is up;
     /// a stuck sync must not block the update for good.
     /// </summary>
     private static async Task WaitForSyncToFinishAsync(CancellationToken ct)

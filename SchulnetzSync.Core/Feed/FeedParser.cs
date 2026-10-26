@@ -8,7 +8,7 @@ namespace SchulnetzSync.Core.Feed;
 
 /// <summary>
 /// Turns the raw iCal text of the Schulnetz feed into typed <see cref="SchulnetzEvent"/>s.
-/// Classification runs on the UID alone — SUMMARY is never asked, because it lies.
+/// Classification runs on the UID alone; SUMMARY is never asked, because it lies.
 /// </summary>
 public static class FeedParser
 {
@@ -21,7 +21,7 @@ public static class FeedParser
 
     /// <summary>
     /// Parses every VEVENT into a flat list. Entries without a usable UID or start time
-    /// are skipped rather than reported — the feed occasionally ships such leftovers.
+    /// are skipped rather than reported; the feed occasionally ships such leftovers.
     /// </summary>
     public static IReadOnlyList<SchulnetzEvent> Parse(string icsContent)
     {
@@ -69,7 +69,7 @@ public static class FeedParser
     }
     /// <summary>
     /// Quick structural sanity check on the raw text. An unhealthy feed must not be
-    /// allowed to delete anything — a truncated download reads like a mass cancellation.
+    /// allowed to delete anything; a truncated download reads like a mass cancellation.
     /// </summary>
     public static FeedHealth CheckPlausibility(string icsContent)
     {
@@ -78,7 +78,7 @@ public static class FeedParser
         var problems = new List<string>();
 
         if (!icsContent.TrimEnd().EndsWith("END:VCALENDAR", StringComparison.Ordinal))
-            problems.Add("Feed does not end with END:VCALENDAR — the download may be truncated.");
+            problems.Add("Feed does not end with END:VCALENDAR; the download may be truncated.");
 
         if (!icsContent.Contains("BEGIN:VEVENT", StringComparison.Ordinal))
             problems.Add("Feed contains no events (no BEGIN:VEVENT marker found).");
@@ -164,7 +164,7 @@ public static class FeedParser
             return new DateTimeOffset(calDt.Value, TimeSpan.Zero);
 
         // Force Unspecified, otherwise GetUtcOffset reads it as the machine timezone
-        // instead of Zurich — which is wrong as soon as the laptop travels.
+        // instead of Zurich, which is wrong as soon as the laptop travels.
         var dt = DateTime.SpecifyKind(calDt.Value, DateTimeKind.Unspecified);
         TimeSpan offset = s_zurichTz.GetUtcOffset(dt);
         return new DateTimeOffset(dt, offset);

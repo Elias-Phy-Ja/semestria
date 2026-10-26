@@ -22,7 +22,7 @@ public sealed class SyncConfig
     public string? CalendarId { get; set; }
 
     /// <summary>
-    /// Types that go to Outlook. Exams only by default — Termine are opt-in, because
+    /// Types that go to Outlook. Exams only by default; Termine are opt-in, because
     /// the feed carries hundreds of them and would flood the calendar unasked.
     /// </summary>
     public HashSet<SchulnetzEventType> EnabledTypes { get; set; } =

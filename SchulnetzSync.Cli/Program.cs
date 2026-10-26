@@ -13,7 +13,7 @@ using SchulnetzSync.Core.Sync;
 // Exit codes: 0 = done, 1 = error, 2 = plan was blocked, 3 = interactive login needed.
 // The Task Scheduler reads those, so do not renumber them.
 
-var rootCmd = new RootCommand("SchulnetzSync — Schulnetz → Outlook Kalender");
+var rootCmd = new RootCommand("SchulnetzSync: Schulnetz → Outlook Kalender");
 
 // Everything the CLI understands. --silent is the one the scheduled task uses.
 var dryRunOpt  = new Option<bool>("--dry-run",  "Plan berechnen und anzeigen, nichts schreiben");
@@ -87,7 +87,7 @@ rootCmd.SetHandler(async ctx =>
         ctx.ExitCode = 0; return;
     }
 
-    // No mode given at all — print the usage instead of guessing what was meant.
+    // No mode given at all: print the usage instead of guessing what was meant.
     if (!dryRun && !sync && !silent)
     {
         Console.WriteLine(rootCmd.Description);
