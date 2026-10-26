@@ -78,6 +78,13 @@ Datenschutz und Nutzungsbedingungen: [docs/policy.html](docs/policy.html)
 Ausführliche Notizen zu den einzelnen Arbeitstagen liegen unter
 [Session Summary](Session%20Summary/).
 
+### 26.10.2026 (v3.1)
+
+- [x] Profilbild: im Profilmenü ein eigenes Bild wählen oder entfernen
+- [x] Profilfeld neu: Bild links, Name und «Profil wechseln» daneben
+- [x] IMS-Vorlage: höchstens 3 Minuspunkte, keine Mindestnote in Informatik mehr (eigene Mindestnoten weiterhin möglich)
+- [x] Nach einem Update startet Semestria erst neu, wenn Windows die neue Version installiert hat
+
 ### 24.10.2026 (v3.0)
 
 **Noten**
