@@ -307,7 +307,7 @@ public partial class GradesPage : WpfPage, ITourPage
             "Pluspunkte mindestens 0, wobei Minuspunkte doppelt zählen, und höchstens 4 Noten unter 4.",
             PromotionRule.KantiMatur));
         schools.Children.Add(SetupCard("IMS Aarau · BM", "IMS-STANDARD",
-            "Gesamtnote mindestens 4.0, höchstens 2 ungenügend, höchstens 2 Minuspunkte und Informatik mindestens 4.",
+            "Gesamtnote mindestens 4.0, höchstens 2 ungenügend und höchstens 3 Minuspunkte.",
             PromotionRule.ImsBm));
         SetupPane.Children.Add(new WpfTextBlock { Text = "VORLAGE DEINER SCHULE", Style = (Style)FindResource("SectionLabel"), Margin = new Thickness(0, 0, 0, 8) });
         SetupPane.Children.Add(schools);
@@ -1482,7 +1482,7 @@ public partial class GradesPage : WpfPage, ITourPage
         schools.Children.Add(TemplateCard("Kanti Aarau · Matur",
             "Pluspunkte ≥ 0 (Minus doppelt), höchstens 4 unter 4", PromotionRule.KantiMatur, "KANTI-STANDARD"));
         schools.Children.Add(TemplateCard("IMS Aarau · BM",
-            "Gesamtnote ≥ 4.0, höchstens 2 ungenügend, höchstens 2 Minuspunkte, INF ≥ 4", PromotionRule.ImsBm, "IMS-STANDARD"));
+            "Gesamtnote ≥ 4.0, höchstens 2 ungenügend, höchstens 3 Minuspunkte", PromotionRule.ImsBm, "IMS-STANDARD"));
         DialogContent.Children.Add(Labeled("Vorlage deiner Schule", schools, stretch: true));
 
         var generic = new UniformGrid { Columns = 3, Margin = new Thickness(0, 0, 0, 16) };
@@ -1508,13 +1508,13 @@ public partial class GradesPage : WpfPage, ITourPage
         adders.Children.Add(AddConditionButton("+ Pluspunkte",          new DraftCondition { Kind = "plus",    Value = "0" }));
         adders.Children.Add(AddConditionButton("+ Ungenügende Fächer",  new DraftCondition { Kind = "maxInsu", Value = "2" }));
         adders.Children.Add(AddConditionButton("+ Gesamtschnitt",       new DraftCondition { Kind = "average", Value = "4" }));
-        adders.Children.Add(AddConditionButton("+ Minuspunkte unter 4", new DraftCondition { Kind = "deficit", Value = "2" }));
+        adders.Children.Add(AddConditionButton("+ Minuspunkte unter 4", new DraftCondition { Kind = "deficit", Value = "3" }));
         adders.Children.Add(AddConditionButton("+ Mindestnote in Fach", new DraftCondition { Kind = "subject", Value = "4", Subject = _selectedSubject ?? "" }));
         DialogContent.Children.Add(adders);
 
         DialogContent.Children.Add(new WpfTextBlock
         {
-            Text = "Schlüsselfächer wie Informatik an der IMS: «+ Mindestnote in Fach» mit INF und 4.",
+            Text = "Muss ein einzelnes Fach eine Mindestnote erreichen (z. B. Informatik), füge «+ Mindestnote in Fach» hinzu.",
             Style = (Style)FindResource("NoteText"), Margin = new Thickness(0, 0, 0, 12)
         });
 

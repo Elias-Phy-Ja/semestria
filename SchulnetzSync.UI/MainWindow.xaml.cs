@@ -212,11 +212,11 @@ public partial class MainWindow : Window
         LoadingProgressArea.Visibility = Visibility.Collapsed;
         UpdateFailureArea.Visibility   = Visibility.Collapsed;
         UpdateDoneArea.Visibility      = Visibility.Visible;
-        TxtUpdateDone.Text             = "Update installiert. Semestria startet neu…";
+        TxtUpdateDone.Text             = "Update installiert. Semestria startet gleich neu…";
 
         await Task.Delay(1200);
 
-        if (AppRelaunch.TryRelaunch())
+        if (AppRelaunch.TryRelaunchAfterUpdate() || AppRelaunch.TryRelaunch())
         {
             System.Windows.Application.Current.Shutdown();
             return;

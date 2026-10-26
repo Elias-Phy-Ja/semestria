@@ -78,22 +78,41 @@ public class SchoolRulesTests
     }
 
     [Fact]
-    public void Ims_FailsOnMoreThanTwoMinusPoints()
+    public void Ims_FailsOnMoreThanThreeMinusPoints()
     {
-        // Two subjects at 3 cost exactly 2 Minuspunkte, still allowed; 2.5 and 3 cost 2.5
-        var ok   = Grading.Summarize([G("A", 6), G("B", 6), G("C", 3), G("D", 3), G("INF", 4)]);
-        var fail = Grading.Summarize([G("A", 6), G("B", 6), G("C", 2.5), G("D", 3), G("INF", 4)]);
+        // Three subjects at 3 cost exactly 3 Minuspunkte, still allowed; 2.5, 3 and 3 cost 3.5
+        var ok   = Grading.Summarize([G("A", 6), G("B", 6), G("C", 6), G("D", 3), G("E", 3), G("F", 3)]);
+        var fail = Grading.Summarize([G("A", 6), G("B", 6), G("C", 6), G("D", 2.5), G("E", 3), G("F", 3)]);
 
         Assert.Equal(ConditionStatus.Met,    PromotionRule.ImsBm.Evaluate(ok).Conditions[2].Status);
         Assert.Equal(ConditionStatus.Failed, PromotionRule.ImsBm.Evaluate(fail).Conditions[2].Status);
     }
 
     [Fact]
-    public void Ims_NeedsInformatikAtLeastFour()
+    public void Ims_TemplateHasNoSubjectMinimum()
     {
-        var result = PromotionRule.ImsBm.Evaluate(Grading.Summarize([.. ImsExample(), G("INF", 3.5)]));
+        var result = PromotionRule.ImsBm.Evaluate(Grading.Summarize([G("DEU", 5), G("ENG", 5), G("INF", 3.5)]));
 
-        Assert.Equal(ConditionStatus.Failed, result.Conditions[3].Status);
+        Assert.DoesNotContain(PromotionRule.ImsBm.Conditions, c => c is MinSubjectGrade);
+        Assert.Equal(ConditionStatus.Met, result.Status);
+    }
+
+    [Fact]
+    public void Ims_OldUnchangedTemplate_IsUpgraded()
+    {
+        var old = new PromotionRule("IMS Aarau · BM",
+            [new MinOverallAverage(4), new MaxInsufficientSubjects(2), new MaxDeficitPoints(2), new MinSubjectGrade("INF", 4)]);
+
+        Assert.Same(PromotionRule.ImsBm, PromotionRule.UpgradeOutdatedTemplate(old));
+    }
+
+    [Fact]
+    public void Ims_EditedRule_IsKept()
+    {
+        var edited = new PromotionRule("IMS Aarau · BM",
+            [new MinOverallAverage(4), new MaxInsufficientSubjects(2), new MaxDeficitPoints(2), new MinSubjectGrade("INF", 4.5)]);
+
+        Assert.Same(edited, PromotionRule.UpgradeOutdatedTemplate(edited));
     }
 
     [Fact]

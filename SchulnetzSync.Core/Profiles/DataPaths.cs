@@ -59,6 +59,13 @@ public static class DataPaths
     public static string DirectoryFor(string root, Guid profileId)
         => Path.Combine(root, "profiles", profileId.ToString("N"));
 
+    /// <summary>
+    /// The profile picture, when the person chose one. It sits in their own folder, so it
+    /// goes along when the profile is removed.
+    /// </summary>
+    public static string PictureFor(string root, Guid profileId)
+        => Path.Combine(DirectoryFor(root, profileId), "profile-picture.png");
+
     /// <summary>Points every per-person path at this profile. Call before anything loads.</summary>
     public static void UseProfile(Guid profileId)
     {

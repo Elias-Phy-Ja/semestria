@@ -715,7 +715,9 @@ public static class AppState
     private static readonly List<GradeEntry> _grades = LoadJson<List<GradeEntry>>(_gradesPath) ?? [];
 
     private static PromotionRule _promotionRule =
-        LoadJson<PromotionRule>(_promotionRulePath) ?? PromotionRule.PlusPointsSystem;
+        LoadJson<PromotionRule>(_promotionRulePath) is { } saved
+            ? PromotionRule.UpgradeOutdatedTemplate(saved)
+            : PromotionRule.PlusPointsSystem;
 
     /// <summary>
     /// False until the user picked a rule on purpose. The grade page asks for one first:

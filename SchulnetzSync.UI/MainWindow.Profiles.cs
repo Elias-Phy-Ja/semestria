@@ -28,8 +28,9 @@ public partial class MainWindow
     {
         var p = ProfileSession.Active;
         TxtProfileName.Text     = p.Name;
-        TxtAvatar.Text          = p.Initials;
-        AvatarCircle.Background = BrushFrom(p.ColorHex);
+        var picture = ProfilePicture.Load(p.Id);
+        TxtAvatar.Text          = picture is null ? p.Initials : "";
+        AvatarCircle.Background = AvatarBrush(p, picture);
         TxtProfileHint.Text     = ProfileSession.Registry.Profiles.Count > 1 ? "Profil wechseln" : "Profil";
     }
 
@@ -102,6 +103,9 @@ public partial class MainWindow
                     _profileMenuMode = "Rename";
                     BuildProfileMenu();
                 }));
+                ProfileMenu.Children.Add(MenuButton("", "Profilbild ändern", ChooseProfilePicture));
+                if (ProfilePicture.Exists(ProfileSession.Active.Id))
+                    ProfileMenu.Children.Add(MenuButton("", "Profilbild entfernen", RemoveProfilePicture));
                 if (registry.Profiles.Count > 1)
                     ProfileMenu.Children.Add(MenuButton("", "Dieses Profil entfernen", RemoveActiveProfile));
                 break;
@@ -115,12 +119,13 @@ public partial class MainWindow
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
+        var picture = ProfilePicture.Load(p.Id);
         grid.Children.Add(new WpfBorder
         {
-            Width = 26, Height = 26, CornerRadius = new CornerRadius(13), Background = BrushFrom(p.ColorHex),
+            Width = 26, Height = 26, CornerRadius = new CornerRadius(13), Background = AvatarBrush(p, picture),
             Child = new WpfTextBlock
             {
-                Text = p.Initials, Foreground = Brushes.White, FontSize = 11, FontWeight = FontWeights.SemiBold,
+                Text = picture is null ? p.Initials : "", Foreground = Brushes.White, FontSize = 11, FontWeight = FontWeights.SemiBold,
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             }
@@ -259,6 +264,46 @@ public partial class MainWindow
 
         ProfileSession.Remove(p.Id);
     }
+
+    private void ChooseProfilePicture()
+    {
+        ProfilePopup.IsOpen = false;
+
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title  = "Profilbild wählen",
+            Filter = ProfilePicture.FileFilter
+        };
+        if (dialog.ShowDialog(this) != true) return;
+
+        try
+        {
+            ProfilePicture.Save(ProfileSession.Active.Id, dialog.FileName);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or NotSupportedException
+                                       or UnauthorizedAccessException or ArgumentException
+                                       or FormatException or System.Runtime.InteropServices.COMException)
+        {
+            App.LogLine($"Profilbild nicht übernommen: {ex.GetType().Name}: {ex.Message}");
+            MessageBox.Show("Dieses Bild konnte nicht geöffnet werden. Versuch es mit einer PNG- oder JPG-Datei.",
+                "Profilbild", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        ShowProfileHeader();
+    }
+
+    private void RemoveProfilePicture()
+    {
+        ProfilePopup.IsOpen = false;
+        ProfilePicture.Remove(ProfileSession.Active.Id);
+        ShowProfileHeader();
+    }
+
+    /// <summary>The picture filling the circle, or the profile colour behind the initials.</summary>
+    private static Brush AvatarBrush(Profile p, ImageSource? picture)
+        => picture is null
+            ? BrushFrom(p.ColorHex)
+            : new ImageBrush(picture) { Stretch = Stretch.UniformToFill };
 
     private static Brush BrushFrom(string hex)
     {

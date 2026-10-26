@@ -89,7 +89,7 @@ public sealed record MinOverallAverage(double Min) : RuleCondition
 
 /// <summary>
 /// The grades below 4 may together miss 4 by at most this much: 3.5 costs 0.5, 3 costs 1.
-/// The IMS calls these «Minuspunkte unter 4» and allows 2.
+/// The IMS calls these «Minuspunkte unter 4» and allows 3.
 /// </summary>
 public sealed record MaxDeficitPoints(double Max) : RuleCondition
 {
@@ -150,17 +150,37 @@ public sealed record PromotionRule(string Name, IReadOnlyList<RuleCondition> Con
     ]);
 
     /// <summary>
-    /// IMS Aarau, Berufsmaturität (school's grade calculator 2026): overall grade at least
-    /// 4.0, at most two insufficient subject grades, at most two «Minuspunkte unter 4»,
-    /// plus Informatik at least 4 for the IMS diploma.
+    /// IMS Aarau, Berufsmaturität: overall grade at least 4.0, at most two insufficient
+    /// subject grades, at most three «Minuspunkte unter 4». A minimum for a single subject
+    /// is not part of the template; whoever needs one adds it as <see cref="MinSubjectGrade"/>.
     /// </summary>
     public static PromotionRule ImsBm { get; } = new("IMS Aarau · BM",
+    [
+        new MinOverallAverage(4),
+        new MaxInsufficientSubjects(2),
+        new MaxDeficitPoints(3)
+    ]);
+
+    /// <summary>
+    /// The IMS template up to v3.0 (two Minuspunkte, Informatik at least 4). A saved rule that
+    /// is still exactly this one was never customised and is moved to the current template.
+    /// </summary>
+    private static readonly PromotionRule _imsBmBefore31 = new("IMS Aarau · BM",
     [
         new MinOverallAverage(4),
         new MaxInsufficientSubjects(2),
         new MaxDeficitPoints(2),
         new MinSubjectGrade("INF", 4)
     ]);
+
+    /// <summary>
+    /// Replaces a saved rule that is an unchanged outdated template with the current one;
+    /// anything the user edited is returned as it is.
+    /// </summary>
+    public static PromotionRule UpgradeOutdatedTemplate(PromotionRule saved)
+        => saved.Name == _imsBmBefore31.Name && saved.Conditions.SequenceEqual(_imsBmBefore31.Conditions)
+            ? ImsBm
+            : saved;
 
     public PromotionResult Evaluate(IReadOnlyList<SubjectStanding> standings)
     {
