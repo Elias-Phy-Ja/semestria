@@ -59,8 +59,7 @@
         <!-- ── Sidebar logo ── -->
         <ui:NavigationView.PaneHeader>
             <StackPanel Margin="10,12,10,8">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center"
-                            Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,8">
                     <Image Source="pack://application:,,,/Resources/Semestra_Logo.png"
                            Width="22" Height="22" Margin="0,0,8,0"
                            VerticalAlignment="Center"
@@ -74,33 +73,37 @@
                                VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- Profile switcher: one click, like the account picker in Teams. A centred card:
-                     picture (or initials) on top, name and "Profil wechseln ▾" below. -->
+                <!-- Profile switcher: one click, like the account picker in Teams. Picture (or
+                     initials) on the left, name and "Profil ▾" next to it. -->
                 <Button x:Name="BtnProfile" Style="{StaticResource FlatMenuButton}"
-                        HorizontalContentAlignment="Center"
+                        HorizontalContentAlignment="Left"
                         ToolTip="Profil wechseln"
                         AutomationProperties.Name="Profil wechseln"
                         Click="BtnProfile_Click">
-                    <StackPanel HorizontalAlignment="Center" Margin="0,4,0,4">
-                        <Border x:Name="AvatarCircle" Width="48" Height="48" CornerRadius="24"
-                                HorizontalAlignment="Center"
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="AvatarCircle" Width="40" Height="40" CornerRadius="20"
+                                VerticalAlignment="Center"
                                 Background="{StaticResource AccentBrush}">
-                            <TextBlock x:Name="TxtAvatar" Foreground="White" FontSize="18"
+                            <TextBlock x:Name="TxtAvatar" Foreground="White" FontSize="15"
                                        FontWeight="SemiBold"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <TextBlock x:Name="TxtProfileName" FontSize="14" FontWeight="SemiBold"
-                                   Margin="0,8,0,0" MaxWidth="200"
-                                   HorizontalAlignment="Center" TextAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,1,0,0">
-                            <TextBlock x:Name="TxtProfileHint" FontSize="11" Opacity="0.55"
-                                       Text="Profil wechseln" VerticalAlignment="Center"/>
-                            <TextBlock Text="&#xE70D;" FontSize="9" Opacity="0.55" Margin="5,1,0,0"
-                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                       VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtProfileName" FontSize="14" FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,1,0,0">
+                                <TextBlock x:Name="TxtProfileHint" FontSize="11" Opacity="0.55"
+                                           Text="Profil wechseln" VerticalAlignment="Center"/>
+                                <TextBlock Text="&#xE70D;" FontSize="9" Opacity="0.55" Margin="5,1,0,0"
+                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
-                    </StackPanel>
+                    </Grid>
                 </Button>
 
                 <Popup x:Name="ProfilePopup"
