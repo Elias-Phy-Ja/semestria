@@ -1,3 +1,4 @@
+using SchulnetzSync.Core.Cloud;
 using SchulnetzSync.Core.Comments;
 using SchulnetzSync.Core.Grades;
 using SchulnetzSync.Core.Model;
@@ -37,4 +38,12 @@ public interface IUserDataStore
     /// <summary>Every grade of every period.</summary>
     IReadOnlyList<GradeEntry> LoadGrades();
     void SaveGrades(IReadOnlyList<GradeEntry> grades);
+
+    /// <summary>The user's changes to exams from the feed.</summary>
+    IReadOnlyList<PruefungOverlay> LoadPruefungOverlays();
+    void SavePruefungOverlays(IReadOnlyList<PruefungOverlay> overlays);
+
+    /// <summary>What this device and the cloud last agreed on. Empty in the local mode.</summary>
+    IReadOnlyList<SyncLedgerEntry> LoadSyncLedger();
+    void SaveSyncLedger(IReadOnlyList<SyncLedgerEntry> ledger);
 }

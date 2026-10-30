@@ -1,3 +1,4 @@
+using SchulnetzSync.Core.Cloud;
 using SchulnetzSync.Core.Comments;
 using SchulnetzSync.Core.Grades;
 using SchulnetzSync.Core.Model;
@@ -198,6 +199,36 @@ public sealed class LocalJsonStoreTests : IDisposable
         _store.SaveTaskLists(["DEU"]);
 
         Assert.Empty(other.LoadTaskLists());
+    }
+
+    [Fact]
+    public void Overlays_RoundTrip()
+    {
+        var at      = new DateTimeOffset(2026, 11, 3, 8, 0, 0, TimeSpan.FromHours(1));
+        var overlay = new PruefungOverlay("P_1", "Neu", "", at, at, "Alt", null, at, at);
+
+        _store.SavePruefungOverlays([overlay]);
+
+        Assert.Equal(overlay, Assert.Single(_store.LoadPruefungOverlays()));
+    }
+
+    [Fact]
+    public void Ledger_RoundTripsWithItsKind()
+    {
+        var at    = new DateTimeOffset(2026, 11, 3, 8, 0, 0, TimeSpan.Zero);
+        var entry = new SyncLedgerEntry("P_1", SyncRecordKind.Pruefung, "ABC", at, at);
+
+        _store.SaveSyncLedger([entry]);
+
+        Assert.Equal(entry, Assert.Single(_store.LoadSyncLedger()));
+        Assert.Contains("Pruefung", Get(LocalJsonStore.SyncLedgerFile));
+    }
+
+    [Fact]
+    public void LocalMode_HasNoSyncFile()
+    {
+        Assert.Empty(_store.LoadSyncLedger());
+        Assert.False(File.Exists(Path.Combine(_dir, LocalJsonStore.SyncLedgerFile)));
     }
 
     [Fact]

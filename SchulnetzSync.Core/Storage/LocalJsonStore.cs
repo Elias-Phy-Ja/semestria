@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SchulnetzSync.Core.Cloud;
 using SchulnetzSync.Core.Comments;
 using SchulnetzSync.Core.Grades;
 using SchulnetzSync.Core.Model;
@@ -22,6 +23,8 @@ public sealed class LocalJsonStore(string directory) : IUserDataStore
     public const string TaskListsFile       = "task-lists.json";
     public const string SubjectCommentsFile = "subject-comments.json";
     public const string GradesFile          = "grades.json";
+    public const string OverlaysFile        = "pruefung-overlays.json";
+    public const string SyncLedgerFile      = "sync-ledger.json";
 
     /// <summary>Added to a file's name for the copy kept when it could not be read.</summary>
     public const string CorruptSuffix = ".corrupt";
@@ -70,6 +73,18 @@ public sealed class LocalJsonStore(string directory) : IUserDataStore
 
     public void SaveGrades(IReadOnlyList<GradeEntry> grades)
         => Save(GradesFile, grades, s_plain);
+
+    public IReadOnlyList<PruefungOverlay> LoadPruefungOverlays()
+        => Load<List<PruefungOverlay>>(OverlaysFile, s_plain) ?? [];
+
+    public void SavePruefungOverlays(IReadOnlyList<PruefungOverlay> overlays)
+        => Save(OverlaysFile, overlays, s_plain);
+
+    public IReadOnlyList<SyncLedgerEntry> LoadSyncLedger()
+        => Load<List<SyncLedgerEntry>>(SyncLedgerFile, s_events) ?? [];
+
+    public void SaveSyncLedger(IReadOnlyList<SyncLedgerEntry> ledger)
+        => Save(SyncLedgerFile, ledger, s_events);
 
     private T? Load<T>(string fileName, JsonSerializerOptions options) where T : class
     {
