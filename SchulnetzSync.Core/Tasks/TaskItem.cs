@@ -1,4 +1,4 @@
-namespace SchulnetzSync.UI.Model;
+namespace SchulnetzSync.Core.Tasks;
 
 /// <summary>
 /// A single to-do: homework, a paper to hand in, something to prepare.

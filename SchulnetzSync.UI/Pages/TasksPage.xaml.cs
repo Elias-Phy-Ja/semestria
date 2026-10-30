@@ -4,7 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using SchulnetzSync.Core.Tasks;
-using SchulnetzSync.UI.Model;
 // WinForms is in the build for NotifyIcon and clashes with half the control names
 using Brushes        = System.Windows.Media.Brushes;
 using Button         = System.Windows.Controls.Button;

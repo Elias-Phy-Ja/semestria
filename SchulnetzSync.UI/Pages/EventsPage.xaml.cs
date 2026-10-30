@@ -7,7 +7,8 @@ using System.Windows.Media;
 using SchulnetzSync.Core.Colors;
 using SchulnetzSync.Core.Model;
 using SchulnetzSync.UI.Controls;
-using SchulnetzSync.UI.Model;
+using SchulnetzSync.Core.Comments;
+using SchulnetzSync.Core.Tasks;
 using ModernWpf.Controls.Primitives;
 using Point          = System.Windows.Point;
 

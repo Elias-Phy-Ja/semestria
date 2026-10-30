@@ -1,24 +1,16 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SchulnetzSync.Core.Comments;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Feed;
 using SchulnetzSync.Core.Grades;
 using SchulnetzSync.Core.Model;
 using SchulnetzSync.Core.Profiles;
-using SchulnetzSync.UI.Model;
+using SchulnetzSync.Core.Storage;
+using SchulnetzSync.Core.Tasks;
 
 namespace SchulnetzSync.UI;
-
-// ── An entry the user made by hand. Local only, never pushed to Outlook. ─────
-public sealed record ManualEventData(
-    Guid Id,
-    string Title,
-    DateTimeOffset Start,
-    DateTimeOffset End,
-    bool IsAllDay,
-    string? Location,
-    string TypeKey);   // "Pruefung" | "Termin"
 
 /// <summary>
 /// Global state: the single source of truth for the config, the cached feed, the tasks,
@@ -30,6 +22,9 @@ public sealed record ManualEventData(
 /// </summary>
 public static class AppState
 {
+    // First on purpose: the fields below load through it as the class initialises.
+    private static readonly IUserDataStore _store = new LocalJsonStore(DataPaths.ProfileDirectory);
+
     private static SyncConfig _config = ConfigManager.Load();
 
     public static SyncConfig Config
@@ -65,8 +60,6 @@ public static class AppState
     }
 
     // ── Cached feed, kept on disk ────────────────────────────────────────────
-    private static readonly string _cachePath = DataPaths.ProfileFile("cached-events.json");
-
     // Enums as strings, otherwise SchulnetzEventType does not survive the round trip
     private static readonly JsonSerializerOptions _eventJsonOpts = new()
     {
@@ -74,7 +67,7 @@ public static class AppState
         Converters                  = { new JsonStringEnumConverter() }
     };
 
-    private static IReadOnlyList<SchulnetzEvent> _cachedFeedEvents = LoadCachedEvents();
+    private static IReadOnlyList<SchulnetzEvent> _cachedFeedEvents = LoadOrEmpty(_store.LoadCachedEvents);
 
     /// <summary>
     /// The events from the last parse, filled after every run including a dry one. Written
@@ -86,32 +79,8 @@ public static class AppState
         set
         {
             _cachedFeedEvents = value;
-            SaveCachedEvents();
+            Persist(() => _store.SaveCachedEvents(_cachedFeedEvents));
         }
-    }
-
-    private static IReadOnlyList<SchulnetzEvent> LoadCachedEvents()
-    {
-        try
-        {
-            if (File.Exists(_cachePath))
-                return JsonSerializer.Deserialize<List<SchulnetzEvent>>(
-                    File.ReadAllText(_cachePath), _eventJsonOpts)
-                    ?? [];
-        }
-        catch { /* corrupt file: start empty rather than not at all */ }
-        return [];
-    }
-
-    private static void SaveCachedEvents()
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_cachePath)!);
-            File.WriteAllText(_cachePath,
-                JsonSerializer.Serialize(_cachedFeedEvents, _eventJsonOpts));
-        }
-        catch { }
     }
 
     /// <summary>
@@ -337,9 +306,7 @@ public static class AppState
     }
 
     // ── Hand-made entries ────────────────────────────────────────────────────
-    private static readonly string _manualPath = DataPaths.ProfileFile("manual-events.json");
-
-    private static List<ManualEventData> _manualEvents = LoadManual();
+    private static List<ManualEventData> _manualEvents = LoadOrEmpty(_store.LoadManualEvents).ToList();
     public static IReadOnlyList<ManualEventData> ManualEvents => _manualEvents;
 
     /// <summary>
@@ -392,32 +359,10 @@ public static class AppState
         Notify();
     }
 
-    private static List<ManualEventData> LoadManual()
-    {
-        try
-        {
-            if (File.Exists(_manualPath))
-                return JsonSerializer.Deserialize<List<ManualEventData>>(
-                    File.ReadAllText(_manualPath)) ?? [];
-        }
-        catch { }
-        return [];
-    }
-
-    private static void SaveManual()
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_manualPath)!);
-            File.WriteAllText(_manualPath, JsonSerializer.Serialize(_manualEvents));
-        }
-        catch { }
-    }
+    private static void SaveManual() => Persist(() => _store.SaveManualEvents(_manualEvents));
 
     // ── Tasks ────────────────────────────────────────────────────────────────
-    private static readonly string _tasksPath = DataPaths.ProfileFile("tasks.json");
-
-    private static List<TaskItem> _tasks = LoadTasks();
+    private static List<TaskItem> _tasks = LoadOrEmpty(_store.LoadTasks).ToList();
 
     /// <summary>Every task, open and done, in the order they were added.</summary>
     public static IReadOnlyList<TaskItem> Tasks => _tasks;
@@ -459,9 +404,7 @@ public static class AppState
     }
 
     // ── Task lists ───────────────────────────────────────────────────────────
-    private static readonly string _taskListsPath = DataPaths.ProfileFile("task-lists.json");
-
-    private static List<string> _taskLists = LoadTaskLists();
+    private static List<string> _taskLists = LoadOrEmpty(_store.LoadTaskLists).ToList();
 
     /// <summary>
     /// Every list name: the ones created on purpose plus the ones still attached to a
@@ -585,54 +528,12 @@ public static class AppState
             .ToList();
     }
 
-    private static List<string> LoadTaskLists()
-    {
-        try
-        {
-            if (File.Exists(_taskListsPath))
-                return JsonSerializer.Deserialize<List<string>>(
-                    File.ReadAllText(_taskListsPath)) ?? [];
-        }
-        catch { }
-        return [];
-    }
+    private static void SaveTaskLists() => Persist(() => _store.SaveTaskLists(_taskLists));
 
-    private static void SaveTaskLists()
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_taskListsPath)!);
-            File.WriteAllText(_taskListsPath, JsonSerializer.Serialize(_taskLists));
-        }
-        catch { }
-    }
-
-    private static List<TaskItem> LoadTasks()
-    {
-        try
-        {
-            if (File.Exists(_tasksPath))
-                return JsonSerializer.Deserialize<List<TaskItem>>(
-                    File.ReadAllText(_tasksPath)) ?? [];
-        }
-        catch { /* corrupt file: start empty rather than not at all */ }
-        return [];
-    }
-
-    private static void SaveTasks()
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_tasksPath)!);
-            File.WriteAllText(_tasksPath, JsonSerializer.Serialize(_tasks));
-        }
-        catch { }
-    }
+    private static void SaveTasks() => Persist(() => _store.SaveTasks(_tasks));
 
     // ── Subject comments ─────────────────────────────────────────────────────
-    private static readonly string _subjectCommentsPath = DataPaths.ProfileFile("subject-comments.json");
-
-    private static readonly List<SubjectComment> _subjectComments = LoadSubjectComments();
+    private static readonly List<SubjectComment> _subjectComments = LoadOrEmpty(_store.LoadSubjectComments).ToList();
 
     /// <summary>The notes on one subject, newest first.</summary>
     public static IReadOnlyList<SubjectComment> CommentsFor(string subject)
@@ -681,38 +582,16 @@ public static class AppState
         return clean.Length > SubjectComment.MaxLength ? clean[..SubjectComment.MaxLength] : clean;
     }
 
-    private static List<SubjectComment> LoadSubjectComments()
-    {
-        try
-        {
-            if (File.Exists(_subjectCommentsPath))
-                return JsonSerializer.Deserialize<List<SubjectComment>>(
-                    File.ReadAllText(_subjectCommentsPath)) ?? [];
-        }
-        catch { /* corrupt file: start empty rather than not at all */ }
-        return [];
-    }
-
-    private static void SaveSubjectComments()
-    {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(_subjectCommentsPath)!);
-            File.WriteAllText(_subjectCommentsPath, JsonSerializer.Serialize(_subjectComments));
-        }
-        catch { }
-    }
+    private static void SaveSubjectComments() => Persist(() => _store.SaveSubjectComments(_subjectComments));
 
     // ── Grades ───────────────────────────────────────────────────────────────
     //
     // Typed in by hand, local only. The promotion rule the user picked (or built) is
     // stored next to them.
 
-    private static readonly string _gradesPath = DataPaths.ProfileFile("grades.json");
-
     private static readonly string _promotionRulePath = DataPaths.ProfileFile("promotion-rule.json");
 
-    private static readonly List<GradeEntry> _grades = LoadJson<List<GradeEntry>>(_gradesPath) ?? [];
+    private static readonly List<GradeEntry> _grades = LoadOrEmpty(_store.LoadGrades).ToList();
 
     private static PromotionRule _promotionRule =
         LoadJson<PromotionRule>(_promotionRulePath) is { } saved
@@ -830,7 +709,7 @@ public static class AppState
         _grades.RemoveAll(g => g.PeriodId == id);
         if (_gradePeriods is null) return;
         _gradePeriods = Core.Grades.GradePeriods.Remove(_gradePeriods, id);
-        SaveJson(_gradesPath, _grades);
+        SaveGrades();
         if (_gradePeriods is null) { try { File.Delete(_gradePeriodsPath); } catch (IOException) { } }
         else SaveJson(_gradePeriodsPath, _gradePeriods);
         Notify();
@@ -850,7 +729,7 @@ public static class AppState
         {
             _grades.Clear();
             _grades.AddRange(grades);
-            SaveJson(_gradesPath, _grades);
+            SaveGrades();
         }
         return state;
     }
@@ -867,14 +746,14 @@ public static class AppState
     {
         var i = _grades.FindIndex(g => g.Id == grade.Id);
         if (i < 0) _grades.Add(grade); else _grades[i] = grade;
-        SaveJson(_gradesPath, _grades);
+        SaveGrades();
         Notify();
     }
 
     public static void RemoveGrade(Guid id)
     {
         if (_grades.RemoveAll(g => g.Id == id) == 0) return;
-        SaveJson(_gradesPath, _grades);
+        SaveGrades();
         Notify();
     }
 
@@ -892,6 +771,8 @@ public static class AppState
             .Distinct()
             .OrderBy(c => c, StringComparer.CurrentCulture)
             .ToList();
+
+    private static void SaveGrades() => Persist(() => _store.SaveGrades(_grades));
 
     private static T? LoadJson<T>(string path) where T : class
     {
@@ -950,6 +831,34 @@ public static class AppState
     }
 
     // ── Small helpers ────────────────────────────────────────────────────────
+
+    // A failed load must not keep the app from starting, so it begins empty. The log says
+    // what happened, and LocalJsonStore has kept a copy of a damaged file by then.
+    private static IReadOnlyList<T> LoadOrEmpty<T>(Func<IReadOnlyList<T>> load)
+    {
+        try
+        {
+            return load();
+        }
+        catch (Exception ex)
+        {
+            App.LogLine($"Daten nicht geladen: {ex.GetType().Name}: {ex.Message}");
+            return [];
+        }
+    }
+
+    // Everything is saved as it changes, so one failed write is logged and the next retries.
+    private static void Persist(Action save)
+    {
+        try
+        {
+            save();
+        }
+        catch (Exception ex)
+        {
+            App.LogLine($"Daten nicht gespeichert: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
 
     public static void Reload()
     {

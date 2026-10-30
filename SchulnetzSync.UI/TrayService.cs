@@ -90,7 +90,7 @@ public sealed class TrayService : IDisposable
             AppState.UpdateTask(task with { ReminderShown = true });
     }
 
-    private static string BuildReminderLine(SchulnetzSync.UI.Model.TaskItem task)
+    private static string BuildReminderLine(SchulnetzSync.Core.Tasks.TaskItem task)
     {
         var list = string.IsNullOrWhiteSpace(task.ListName) ? "" : task.ListName + ": ";
         if (task.DueAt is not { } due) return list + task.Title;

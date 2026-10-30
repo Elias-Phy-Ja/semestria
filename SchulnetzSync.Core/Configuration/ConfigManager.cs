@@ -1,7 +1,7 @@
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using SchulnetzSync.Core.Profiles;
+using SchulnetzSync.Core.Security;
 
 namespace SchulnetzSync.Core.Configuration;
 
@@ -14,6 +14,8 @@ public static class ConfigManager
     // Asked on every use: the folder belongs to the active profile (see DataPaths).
     private static string ConfigDir  => DataPaths.ProfileDirectory;
     private static string ConfigPath => DataPaths.ProfileFile("config.json");
+
+    private static readonly ISecretStore s_secrets = new DpapiSecretStore();
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -49,9 +51,7 @@ public static class ConfigManager
     /// </summary>
     public static void SetFeedUrl(SyncConfig config, string plainUrl)
     {
-        byte[] plain     = Encoding.UTF8.GetBytes(plainUrl);
-        byte[] encrypted = ProtectedData.Protect(plain, null, DataProtectionScope.CurrentUser);
-        config.FeedUrlEncrypted = Convert.ToBase64String(encrypted);
+        config.FeedUrlEncrypted = s_secrets.Protect(Encoding.UTF8.GetBytes(plainUrl));
     }
 
     /// <summary>Decrypts the stored feed URL, or null when there is none yet.</summary>
@@ -59,8 +59,6 @@ public static class ConfigManager
     {
         if (config.FeedUrlEncrypted is null) return null;
 
-        byte[] encrypted = Convert.FromBase64String(config.FeedUrlEncrypted);
-        byte[] plain     = ProtectedData.Unprotect(encrypted, null, DataProtectionScope.CurrentUser);
-        return Encoding.UTF8.GetString(plain);
+        return Encoding.UTF8.GetString(s_secrets.Unprotect(config.FeedUrlEncrypted));
     }
 }

@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Model;
-using SchulnetzSync.UI.Model;
+using SchulnetzSync.Core.Tasks;
 using SchulnetzSync.UI.Services;
 using CheckBox            = System.Windows.Controls.CheckBox;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;

@@ -1,4 +1,4 @@
-namespace SchulnetzSync.UI.Model;
+namespace SchulnetzSync.Core.Comments;
 
 /// <summary>
 /// A free-text note attached to a whole subject, e.g. "TEU".
