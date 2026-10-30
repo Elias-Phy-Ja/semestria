@@ -15,6 +15,19 @@ public enum StartupOutcome
     PromptMandatory,
 }
 
+/// <summary>What a search started from the settings came to.</summary>
+public enum ManualUpdateResult
+{
+    /// <summary>An update was found and the prompt is on screen.</summary>
+    PromptShown,
+
+    /// <summary>The store answered and has nothing newer.</summary>
+    UpToDate,
+
+    /// <summary>The store gave no usable answer.</summary>
+    Failed,
+}
+
 /// <summary>
 /// Drives the start: config, update check, initialisation, and keeps the loading view on
 /// screen long enough that it does not just flash past.
@@ -30,6 +43,9 @@ public sealed class StartupCoordinator(
 {
     /// <summary>Hard cap for the network check.</summary>
     private static readonly TimeSpan CheckTimeout = TimeSpan.FromMilliseconds(2500);
+
+    /// <summary>Limit for a search by hand: nothing is waiting on it, so the store gets time.</summary>
+    private static readonly TimeSpan ManualCheckTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>So the loading view does not flash by on a fast machine.</summary>
     private static readonly TimeSpan MinimumVisible = TimeSpan.FromMilliseconds(800);
@@ -81,6 +97,26 @@ public sealed class StartupCoordinator(
         _status.Report("Wird vorbereitet…");
         await EnsureMinimumVisibleAsync(started, ct).ConfigureAwait(false);
         _progress.Report(1.0);
+
+        return decision.Prompt switch
+        {
+            UpdatePrompt.Mandatory => StartupOutcome.PromptMandatory,
+            UpdatePrompt.Optional  => StartupOutcome.PromptOptional,
+            _                      => StartupOutcome.Continue,
+        };
+    }
+
+    /// <summary>
+    /// Searches on request while the app is running, postponed updates included. Download
+    /// and install work afterwards exactly as after the check at the start.
+    /// </summary>
+    public async Task<StartupOutcome> CheckNowAsync(CancellationToken ct)
+    {
+        var gate     = new UpdateGate(_source, ManualCheckTimeout);
+        var decision = await gate.EvaluateIgnoringSnoozeAsync(DateTimeOffset.UtcNow, ct).ConfigureAwait(false);
+
+        OfferedVersion = decision.Version;
+        FailureReason  = decision.FailureReason;
 
         return decision.Prompt switch
         {

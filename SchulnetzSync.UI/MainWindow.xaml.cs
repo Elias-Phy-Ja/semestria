@@ -112,9 +112,12 @@ public partial class MainWindow : Window
         _offeredVersion    = version;
         _updateIsMandatory = mandatory;
 
+        LoadingOverlay.Visibility      = Visibility.Visible;
         LoadingProgressArea.Visibility = Visibility.Collapsed;
         UpdateFailureArea.Visibility   = Visibility.Collapsed;
+        UpdateDoneArea.Visibility      = Visibility.Collapsed;
         UpdatePromptArea.Visibility    = Visibility.Visible;
+        BtnUpdateNow.Visibility        = Visibility.Visible;
 
         // The store sometimes reports the version that is already installed. A number that
         // is not actually higher is therefore left out of the message entirely.
@@ -133,9 +136,43 @@ public partial class MainWindow : Window
         BtnUpdateLater.Visibility = mandatory ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    /// <summary>
+    /// The search behind the button in the settings. When it finds something, the same
+    /// prompt as at the start opens in front of the app.
+    /// </summary>
+    public async Task<ManualUpdateResult> SearchForUpdateAsync()
+    {
+        if (_startup is null) return ManualUpdateResult.Failed;
+
+        StartupOutcome outcome;
+        try
+        {
+            outcome = await _startup.CheckNowAsync(_startupCts?.Token ?? CancellationToken.None);
+        }
+        catch (OperationCanceledException)
+        {
+            return ManualUpdateResult.Failed;   // the window is closing
+        }
+
+        if (_startup.FailureReason is { } reason)
+        {
+            App.LogLine($"Update-Suche ohne Ergebnis: {reason}");
+            return ManualUpdateResult.Failed;
+        }
+
+        if (outcome == StartupOutcome.Continue) return ManualUpdateResult.UpToDate;
+
+        ShowUpdatePrompt(_startup.OfferedVersion, outcome == StartupOutcome.PromptMandatory);
+        return ManualUpdateResult.PromptShown;
+    }
+
     private void FinishStartup()
     {
         LoadingOverlay.Visibility = Visibility.Collapsed;
+
+        // The prompt can also come from the settings, long after the start is over
+        if (_startupDone) return;
+
         _startupDone = true;
         StartupFinished?.Invoke();
 

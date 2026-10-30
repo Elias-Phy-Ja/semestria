@@ -29,6 +29,35 @@ public class UpdateDecisionTests
         => new(new StubSource(_ => Task.FromResult<IReadOnlyList<UpdateInfo>>(updates)),
                TimeSpan.FromMilliseconds(2500));
 
+    // ── Search by hand ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Suche_von_Hand_zeigt_auch_verschobenes_Update()
+    {
+        var postponed = UpdatePolicy.Postpone(new UpdatePreferences(), "2.1.0.0", Now);
+        var gate      = GateReturning(Update("2.1.0.0"));
+
+        var atStart = await gate.EvaluateAsync(postponed, Now.AddHours(1), skipCheck: false);
+        var byHand  = await gate.EvaluateIgnoringSnoozeAsync(Now.AddHours(1));
+
+        Assert.Equal(UpdatePrompt.None, atStart.Prompt);
+        Assert.Equal(UpdatePrompt.Optional, byHand.Prompt);
+        Assert.Equal("2.1.0.0", byHand.Version);
+    }
+
+    [Fact]
+    public async Task Suche_von_Hand_meldet_Fehler_statt_aktuell()
+    {
+        var gate = new UpdateGate(
+            new StubSource(_ => throw new InvalidOperationException("kein Store")),
+            TimeSpan.FromMilliseconds(2500));
+
+        var decision = await gate.EvaluateIgnoringSnoozeAsync(Now);
+
+        Assert.Equal(UpdatePrompt.None, decision.Prompt);
+        Assert.NotNull(decision.FailureReason);
+    }
+
     // ── Nothing on offer ─────────────────────────────────────────────────────
 
     [Fact]

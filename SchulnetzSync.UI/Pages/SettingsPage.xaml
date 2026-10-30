@@ -207,6 +207,33 @@
                 </StackPanel>
             </Border>
 
+            <!-- ═══ UPDATES ═══ -->
+            <TextBlock Text="UPDATES" Style="{StaticResource SectionLabel}"/>
+            <Border x:Name="CardUpdates" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock x:Name="TxtInstalledVersion"
+                               Style="{StaticResource BodyText}"
+                               Margin="0,0,0,6"/>
+                    <TextBlock Style="{StaticResource NoteText}" Margin="0,0,0,14"
+                               Text="Zeigt auch ein Update, das du beim Start mit «Später erinnern» verschoben hast."/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnSearchUpdate"
+                                Content="Nach Updates suchen"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="BtnSearchUpdate_Click"/>
+                        <ui:ProgressRing x:Name="UpdateRing"
+                                         IsActive="False" Width="20" Height="20"
+                                         VerticalAlignment="Center"
+                                         Margin="14,0,0,0"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="TxtUpdateStatus"
+                               Style="{StaticResource BodyText}"
+                               Margin="0,12,0,0"/>
+                </StackPanel>
+            </Border>
+
             <!-- ═══ CLEAN-UP ═══ -->
             <TextBlock Text="AUFRÄUMEN" Style="{StaticResource SectionLabel}"/>
             <Border x:Name="CardCleanup" Style="{StaticResource Card}">

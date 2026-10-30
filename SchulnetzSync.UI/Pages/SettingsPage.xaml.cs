@@ -9,6 +9,7 @@ using SchulnetzSync.Core.Calendar;
 using SchulnetzSync.Core.Configuration;
 using SchulnetzSync.Core.Model;
 using SchulnetzSync.UI.Services;
+using SchulnetzSync.UI.Update;
 
 namespace SchulnetzSync.UI.Pages;
 
@@ -40,6 +41,8 @@ public partial class SettingsPage : Page
         try
         {
             var config = AppState.Config;
+            TxtInstalledVersion.Text = $"Installiert ist Version {AppConstants.Version}.";
+
             // Feed URL: show the path only, NEVER the token
             var raw = ConfigManager.GetFeedUrl(config);
             TxtFeedUrl.Text = raw ?? "";
@@ -289,6 +292,26 @@ public partial class SettingsPage : Page
     // ── Keeping secrets off the screen ──────────────────────────────────
 
     // ── Clean-up: remove every Outlook entry Semestria ever created ─────
+
+    private async void BtnSearchUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        if (Window.GetWindow(this) is not MainWindow main) return;
+
+        BtnSearchUpdate.IsEnabled = false;
+        UpdateRing.IsActive       = true;
+        TxtUpdateStatus.Text      = "";
+
+        var result = await main.SearchForUpdateAsync();
+
+        UpdateRing.IsActive       = false;
+        BtnSearchUpdate.IsEnabled = true;
+        TxtUpdateStatus.Text = result switch
+        {
+            ManualUpdateResult.UpToDate => "Semestria ist auf dem neuesten Stand.",
+            ManualUpdateResult.Failed   => "Der Microsoft Store hat nicht geantwortet. Prüfe die Internetverbindung und versuch es nochmal.",
+            _                           => ""
+        };
+    }
 
     private async void BtnPurgeAll_Click(object sender, RoutedEventArgs e)
     {

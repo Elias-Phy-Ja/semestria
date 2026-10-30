@@ -14,6 +14,13 @@ public sealed class UpdateGate(IUpdateSource source, TimeSpan timeout)
     private readonly IUpdateSource _source  = source;
     private readonly TimeSpan      _timeout = timeout;
 
+    /// <summary>
+    /// The check the user asked for in the settings: «Später erinnern» does not count here,
+    /// because whoever searches by hand wants to see the postponed update.
+    /// </summary>
+    public Task<UpdateDecision> EvaluateIgnoringSnoozeAsync(DateTimeOffset nowUtc, CancellationToken ct = default)
+        => EvaluateAsync(new UpdatePreferences(), nowUtc, skipCheck: false, ct);
+
     /// <summary>Checks for updates and applies the snooze rules.</summary>
     /// <param name="prefs">Snooze state from disk.</param>
     /// <param name="nowUtc">Current time, injected so the tests stay deterministic.</param>
