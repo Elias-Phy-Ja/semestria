@@ -8,204 +8,17 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,400..900&family=Hanken+Grotesk:wght@400..700&display=swap">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="icon" type="image/png" href="logo.png">
 
-<style>
-:root {
-  --bg:        #0D0F18;
-  --surface:   #13162A;
-  --border:    #252A42;
-  --accent:    #5C6EF7;
-  --text:      #E2E5F4;
-  --muted:     #7A81A0;
-  --faint:     #3D4260;
-  --f-display: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --f-body:    'Inter', system-ui, sans-serif;
-  --f-mono:    'JetBrains Mono', monospace;
-  --radius:    7px;
-}
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg:      #F1F3FD;
-    --surface: #FFFFFF;
-    --border:  #D4D8F0;
-    --text:    #0D0F18;
-    --muted:   #5B628A;
-    --faint:   #B0B6D8;
-  }
-}
-:root[data-theme="light"] {
-  --bg:      #F1F3FD;
-  --surface: #FFFFFF;
-  --border:  #D4D8F0;
-  --text:    #0D0F18;
-  --muted:   #5B628A;
-  --faint:   #B0B6D8;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; scroll-behavior: smooth; }
-body {
-  font-family: var(--f-body);
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.7;
-  -webkit-font-smoothing: antialiased;
-}
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
-
-/* Nav */
-nav {
-  border-bottom: 1px solid var(--border);
-  padding: 16px 0;
-  background: color-mix(in srgb, var(--bg) 85%, transparent);
-  backdrop-filter: blur(16px);
-  position: sticky; top: 0; z-index: 20;
-}
-.wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
-.nav-inner { display: flex; align-items: center; justify-content: space-between; }
-.logo {
-  display: flex; align-items: center; gap: 10px;
-  font-family: var(--f-display); font-weight: 700; font-size: 1rem;
-  color: var(--text); text-decoration: none;
-}
-.logo:hover { text-decoration: none; }
-.logo-mark {
-  width: 28px; height: 28px; border-radius: 7px;
-  overflow: hidden; flex-shrink: 0;
-}
-.logo-mark img { width: 100%; height: 100%; display: block; }
-.nav-back {
-  font-size: .8rem; color: var(--muted);
-  display: flex; align-items: center; gap: 5px;
-}
-.nav-back:hover { color: var(--text); text-decoration: none; }
-
-/* Page header */
-.page-header {
-  padding: 56px 0 40px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 48px;
-}
-.page-label {
-  font-family: var(--f-mono); font-size: .68rem;
-  text-transform: uppercase; letter-spacing: .1em;
-  color: var(--accent); margin-bottom: 14px;
-}
-h1 {
-  font-family: var(--f-display);
-  font-size: clamp(1.6rem, 3vw, 2.1rem);
-  font-weight: 800; letter-spacing: -.02em;
-  line-height: 1.15; margin-bottom: 12px;
-}
-.page-meta {
-  font-family: var(--f-mono); font-size: .72rem; color: var(--faint);
-}
-
-/* Tab switcher */
-.tabs {
-  display: flex; gap: 4px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 40px;
-}
-.tab {
-  padding: 9px 18px;
-  font-size: .85rem; font-weight: 500;
-  border: none; background: none; cursor: pointer;
-  color: var(--muted);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  font-family: var(--f-body);
-  transition: color .15s, border-color .15s;
-}
-.tab.active {
-  color: var(--text);
-  border-bottom-color: var(--accent);
-}
-.tab:hover:not(.active) { color: var(--text); }
-
-/* Document content */
-.doc { display: none; }
-.doc.active { display: block; }
-
-/* Section */
-.section { margin-bottom: 36px; }
-.section-num {
-  font-family: var(--f-mono); font-size: .68rem;
-  color: var(--accent); margin-bottom: 6px;
-}
-h2 {
-  font-family: var(--f-display);
-  font-size: 1rem; font-weight: 700;
-  margin-bottom: 12px; letter-spacing: -.01em;
-}
-p { color: var(--muted); font-size: .9rem; margin-bottom: 10px; }
-p:last-child { margin-bottom: 0; }
-
-/* Data table */
-.data-table {
-  width: 100%; border-collapse: collapse;
-  margin: 14px 0; font-size: .84rem;
-}
-.data-table th {
-  text-align: left; padding: 7px 12px;
-  font-size: .7rem; font-weight: 600; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--faint);
-  border-bottom: 1px solid var(--border);
-}
-.data-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted); vertical-align: top;
-}
-.data-table td:first-child { color: var(--text); font-weight: 500; }
-.data-table tr:last-child td { border-bottom: none; }
-
-/* Chip list */
-.chip-list { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0; }
-.chip {
-  font-size: .75rem; font-family: var(--f-mono);
-  padding: 3px 10px; border-radius: 4px;
-  border: 1px solid var(--border); color: var(--muted);
-  background: var(--surface);
-}
-.chip.no { border-color: rgba(220,38,38,.3); color: #DC2626; background: rgba(220,38,38,.06); }
-
-/* Callout */
-.callout {
-  border-left: 3px solid var(--accent);
-  background: rgba(92,110,247,.07);
-  padding: 14px 16px; border-radius: 0 var(--radius) var(--radius) 0;
-  margin: 16px 0; font-size: .88rem; color: var(--muted);
-}
-.callout strong { color: var(--text); }
-
-/* Divider */
-hr { height: 1px; background: var(--border); border: none; margin: 40px 0; }
-
-/* Footer */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 28px 0; margin-top: 64px;
-}
-.foot-inner {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-}
-.foot-brand { font-family: var(--f-display); font-size: .85rem; font-weight: 700; }
-.foot-meta  { font-size: .72rem; color: var(--faint); margin-top: 2px; }
-.foot-links { display: flex; gap: 18px; }
-.foot-links a { font-size: .78rem; color: var(--muted); }
-.foot-links a:hover { color: var(--text); text-decoration: none; }
-</style>
+<link rel="stylesheet" href="site.css">
 </head>
-<body>
+<body class="legal">
 
 <nav>
   <div class="wrap nav-inner">
-    <a class="logo" href="https://elias-phy-ja.github.io/semestria/">
+    <a class="logo" href="./">
       <div class="logo-mark"><img src="logo.png" alt="Semestria Logo"></div>
       Semestria
     </a>
@@ -251,7 +64,7 @@ footer {
     <div class="section">
       <p class="section-num">03</p>
       <h2>Welche Daten werden verarbeitet?</h2>
-      <table class="data-table">
+      <div class="table-scroll"><table class="data-table">
         <thead>
           <tr>
             <th>Datenkategorie</th>
@@ -286,7 +99,7 @@ footer {
             <td>Keine Übertragung</td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
       <div class="callout">
         <strong>DPAPI</strong>: Die Feed-URL und das Microsoft-Token werden mit dem Windows Data Protection API verschlüsselt, das an dein Windows-Benutzerkonto gebunden ist. Nur du (auf diesem Gerät) kannst diese Daten entschlüsseln.
       </div>
@@ -316,7 +129,7 @@ footer {
       <p class="section-num">07</p>
       <h2>Drittanbieter-Dienste</h2>
       <p>Die App nutzt folgende externe Dienste, auf deren Datenschutzpraktiken wir keinen Einfluss haben:</p>
-      <table class="data-table">
+      <div class="table-scroll"><table class="data-table">
         <tbody>
           <tr>
             <td>Microsoft Graph API</td>
@@ -335,7 +148,7 @@ footer {
             <td>Webhosting dieser Seite und der Nachrichtendatei</td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
     </div>
 
     <div class="section">

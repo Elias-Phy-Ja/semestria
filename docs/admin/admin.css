@@ -1,8 +1,8 @@
 /* News admin. Same colours as the landing page, no external fonts or scripts. */
 :root {
-  --bg: #0D0F18; --surface: #13162A; --border: #252A42;
-  --accent: #5C6EF7; --text: #E2E5F4; --muted: #7A81A0;
-  --red: #DC2626; --green: #16A34A; --amber: #D97706;
+  --bg: #000000; --surface: #050B24; --border: #1B3F9E;
+  --accent: #2F7BFF; --text: #EAF4FF; --muted: #A3B9DC;
+  --red: #FF5A4F; --green: #16A34A; --amber: #FF7A1A;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text);
@@ -23,7 +23,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 input:disabled { opacity: .6; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
-button { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 9px 18px;
+button { background: var(--accent); color: #000; border: 0; border-radius: 8px; padding: 9px 18px;
   font: inherit; font-weight: 600; cursor: pointer; }
 button:focus-visible, a:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }

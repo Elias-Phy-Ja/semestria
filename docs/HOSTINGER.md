@@ -12,7 +12,7 @@ Admin-Seite (`admin/`). Diese Datei selbst wird vom Server nicht ausgeliefert.
    Ohne HTTPS verweigern App und Admin-Seite den Dienst.
 3. **PHP-Version:** hPanel → Erweitert → PHP-Konfiguration → **8.1 oder neuer**.
 4. **Dateien hochladen** (Dateimanager oder FTP) in den Subdomain-Ordner:
-   `index.html`, `policy.html`, `news.json`, `logo.png`, `favicon.ico`, `.htaccess`
+   `index.html`, `policy.html`, `site.css`, `strike.js`, `news.json`, `logo.png`, `favicon.ico`, `.htaccess`
    und den ganzen Ordner `admin/` (mit `admin/.htaccess` und `admin/data/.htaccess`).
    Versteckte Dateien (`.htaccess`) müssen mit, im Dateimanager «versteckte Dateien zeigen».
 5. **config.php anlegen:** auf dem Server `admin/config.example.php` nach
