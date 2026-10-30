@@ -29,9 +29,10 @@ public sealed class StoreUpdateSourceFactory : IUpdateSourceFactory
 }
 
 /// <summary>Invents an update; picked by --fake-update.</summary>
-public sealed class FakeUpdateSourceFactory(string version, bool mandatory) : IUpdateSourceFactory
+public sealed class FakeUpdateSourceFactory(string version, bool mandatory, bool slow = false) : IUpdateSourceFactory
 {
-    public IUpdateSource Create(IntPtr windowHandle) => new FakeUpdateSource(version, mandatory);
+    public IUpdateSource Create(IntPtr windowHandle)
+        => new FakeUpdateSource(version, mandatory, TimeSpan.FromSeconds(slow ? 5 : 0));
 
     public bool BypassSnooze => true;
 }

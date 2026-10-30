@@ -44,8 +44,8 @@ public sealed class StartupCoordinator(
     /// <summary>Hard cap for the network check.</summary>
     private static readonly TimeSpan CheckTimeout = TimeSpan.FromMilliseconds(2500);
 
-    /// <summary>Limit for a search by hand: nothing is waiting on it, so the store gets time.</summary>
-    private static readonly TimeSpan ManualCheckTimeout = TimeSpan.FromSeconds(30);
+    /// <summary>Limit once the app is running: nothing is waiting on it, so the store gets time.</summary>
+    private static readonly TimeSpan RunningCheckTimeout = TimeSpan.FromSeconds(30);
 
     /// <summary>So the loading view does not flash by on a fast machine.</summary>
     private static readonly TimeSpan MinimumVisible = TimeSpan.FromMilliseconds(800);
@@ -88,8 +88,7 @@ public sealed class StartupCoordinator(
             .EvaluateAsync(prefs, DateTimeOffset.UtcNow, skipCheck, ct)
             .ConfigureAwait(false);
 
-        OfferedVersion = decision.Version;
-        FailureReason  = decision.FailureReason;
+        var outcome = Apply(decision);
 
         _progress.Report(0.80);
 
@@ -98,12 +97,7 @@ public sealed class StartupCoordinator(
         await EnsureMinimumVisibleAsync(started, ct).ConfigureAwait(false);
         _progress.Report(1.0);
 
-        return decision.Prompt switch
-        {
-            UpdatePrompt.Mandatory => StartupOutcome.PromptMandatory,
-            UpdatePrompt.Optional  => StartupOutcome.PromptOptional,
-            _                      => StartupOutcome.Continue,
-        };
+        return outcome;
     }
 
     /// <summary>
@@ -112,9 +106,29 @@ public sealed class StartupCoordinator(
     /// </summary>
     public async Task<StartupOutcome> CheckNowAsync(CancellationToken ct)
     {
-        var gate     = new UpdateGate(_source, ManualCheckTimeout);
+        var gate     = new UpdateGate(_source, RunningCheckTimeout);
         var decision = await gate.EvaluateIgnoringSnoozeAsync(DateTimeOffset.UtcNow, ct).ConfigureAwait(false);
 
+        return Apply(decision);
+    }
+
+    /// <summary>
+    /// Asks again after the check at the start got no answer, so a slow store cannot hide
+    /// an update. Same rules as at the start, «Später erinnern» included.
+    /// </summary>
+    public async Task<StartupOutcome> RecheckAsync(CancellationToken ct)
+    {
+        var gate  = new UpdateGate(_source, RunningCheckTimeout);
+        var prefs = _bypassSnooze ? new UpdatePreferences() : UpdatePreferencesStore.Load();
+        var decision = await gate
+            .EvaluateAsync(prefs, DateTimeOffset.UtcNow, skipCheck: false, ct)
+            .ConfigureAwait(false);
+
+        return Apply(decision);
+    }
+
+    private StartupOutcome Apply(UpdateDecision decision)
+    {
         OfferedVersion = decision.Version;
         FailureReason  = decision.FailureReason;
 

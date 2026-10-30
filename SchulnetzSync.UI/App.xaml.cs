@@ -58,7 +58,11 @@ public partial class App : Application
 
         // Outside a Store install the real check always says "nothing to do". The fake
         // source is what makes the four states of the loading view testable anyway.
-        if (e.Args.Contains("--fake-update-mandatory", StringComparer.OrdinalIgnoreCase))
+        if (e.Args.Contains("--fake-update-mandatory-slow", StringComparer.OrdinalIgnoreCase))
+            _updateSources = new FakeUpdateSourceFactory("2.1.0.0", mandatory: true, slow: true);
+        else if (e.Args.Contains("--fake-update-slow", StringComparer.OrdinalIgnoreCase))
+            _updateSources = new FakeUpdateSourceFactory("2.1.0.0", mandatory: false, slow: true);
+        else if (e.Args.Contains("--fake-update-mandatory", StringComparer.OrdinalIgnoreCase))
             _updateSources = new FakeUpdateSourceFactory("2.1.0.0", mandatory: true);
         else if (e.Args.Contains("--fake-update", StringComparer.OrdinalIgnoreCase))
             _updateSources = new FakeUpdateSourceFactory("2.1.0.0", mandatory: false);

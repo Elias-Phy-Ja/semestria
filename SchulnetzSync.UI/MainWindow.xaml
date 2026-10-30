@@ -207,6 +207,35 @@
 
         </ui:NavigationView>
 
+        <!-- An optional update found after the start: a corner hint, the app stays usable -->
+        <Border x:Name="UpdateHint"
+                Visibility="Collapsed"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Margin="24" Padding="16" MaxWidth="360" CornerRadius="10"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="1">
+            <StackPanel>
+                <TextBlock x:Name="TxtUpdateHintTitle"
+                           FontSize="14" FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,4"/>
+                <TextBlock Text="Das Update kommt aus dem Microsoft Store."
+                           FontSize="12" Opacity="0.75"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Update ansehen"
+                            Style="{StaticResource PrimaryButton}"
+                            Margin="0,0,8,0"
+                            Click="BtnUpdateHintShow_Click"/>
+                    <Button Content="Später erinnern"
+                            Style="{StaticResource SecondaryButton}"
+                            Click="BtnUpdateHintLater_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
         <!-- ══════════════════════════════════════════════════════════════
              LOADING VIEW
 

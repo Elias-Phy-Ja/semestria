@@ -58,6 +58,43 @@ public class UpdateDecisionTests
         Assert.NotNull(decision.FailureReason);
     }
 
+    // ── A store too slow for the start ───────────────────────────────────────
+
+    private static StubSource SlowSource(params UpdateInfo[] updates)
+        => new(async ct =>
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(200), ct);
+            return updates;
+        });
+
+    [Fact]
+    public async Task Langsamer_Store_Pflicht_Update_kommt_beim_zweiten_Versuch()
+    {
+        var source = SlowSource(Update(mandatory: true));
+        var snoozed = UpdatePolicy.Postpone(new UpdatePreferences(), "2.1.0.0", Now);
+
+        var atStart = await new UpdateGate(source, TimeSpan.FromMilliseconds(20))
+            .EvaluateAsync(snoozed, Now, skipCheck: false);
+        var later = await new UpdateGate(source, TimeSpan.FromSeconds(30))
+            .EvaluateAsync(snoozed, Now, skipCheck: false);
+
+        Assert.Equal(UpdatePrompt.None, atStart.Prompt);
+        Assert.NotNull(atStart.FailureReason);
+        Assert.Equal(UpdatePrompt.Mandatory, later.Prompt);
+    }
+
+    [Fact]
+    public async Task Langsamer_Store_verschobenes_Update_bleibt_verschoben()
+    {
+        var source = SlowSource(Update());
+        var snoozed = UpdatePolicy.Postpone(new UpdatePreferences(), "2.1.0.0", Now);
+
+        var later = await new UpdateGate(source, TimeSpan.FromSeconds(30))
+            .EvaluateAsync(snoozed, Now.AddHours(1), skipCheck: false);
+
+        Assert.Equal(UpdatePrompt.None, later.Prompt);
+    }
+
     // ── Nothing on offer ─────────────────────────────────────────────────────
 
     [Fact]

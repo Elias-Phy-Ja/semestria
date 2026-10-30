@@ -9,12 +9,16 @@ namespace SchulnetzSync.UI.Update;
 /// Store: under "dotnet run" and with a self-signed MSIX you always end up on the "nothing
 /// to do" path and never see the rest.
 /// Switched on with <c>--fake-update</c>, or <c>--fake-update-mandatory</c> for the
-/// version without a way out.
+/// version without a way out. With <c>-slow</c> behind either one it answers too late for
+/// the start, which is how the check in the background gets its turn.
 /// </summary>
-public sealed class FakeUpdateSource(string version, bool mandatory) : IUpdateSource
+public sealed class FakeUpdateSource(string version, bool mandatory, TimeSpan answerAfter) : IUpdateSource
 {
-    public Task<IReadOnlyList<UpdateInfo>> CheckAsync(CancellationToken ct)
-        => Task.FromResult<IReadOnlyList<UpdateInfo>>([new UpdateInfo(version, mandatory)]);
+    public async Task<IReadOnlyList<UpdateInfo>> CheckAsync(CancellationToken ct)
+    {
+        await Task.Delay(answerAfter, ct).ConfigureAwait(false);
+        return [new UpdateInfo(version, mandatory)];
+    }
 
     public async Task DownloadAsync(IProgress<double>? progress, CancellationToken ct)
     {

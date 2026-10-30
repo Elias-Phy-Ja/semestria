@@ -31,6 +31,9 @@ public partial class MainWindow : Window
     /// <summary>True while the prompt must not offer a way into the app.</summary>
     private bool _updateIsMandatory;
 
+    /// <summary>The second try after a check at the start without an answer, while it runs.</summary>
+    private Task? _backgroundCheck;
+
     /// <summary>Runs once the loading view is gone.</summary>
     public event Action? StartupFinished;
 
@@ -93,8 +96,51 @@ public partial class MainWindow : Window
 
             default:
                 FinishStartup();
+
+                // Too slow for the start is not the same as nothing to update: keep asking.
+                if (_startup.FailureReason is not null)
+                    _backgroundCheck = CheckInBackgroundAsync();
                 break;
         }
+    }
+
+    /// <summary>
+    /// Finishes a check the start gave up on. A mandatory update then locks the app just as
+    /// it would have at the start; an optional one only shows a small hint, because by now
+    /// the user may be in the middle of typing something.
+    /// </summary>
+    private async Task CheckInBackgroundAsync()
+    {
+        StartupOutcome outcome;
+        try
+        {
+            outcome = await _startup!.RecheckAsync(_startupCts?.Token ?? CancellationToken.None);
+        }
+        catch (OperationCanceledException)
+        {
+            return;   // the window is closing
+        }
+
+        if (_startup.FailureReason is { } reason)
+            App.LogLine($"Update-Prüfung im Hintergrund ohne Ergebnis: {reason}");
+
+        switch (outcome)
+        {
+            case StartupOutcome.PromptMandatory:
+                ShowUpdatePrompt(_startup.OfferedVersion, mandatory: true);
+                break;
+
+            case StartupOutcome.PromptOptional:
+                ShowUpdateHint(_startup.OfferedVersion);
+                break;
+        }
+    }
+
+    private void ShowUpdateHint(string? version)
+    {
+        _offeredVersion        = version;
+        TxtUpdateHintTitle.Text = UpdateHeadline(version);
+        UpdateHint.Visibility  = Visibility.Visible;
     }
 
     /// <summary>A short confirmation after a restart, then on into the app.</summary>
@@ -112,6 +158,10 @@ public partial class MainWindow : Window
         _offeredVersion    = version;
         _updateIsMandatory = mandatory;
 
+        // The overlay alone only stops the mouse; this also keeps the keyboard out of the app
+        NavView.IsEnabled = !mandatory;
+
+        UpdateHint.Visibility          = Visibility.Collapsed;
         LoadingOverlay.Visibility      = Visibility.Visible;
         LoadingProgressArea.Visibility = Visibility.Collapsed;
         UpdateFailureArea.Visibility   = Visibility.Collapsed;
@@ -119,13 +169,7 @@ public partial class MainWindow : Window
         UpdatePromptArea.Visibility    = Visibility.Visible;
         BtnUpdateNow.Visibility        = Visibility.Visible;
 
-        // The store sometimes reports the version that is already installed. A number that
-        // is not actually higher is therefore left out of the message entirely.
-        bool nameVersion = UpdatePolicy.IsNewerThan(version, AppConstants.Version);
-
-        TxtUpdateHeadline.Text = nameVersion
-            ? $"Version {version} verfügbar"
-            : "Ein Update ist verfügbar";
+        TxtUpdateHeadline.Text = UpdateHeadline(version);
 
         TxtUpdateBody.Text = mandatory
             ? $"Du hast {AppConstants.Version}. Dieses Update ist erforderlich, "
@@ -137,12 +181,28 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// The store sometimes reports the version that is already installed. A number that
+    /// is not actually higher is therefore left out of the message entirely.
+    /// </summary>
+    private static string UpdateHeadline(string? version)
+        => UpdatePolicy.IsNewerThan(version, AppConstants.Version)
+            ? $"Version {version} verfügbar"
+            : "Ein Update ist verfügbar";
+
+    /// <summary>
     /// The search behind the button in the settings. When it finds something, the same
     /// prompt as at the start opens in front of the app.
     /// </summary>
     public async Task<ManualUpdateResult> SearchForUpdateAsync()
     {
         if (_startup is null) return ManualUpdateResult.Failed;
+
+        // Never two checks at once: each replaces the packages the install needs later
+        if (_backgroundCheck is { } running)
+        {
+            await running;
+            if (LoadingOverlay.Visibility == Visibility.Visible) return ManualUpdateResult.PromptShown;
+        }
 
         StartupOutcome outcome;
         try
@@ -196,6 +256,17 @@ public partial class MainWindow : Window
             _startup?.Postpone(version);
 
         FinishStartup();
+    }
+
+    private void BtnUpdateHintShow_Click(object sender, RoutedEventArgs e)
+        => ShowUpdatePrompt(_offeredVersion, mandatory: false);
+
+    private void BtnUpdateHintLater_Click(object sender, RoutedEventArgs e)
+    {
+        if (_offeredVersion is { } version)
+            _startup?.Postpone(version);
+
+        UpdateHint.Visibility = Visibility.Collapsed;
     }
 
     private void BtnQuit_Click(object sender, RoutedEventArgs e)
